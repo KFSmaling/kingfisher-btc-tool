@@ -260,7 +260,8 @@ export default function BTCTool() {
   const [blocks, setBlocks] = useState(emptyBlocks());
   const [scope, setScope] = useState("");
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+const [loading, setLoading] = useState(false);
   const [uploadingKey, setUploadingKey] = useState(null);
   const [uploadError, setUploadError] = useState(null);
   const [tab, setTab] = useState("canvas");
