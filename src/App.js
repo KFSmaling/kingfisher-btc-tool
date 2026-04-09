@@ -33,7 +33,7 @@ const BLOCK_LABELS = {
 };
 
 const EXAMPLE = {
-  scope: "Transamerica Life Bermuda — BTP 2024",
+  scope: "Company Example— BTP 2024",
   strategy: ["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Driver C: Operational performance — 20% efficiency gain","Goal: Double value creation by 2028"],
   principles: ["Customer focus: treat HNWI by CLV — no one-size-fits-all","Personalization: 360 degree customer view across all channels","Product modularisation: reusable components, white-label ready","Distribution: segmented broker service levels, clear incentives","Convenience: omnichannel consistency — same request, same outcome","Top 3 price/quality ratio in all target markets"],
   customers: ["Segment Affluent+/HNW: 750K-1M wealth, 85% of policies","Segment HNW+: 3M-10M wealth, 20% of total sum assured","Segment UHNW: >100M — legacy planning and asset structuring","Channel: International brokers (primary, fed by private banks)","Channel: Regional/local brokers and FAs — growing","Geography: HK, Singapore, Bermuda + DIFC hub (Scenario II)"],
