@@ -27,14 +27,67 @@ const BLK = {
 };
 
 const EXAMPLE = {
-  scope: "Transamerica Life Bermuda — BTP 2024",
-  strategy: ["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Driver C: Operational performance — 20% efficiency gain","Goal: Double value creation by 2028"],
-  principles: ["Customer focus: treat HNWI by CLV — no one-size-fits-all","Personalization: 360 degree customer view across all channels","Product modularisation: reusable components, white-label ready","Distribution: segmented broker service levels, clear incentives","Convenience: omnichannel consistency — same request, same outcome","Top 3 price/quality ratio in all target markets"],
-  customers: ["Segment Affluent+/HNW: 750K-1M wealth, 85% of policies","Segment HNW+: 3M-10M wealth, 20% of total sum assured","Segment UHNW: >100M — legacy planning and asset structuring","Channel: International brokers (primary, fed by private banks)","Channel: Regional/local brokers and FAs — growing","Geography: HK, Singapore, Bermuda + DIFC hub (Scenario II)"],
-  processes: ["Standardise and automate: AI, OCR, chatbots where value-adding","Decouple front (CX) from back (admin and efficiency)","Agile way of working: multidisciplinary teams, fixed-budget sprints","Sourcing: top talent ops/data/tech; key roles in-house","BTP as enterprise architecture and transformation management tool"],
-  people: ["Performance: clear goals, accountable, recognized","Talent management: succession planning, career conversations","Leadership: soft skills training + Rising Star Programme","Digital savviness: AI/data literacy across all staff","Engagement: pulse surveys, inclusion and diversity programme"],
-  technology: ["Flexibility: modular, API-based, no redundant IT solutions","Cloud-native platform: cyber-secure, scalable, as-a-service","Data as asset: analytics across distribution, UW, claims, servicing","Data governance: quality, lifecycle, privacy, auditable access","Case management and 360 customer/broker view (Scenario II)"],
-  portfolio: ["Hygiene: Brand and presence, pricing benchmark, LifePro upgrade","Hygiene: Data foundation, management dashboard","Scenario I: WOL launch HK/Bermuda, broker portal uplift","Scenario I: Global sales build-out, customer journey redesign","Scenario II: DIFC hub, FA proposition Singapore, CRM platform","Scenario III: UL remediation, PPLI/VUL assessment"],
+  scope: "International Financial Services Provider — Transformation Plan",
+
+  strategy: [
+    "Vision: Top-tier international provider known for service quality and reliability",
+    "Shift: from legacy portfolio management to growth and innovation",
+    "Driver A: Customer & partner centricity — seamless omnichannel interaction",
+    "Driver B: Product differentiation — new propositions within 6–9 months",
+    "Driver C: Operational performance — structural cost and efficiency improvement",
+    "Goal: Significant increase in value creation within 5 years"
+  ],
+
+  principles: [
+    "Customer focus: differentiated service based on customer lifetime value",
+    "Personalisation: single customer view across all channels and touchpoints",
+    "Modularisation: reusable product components to enable faster launches",
+    "Distribution: clear segmentation of partners with aligned incentives",
+    "Consistency: same request leads to same outcome across channels",
+    "Competitive positioning: top-tier price/quality ratio in core segments"
+  ],
+
+  customers: [
+    "Segment 1: affluent customers with standardised product needs",
+    "Segment 2: high-value customers requiring tailored advisory",
+    "Segment 3: very high-value customers focused on long-term structuring",
+    "Channel: intermediaries and advisory partners (primary)",
+    "Channel: direct and digital channels (increasing importance)",
+    "Geography: presence across multiple international financial hubs"
+  ],
+
+  processes: [
+    "Standardisation and automation using AI and workflow tooling",
+    "Clear separation between front-office (experience) and back-office (efficiency)",
+    "Agile delivery model with multidisciplinary teams and fixed cycles",
+    "Selective insourcing of critical capabilities (data, tech, operations)",
+    "Transformation governed via enterprise architecture and portfolio steering"
+  ],
+
+  people: [
+    "Performance culture with clear targets and accountability",
+    "Structured talent management and succession planning",
+    "Leadership development focused on collaboration and change",
+    "Upskilling in data, digital and AI capabilities",
+    "Employee engagement through continuous feedback mechanisms"
+  ],
+
+  technology: [
+    "Modular, API-based architecture with minimal redundancy",
+    "Cloud-native platform with strong security and scalability",
+    "Data as core asset across distribution, underwriting and servicing",
+    "Formal data governance with ownership, quality and lifecycle controls",
+    "Integrated customer and partner platforms enabling 360° view"
+  ],
+
+  portfolio: [
+    "Foundation: core system improvements and data platform",
+    "Foundation: management dashboard and performance insights",
+    "Growth: new product propositions and faster launch capability",
+    "Growth: partner portal and customer journey improvements",
+    "Expansion: new market and partner propositions",
+    "Optimisation: portfolio rationalisation and legacy clean-up"
+  ]
 };
 
 // ── Local analysis engine ─────────────────────────────────────────────────────
