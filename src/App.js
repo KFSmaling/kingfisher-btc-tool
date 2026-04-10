@@ -182,7 +182,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         <div className="space-y-1.5 mt-3">
           {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
             <div key={i} className="flex items-start gap-2">
-              <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rounded-full shrink-0" />
+              <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
               <span className="text-[11px] text-slate-600 leading-snug">{b}</span>
             </div>
           ))}
@@ -444,7 +444,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
             {blockBullets.map((bullet, i) => (
               <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
-                <div className="mt-1.5 w-2 h-2 bg-orange-500 rounded-full shrink-0" />
+                <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
                 {editingIdx === i ? (
                   <div className="flex-1 flex gap-2">
                     <input
@@ -651,7 +651,9 @@ export default function App() {
 
         {/* Left: logo + title */}
         <div className="flex items-center gap-6">
-          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-11 object-contain brightness-0 invert" />
+          <div className="bg-white px-3 py-1.5 flex items-center shrink-0">
+            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
+          </div>
           <div className="w-px h-8 bg-white/20" />
           <div>
             <h1 className="text-sm font-semibold tracking-widest uppercase text-white leading-tight">Business Transformation Canvas</h1>
@@ -683,9 +685,39 @@ export default function App() {
       </header>
 
       {/* Dashboard */}
-      <main className="p-10">
+      <main className="p-10 relative">
+
+        {/* Novius diamond watermark */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-10 py-10">
+          <svg viewBox="0 0 440 260" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+            {/* Outer diamond */}
+            <polygon
+              points="220,6 434,130 220,254 6,130"
+              fill="none"
+              stroke="#00AEEF"
+              strokeWidth="1.2"
+              opacity="0.12"
+            />
+            {/* Inner diamond */}
+            <polygon
+              points="220,30 410,130 220,230 30,130"
+              fill="none"
+              stroke="#00AEEF"
+              strokeWidth="0.6"
+              opacity="0.07"
+            />
+            {/* Corner accents — four apex dots */}
+            <circle cx="220" cy="6"   r="3" fill="#00AEEF" opacity="0.2" />
+            <circle cx="434" cy="130" r="3" fill="#00AEEF" opacity="0.2" />
+            <circle cx="220" cy="254" r="3" fill="#00AEEF" opacity="0.2" />
+            <circle cx="6"   cy="130" r="3" fill="#00AEEF" opacity="0.2" />
+            {/* Center diamond ornament */}
+            <rect x="215" y="125" width="10" height="10" fill="none" stroke="#00AEEF" strokeWidth="0.8" opacity="0.25" transform="rotate(45 220 130)" />
+          </svg>
+        </div>
+
         {/* Canvas grid — BTC layout */}
-        <div className="grid grid-cols-4 gap-5">
+        <div className="relative grid grid-cols-4 gap-5">
 
           {/* Row 1: Strategy (wide) + Principles (half → 2 cols) */}
           {BLOCKS.filter(b => ["strategy", "principles"].includes(b.id)).map(block => (
