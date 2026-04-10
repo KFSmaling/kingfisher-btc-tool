@@ -8,25 +8,48 @@ import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 
 // ── BTC Block definitions ────────────────────────────────────────────────────
 const BLOCKS = [
-  { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide" },
-  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "half" },
-  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "half" },
-  { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter" },
-  { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter" },
-  { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter" },
-  { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide" },
+  { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide",    hasSubs: false },
+  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "half",    hasSubs: false },
+  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "half",    hasSubs: true  },
+  { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter", hasSubs: true  },
+  { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter", hasSubs: true  },
+  { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter", hasSubs: true  },
+  { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide",    hasSubs: false },
 ];
 
-// Helper to convert string arrays to bullet objects for examples
-const eb = (texts, source) => texts.map(text => ({ text, source }));
+const SUBTABS = [
+  { id: "current", label: "Current",  color: "border-slate-400 text-slate-600",  dot: "bg-slate-400",   activeBg: "bg-slate-50  border-slate-300" },
+  { id: "tobe",    label: "To-Be",    color: "border-[#00AEEF] text-[#00AEEF]",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50   border-[#00AEEF]" },
+  { id: "change",  label: "Change",   color: "border-orange-400 text-orange-500", dot: "bg-orange-400",  activeBg: "bg-orange-50 border-orange-300" },
+];
+
+// Helper to convert string arrays to bullet objects
+const eb  = (texts, source) => texts.map(text => ({ text, source }));
+const ebs = (texts, source, subtab) => texts.map(text => ({ text, source, subtab }));
 
 const EXAMPLE_BULLETS = {
   strategy:   eb(["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Goal: Double value creation by 2028"], "example-strategy.pdf"),
   principles: eb(["Customer focus: treat HNWI by CLV — no one-size-fits-all","Personalisation: 360° customer view across all channels","Product modularisation: reusable components, white-label ready","Convenience: omnichannel consistency — same request, same outcome"], "example-principles.pdf"),
-  customers:  eb(["Segment Affluent+/HNW: 750K–1M wealth, 85% of policies","Segment HNW+: 3M–10M wealth, 20% of total sum assured","Channel: International brokers (primary, fed by private banks)","Geography: HK, Singapore, Bermuda + DIFC hub"], "example-customers.pdf"),
-  processes:  eb(["Standardise and automate: AI, OCR, chatbots where value-adding","Decouple front (CX) from back (admin and efficiency)","Agile way of working: multidisciplinary teams, fixed-budget sprints"], "example-processes.pdf"),
-  people:     eb(["Performance: clear goals, accountable, recognised","Talent management: succession planning, career conversations","Digital savviness: AI/data literacy across all staff"], "example-people.pdf"),
-  technology: eb(["Flexibility: modular, API-based, no redundant IT solutions","Cloud-native platform: cyber-secure, scalable, as-a-service","Data as asset: analytics across distribution, UW, claims, servicing"], "example-technology.pdf"),
+  customers: [
+    ...ebs(["Segment Affluent+/HNW: 750K–1M wealth, 85% of policies","Channel: International brokers (primary, fed by private banks)"], "example-customers.pdf", "current"),
+    ...ebs(["Omnichannel proposition: broker + direct + private bank","Geography expansion: DIFC hub as Middle East entry point"], "example-customers.pdf", "tobe"),
+    ...ebs(["Customer journey redesign for HNW+ segment","Launch broker portal uplift H1 2025"], "example-customers.pdf", "change"),
+  ],
+  processes: [
+    ...ebs(["Manual underwriting: 60% of cases still paper-based","Siloed front/back office — no real-time case view"], "example-processes.pdf", "current"),
+    ...ebs(["Straight-through processing for standard cases","Agile operating model: multidisciplinary squads"], "example-processes.pdf", "tobe"),
+    ...ebs(["Standardise and automate: AI, OCR, chatbots rollout","Decouple front (CX) from back (admin) systems"], "example-processes.pdf", "change"),
+  ],
+  people: [
+    ...ebs(["Performance management: inconsistent across BUs","Digital skills gap: limited AI/data literacy"], "example-people.pdf", "current"),
+    ...ebs(["Clear accountability model, goals-based culture","Digital-savvy workforce across all levels"], "example-people.pdf", "tobe"),
+    ...ebs(["Talent management programme + succession planning","Digital literacy uplift: AI/data training for all staff"], "example-people.pdf", "change"),
+  ],
+  technology: [
+    ...ebs(["Legacy policy admin: LifePro, limited API surface","Fragmented data landscape — no 360° customer view"], "example-technology.pdf", "current"),
+    ...ebs(["Cloud-native platform: modular, API-first, scalable","Single customer data platform across distribution, UW, claims"], "example-technology.pdf", "tobe"),
+    ...ebs(["LifePro upgrade + API wrapper phase 1","CRM platform rollout — Phase 1 HK/Singapore"], "example-technology.pdf", "change"),
+  ],
   portfolio:  eb(["Hygiene: Brand and presence, pricing benchmark, LifePro upgrade","Scenario I: WOL launch HK/Bermuda, broker portal uplift","Scenario I: Global sales build-out, customer journey redesign","Scenario II: DIFC hub, FA proposition Singapore, CRM platform"], "example-portfolio.pdf"),
 };
 
@@ -86,7 +109,7 @@ function runConsistencyCheck(bullets) {
   BLOCKS.forEach(b => { scores[b.id] = scoreBlock(bullets[b.id] || []); });
 
   const issues = [];
-  const filled = id => (bullets[id] || []).filter(b => b.trim()).length;
+  const filled = id => (bullets[id] || []).filter(b => (typeof b === "string" ? b : b.text).trim()).length;
 
   if (filled("strategy") >= 3 && filled("portfolio") < 2)
     issues.push({ severity: "high", blocks: ["strategy", "portfolio"], issue: "Strategy has multiple themes but change portfolio is underdeveloped." });
@@ -150,24 +173,64 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
           )}
         </div>
 
-        <div className="space-y-1.5 mt-3">
-          {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
-              <span className="text-[11px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
-            </div>
-          ))}
-          {(bullets || []).length === 0 && (
-            <p className="text-[10px] text-slate-300 italic uppercase tracking-tight">No data yet</p>
-          )}
-        </div>
+        {/* Bullet preview */}
+        {block.hasSubs ? (
+          // Pillar blocks: show bullets grouped by subtab label
+          <div className="space-y-1 mt-3">
+            {SUBTABS.map(st => {
+              const stBullets = (bullets || []).filter(b => b.subtab === st.id);
+              if (stBullets.length === 0) return null;
+              return (
+                <div key={st.id}>
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${st.color.split(" ")[1]}`}>{st.label}</span>
+                  {stBullets.slice(0, 2).map((b, i) => (
+                    <div key={i} className="flex items-start gap-2 mt-0.5">
+                      <div className={`mt-1.5 w-1 h-1 rotate-45 shrink-0 ${st.dot}`} />
+                      <span className="text-[10px] text-slate-600 leading-snug">{b.text}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            {(bullets || []).length === 0 && (
+              <p className="text-[10px] text-slate-300 italic uppercase tracking-tight">No data yet</p>
+            )}
+          </div>
+        ) : (
+          // Other blocks: flat bullet list
+          <div className="space-y-1.5 mt-3">
+            {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
+                <span className="text-[11px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
+              </div>
+            ))}
+            {(bullets || []).length === 0 && (
+              <p className="text-[10px] text-slate-300 italic uppercase tracking-tight">No data yet</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
-        {insightCount > 0
-          ? <span className="text-[9px] font-bold text-orange-500 uppercase">{insightCount} insight{insightCount !== 1 ? "s" : ""} pending</span>
-          : <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullet{(bullets || []).length !== 1 ? "s" : ""}</span>
-        }
+        {insightCount > 0 ? (
+          <span className="text-[9px] font-bold text-orange-500 uppercase">{insightCount} insight{insightCount !== 1 ? "s" : ""} pending</span>
+        ) : block.hasSubs ? (
+          // Show filled sub-tab dots as status indicators
+          <div className="flex items-center gap-2">
+            {SUBTABS.map(st => {
+              const count = (bullets || []).filter(b => b.subtab === st.id).length;
+              return (
+                <div key={st.id} className="flex items-center gap-1">
+                  <div className={`w-1.5 h-1.5 rotate-45 ${count > 0 ? st.dot : "bg-slate-200"}`} />
+                  <span className={`text-[8px] uppercase tracking-wider ${count > 0 ? "text-slate-500" : "text-slate-300"}`}>{st.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullet{(bullets || []).length !== 1 ? "s" : ""}</span>
+        )}
         <ChevronRight size={18} className="text-slate-200 group-hover:text-[#00AEEF] transition-colors" />
       </div>
     </div>
@@ -184,6 +247,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const [newBullet, setNewBullet] = useState("");
   const [addingBullet, setAddingBullet] = useState(false);
   const [editedInsightTexts, setEditedInsightTexts] = useState({});
+  const [activeSubTab, setActiveSubTab] = useState("current");
   const fileRef = useRef();
 
   const blockDocs = docs[block.id] || [];
@@ -432,86 +496,202 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
         {/* 4. CANVAS */}
         {activeTab === "canvas" && (
           <div className="space-y-3">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-              <span className="text-[9px] font-black text-[#001f33] uppercase tracking-widest">Canvas bullets ({blockBullets.length}/7)</span>
-              {blockBullets.length < 7 && (
-                <button
-                  onClick={() => setAddingBullet(true)}
-                  className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
-                >
-                  <Plus size={14} /> Add manually
-                </button>
-              )}
-            </div>
 
-            {blockBullets.map((bullet, i) => {
-              const bulletText   = typeof bullet === "string" ? bullet : bullet.text;
-              const bulletSource = typeof bullet === "string" ? null  : bullet.source;
-              return (
-                <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
-                  <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    {editingIdx === i ? (
-                      <div className="flex gap-2">
-                        <input
-                          autoFocus
-                          value={editVal}
-                          onChange={e => setEditVal(e.target.value)}
-                          className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
-                          onKeyDown={e => {
-                            if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
-                            if (e.key === "Escape") setEditingIdx(null);
-                          }}
-                        />
-                        <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
-                        <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
-                    )}
-                    {bulletSource && editingIdx !== i && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <FileText size={10} className="text-slate-300 shrink-0" />
-                        <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
-                    <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
-                  </div>
+            {block.hasSubs ? (
+              /* ── Pillar blocks: Current / To-Be / Change sub-tabs ── */
+              <>
+                {/* Sub-tab nav */}
+                <div className="flex gap-2 pb-4 border-b border-slate-100">
+                  {SUBTABS.map(st => {
+                    const count = blockBullets.filter(b => b.subtab === st.id).length;
+                    const isActive = activeSubTab === st.id;
+                    return (
+                      <button
+                        key={st.id}
+                        onClick={() => { setActiveSubTab(st.id); setAddingBullet(false); setEditingIdx(null); }}
+                        className={`flex-1 py-2 px-3 rounded-sm border text-[9px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-0.5
+                          ${isActive ? st.activeBg + " " + st.color.split(" ")[1] : "border-slate-100 text-slate-400 bg-white hover:border-slate-200"}`}
+                      >
+                        <div className={`w-1.5 h-1.5 rotate-45 mb-0.5 ${isActive ? st.dot : "bg-slate-300"}`} />
+                        {st.label}
+                        {count > 0 && <span className="text-[8px]">{count}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
 
-            {addingBullet && (
-              <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
-                <div className="w-2 h-2 bg-orange-500 rounded-full shrink-0" />
-                <input
-                  autoFocus
-                  value={newBullet}
-                  onChange={e => setNewBullet(e.target.value)}
-                  placeholder="Type bullet point…"
-                  className="flex-1 text-sm outline-none text-slate-800"
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && newBullet.trim()) {
-                      onAddBullet(block.id, newBullet.trim());
-                      setNewBullet("");
-                      setAddingBullet(false);
-                    }
-                    if (e.key === "Escape") { setAddingBullet(false); setNewBullet(""); }
-                  }}
-                />
-                <button onClick={() => setAddingBullet(false)} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
-              </div>
-            )}
+                {/* Sub-tab bullet list */}
+                {(() => {
+                  const st = SUBTABS.find(s => s.id === activeSubTab);
+                  const stBullets = blockBullets.map((b, i) => ({ ...b, _idx: i })).filter(b => b.subtab === activeSubTab);
+                  return (
+                    <div className="space-y-2">
+                      {stBullets.map(bullet => {
+                        const i = bullet._idx;
+                        const bulletText   = bullet.text;
+                        const bulletSource = bullet.source;
+                        return (
+                          <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
+                            <div className={`mt-1.5 w-2 h-2 rotate-45 shrink-0 ${st.dot}`} />
+                            <div className="flex-1 min-w-0">
+                              {editingIdx === i ? (
+                                <div className="flex gap-2">
+                                  <input
+                                    autoFocus
+                                    value={editVal}
+                                    onChange={e => setEditVal(e.target.value)}
+                                    className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource, subtab: activeSubTab }, i, true); setEditingIdx(null); }
+                                      if (e.key === "Escape") setEditingIdx(null);
+                                    }}
+                                  />
+                                  <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource, subtab: activeSubTab }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
+                                  <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
+                              )}
+                              {bulletSource && editingIdx !== i && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <FileText size={10} className="text-slate-300 shrink-0" />
+                                  <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
+                              <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
 
-            {blockBullets.length === 0 && !addingBullet && (
-              <div className="text-center py-12">
-                <List size={28} className="mx-auto text-slate-200 mb-3" />
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest">No bullets yet</p>
-                <p className="text-[9px] text-slate-300 mt-1">Accept insights in the Review tab, or add manually</p>
-              </div>
+                      {addingBullet && (
+                        <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
+                          <div className={`w-2 h-2 rotate-45 shrink-0 ${st.dot}`} />
+                          <input
+                            autoFocus
+                            value={newBullet}
+                            onChange={e => setNewBullet(e.target.value)}
+                            placeholder={`Voeg ${st.label.toLowerCase()} bullet toe…`}
+                            className="flex-1 text-sm outline-none text-slate-800"
+                            onKeyDown={e => {
+                              if (e.key === "Enter" && newBullet.trim()) {
+                                onAddBullet(block.id, newBullet.trim(), activeSubTab);
+                                setNewBullet("");
+                                setAddingBullet(false);
+                              }
+                              if (e.key === "Escape") { setAddingBullet(false); setNewBullet(""); }
+                            }}
+                          />
+                          <button onClick={() => setAddingBullet(false)} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
+                        </div>
+                      )}
+
+                      {stBullets.length === 0 && !addingBullet && (
+                        <div className="text-center py-8">
+                          <div className={`w-4 h-4 rotate-45 mx-auto mb-3 ${st.dot} opacity-20`} />
+                          <p className="text-[10px] text-slate-400 uppercase tracking-widest">{st.label} — nog leeg</p>
+                          <p className="text-[9px] text-slate-300 mt-1">Voeg handmatig toe of push vanuit Review</p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => setAddingBullet(true)}
+                        className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
+                      >
+                        <Plus size={14} /> Handmatig toevoegen
+                      </button>
+                    </div>
+                  );
+                })()}
+              </>
+            ) : (
+              /* ── Non-pillar blocks: flat list (unchanged) ── */
+              <>
+                <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                  <span className="text-[9px] font-black text-[#001f33] uppercase tracking-widest">Canvas bullets ({blockBullets.length}/7)</span>
+                  {blockBullets.length < 7 && (
+                    <button
+                      onClick={() => setAddingBullet(true)}
+                      className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
+                    >
+                      <Plus size={14} /> Add manually
+                    </button>
+                  )}
+                </div>
+
+                {blockBullets.map((bullet, i) => {
+                  const bulletText   = typeof bullet === "string" ? bullet : bullet.text;
+                  const bulletSource = typeof bullet === "string" ? null  : bullet.source;
+                  return (
+                    <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
+                      <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        {editingIdx === i ? (
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              value={editVal}
+                              onChange={e => setEditVal(e.target.value)}
+                              className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
+                              onKeyDown={e => {
+                                if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
+                                if (e.key === "Escape") setEditingIdx(null);
+                              }}
+                            />
+                            <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
+                            <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
+                        )}
+                        {bulletSource && editingIdx !== i && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <FileText size={10} className="text-slate-300 shrink-0" />
+                            <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
+                        <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {addingBullet && (
+                  <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
+                    <div className="w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
+                    <input
+                      autoFocus
+                      value={newBullet}
+                      onChange={e => setNewBullet(e.target.value)}
+                      placeholder="Type bullet point…"
+                      className="flex-1 text-sm outline-none text-slate-800"
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && newBullet.trim()) {
+                          onAddBullet(block.id, newBullet.trim(), null);
+                          setNewBullet("");
+                          setAddingBullet(false);
+                        }
+                        if (e.key === "Escape") { setAddingBullet(false); setNewBullet(""); }
+                      }}
+                    />
+                    <button onClick={() => setAddingBullet(false)} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
+                  </div>
+                )}
+
+                {blockBullets.length === 0 && !addingBullet && (
+                  <div className="text-center py-12">
+                    <List size={28} className="mx-auto text-slate-200 mb-3" />
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">No bullets yet</p>
+                    <p className="text-[9px] text-slate-300 mt-1">Accept insights in the Review tab, or add manually</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -629,7 +809,12 @@ export default function App() {
   };
 
   const handleMoveToBullets = (blockId, insight, editIdx = null, isEdit = false) => {
-    const bulletObj = { text: insight.text, source: insight.source || null };
+    const block = BLOCKS.find(b => b.id === blockId);
+    const bulletObj = {
+      text: insight.text,
+      source: insight.source || null,
+      subtab: insight.subtab || (block?.hasSubs ? "current" : null),
+    };
     if (isEdit && editIdx !== null) {
       setBullets(p => {
         const arr = [...(p[blockId] || [])];
@@ -654,8 +839,8 @@ export default function App() {
     setBullets(p => ({ ...p, [blockId]: p[blockId].filter((_, i) => i !== idx) }));
   };
 
-  const handleAddBullet = (blockId, text) => {
-    setBullets(p => ({ ...p, [blockId]: [...(p[blockId] || []), { text, source: null }] }));
+  const handleAddBullet = (blockId, text, subtab = null) => {
+    setBullets(p => ({ ...p, [blockId]: [...(p[blockId] || []), { text, source: null, subtab }] }));
   };
 
   const allDone = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
