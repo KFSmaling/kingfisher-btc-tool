@@ -7,20 +7,30 @@ import {
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 
 // ── BTC Block definitions ────────────────────────────────────────────────────
-const BLOCKS = [
-  { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide",    hasSubs: false },
-  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "half",    hasSubs: false },
-  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "half",    hasSubs: true  },
-  { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter", hasSubs: true  },
-  { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter", hasSubs: true  },
-  { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter", hasSubs: true  },
-  { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide",    hasSubs: false },
+
+// Sub-tab sets — pillar blocks use Current/To-Be/Change
+// Guiding Principles uses the 4 pillar names as subtabs
+const PILLAR_SUBTABS = [
+  { id: "current", label: "Current",    dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
+  { id: "tobe",    label: "To-Be",      dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
+  { id: "change",  label: "Change",     dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
-const SUBTABS = [
-  { id: "current", label: "Current",  color: "border-slate-400 text-slate-600",  dot: "bg-slate-400",   activeBg: "bg-slate-50  border-slate-300" },
-  { id: "tobe",    label: "To-Be",    color: "border-[#00AEEF] text-[#00AEEF]",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50   border-[#00AEEF]" },
-  { id: "change",  label: "Change",   color: "border-orange-400 text-orange-500", dot: "bg-orange-400",  activeBg: "bg-orange-50 border-orange-300" },
+const PRINCIPLES_SUBTABS = [
+  { id: "customers",  label: "Customers",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",      color: "border-blue-400 text-blue-600"      },
+  { id: "processes",  label: "Processes",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",  color: "border-violet-500 text-violet-600"  },
+  { id: "people",     label: "People",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",    color: "border-green-500 text-green-600"    },
+  { id: "technology", label: "Technology", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",   color: "border-slate-500 text-slate-600"    },
+];
+
+const BLOCKS = [
+  { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide",    hasSubs: false, subTabs: null           },
+  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "half",    hasSubs: true,  subTabs: PRINCIPLES_SUBTABS },
+  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "half",    hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide",    hasSubs: false, subTabs: null           },
 ];
 
 // Helper to convert string arrays to bullet objects
@@ -29,7 +39,12 @@ const ebs = (texts, source, subtab) => texts.map(text => ({ text, source, subtab
 
 const EXAMPLE_BULLETS = {
   strategy:   eb(["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Goal: Double value creation by 2028"], "example-strategy.pdf"),
-  principles: eb(["Customer focus: treat HNWI by CLV — no one-size-fits-all","Personalisation: 360° customer view across all channels","Product modularisation: reusable components, white-label ready","Convenience: omnichannel consistency — same request, same outcome"], "example-principles.pdf"),
+  principles: [
+    ...ebs(["Customer focus: treat HNWI by CLV — no one-size-fits-all","Omnichannel consistency — same request, same outcome across channels"], "example-principles.pdf", "customers"),
+    ...ebs(["Standardise supporting processes, customise the differentiating 20%","Agile by default — multidisciplinary squads over functional silos"], "example-principles.pdf", "processes"),
+    ...ebs(["Digital savviness is a baseline requirement, not an option","Talent is grown from within before sourcing externally"], "example-principles.pdf", "people"),
+    ...ebs(["API-first: no point solutions that cannot connect","Data is a shared asset — no departmental data islands"], "example-principles.pdf", "technology"),
+  ],
   customers: [
     ...ebs(["Segment Affluent+/HNW: 750K–1M wealth, 85% of policies","Channel: International brokers (primary, fed by private banks)"], "example-customers.pdf", "current"),
     ...ebs(["Omnichannel proposition: broker + direct + private bank","Geography expansion: DIFC hub as Middle East entry point"], "example-customers.pdf", "tobe"),
@@ -177,7 +192,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         {block.hasSubs ? (
           // Pillar blocks: show bullets grouped by subtab label
           <div className="space-y-1 mt-3">
-            {SUBTABS.map(st => {
+            {(block.subTabs || PILLAR_SUBTABS).map(st => {
               const stBullets = (bullets || []).filter(b => b.subtab === st.id);
               if (stBullets.length === 0) return null;
               return (
@@ -218,7 +233,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         ) : block.hasSubs ? (
           // Show filled sub-tab pills as visible status indicators
           <div className="flex items-center gap-1.5">
-            {SUBTABS.map(st => {
+            {(block.subTabs || PILLAR_SUBTABS).map(st => {
               const count = (bullets || []).filter(b => b.subtab === st.id).length;
               const filled = count > 0;
               return (
@@ -255,7 +270,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const [newBullet, setNewBullet] = useState("");
   const [addingBullet, setAddingBullet] = useState(false);
   const [editedInsightTexts, setEditedInsightTexts] = useState({});
-  const [activeSubTab, setActiveSubTab] = useState("current");
+  const [activeSubTab, setActiveSubTab] = useState(() => block.subTabs?.[0]?.id || "current");
   const fileRef = useRef();
 
   const blockDocs = docs[block.id] || [];
@@ -521,7 +536,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               <>
                 {/* Sub-tab nav */}
                 <div className="flex gap-2 pb-4 border-b border-slate-100">
-                  {SUBTABS.map(st => {
+                  {(block.subTabs || PILLAR_SUBTABS).map(st => {
                     const count = blockBullets.filter(b => b.subtab === st.id).length;
                     const isActive = activeSubTab === st.id;
                     return (
@@ -541,7 +556,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
                 {/* Sub-tab bullet list */}
                 {(() => {
-                  const st = SUBTABS.find(s => s.id === activeSubTab);
+                  const st = (block.subTabs || PILLAR_SUBTABS).find(s => s.id === activeSubTab) || (block.subTabs || PILLAR_SUBTABS)[0];
                   const stBullets = blockBullets.map((b, i) => ({ ...b, _idx: i })).filter(b => b.subtab === activeSubTab);
                   return (
                     <div className="space-y-2">
@@ -586,7 +601,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                                 className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#00AEEF] cursor-pointer"
                                 title="Verplaats naar…"
                               >
-                                {SUBTABS.map(s => (
+                                {(block.subTabs || PILLAR_SUBTABS).map(s => (
                                   <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{s.label}</option>
                                 ))}
                               </select>
@@ -1301,7 +1316,7 @@ export default function App() {
     const bulletObj = {
       text: insight.text,
       source: insight.source || null,
-      subtab: insight.subtab || (block?.hasSubs ? "current" : null),
+      subtab: insight.subtab || (block?.hasSubs ? (block.subTabs?.[0]?.id || "current") : null),
     };
     if (isEdit && editIdx !== null) {
       setBullets(p => {
