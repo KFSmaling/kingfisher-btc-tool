@@ -1,16 +1,9 @@
 /**
  * BTC Parser — Serverless Function (PDF only)
  * Kingfisher & Partners — April 2026
- * TXT/PPTX/DOCX worden client-side geparsed — geen server, geen size-limiet.
- * Deze functie handelt alleen PDF af.
  */
 
-// Verhoog body size limit voor grote PDF's (default is 1mb)
-module.exports.config = {
-  api: { bodyParser: { sizeLimit: "10mb" } },
-};
-
-module.exports = async function handler(req, res) {
+const handler = async function (req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { base64, filename } = req.body;
@@ -22,7 +15,6 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Lazy require — voorkomt crash bij module-load op Vercel
     const pdfParse = require("pdf-parse/lib/pdf-parse.js");
     const buf = Buffer.from(base64, "base64");
     const data = await pdfParse(buf);
@@ -37,3 +29,10 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: `PDF parse fout: ${err.message}` });
   }
 };
+
+// Config MOET na de handler-definitie, anders overschrijft module.exports het
+handler.config = {
+  api: { bodyParser: { sizeLimit: "10mb" } },
+};
+
+module.exports = handler;
