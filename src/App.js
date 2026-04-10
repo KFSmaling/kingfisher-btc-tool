@@ -7,6 +7,7 @@ import {
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
 import JSZip from "jszip";
+import * as pdfjsLib from "pdfjs-dist";
 
 // ── BTC Block definitions ────────────────────────────────────────────────────
 
@@ -314,24 +315,16 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
           .join("\n\n");
 
       } else if (ext === "pdf") {
-        // Server-side — pdf-parse kan niet in browser draaien
-        const uint8 = new Uint8Array(arrayBuf);
-        let binary = "";
-        for (let i = 0; i < uint8.length; i += 8192) {
-          binary += String.fromCharCode(...uint8.subarray(i, i + 8192));
+        // Client-side via pdfjs-dist — geen server, geen size-limiet
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuf) }).promise;
+        const pages = [];
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          pages.push(content.items.map(i => i.str).join(" "));
         }
-        const base64 = btoa(binary);
-        const parseRes = await fetch("/api/parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ base64, filename: file.name }),
-        });
-        const parseText = await parseRes.text();
-        let parseData;
-        try { parseData = JSON.parse(parseText); }
-        catch { throw new Error(`PDF server error: ${parseText.slice(0, 120)}`); }
-        if (!parseRes.ok) throw new Error(parseData.error || "PDF kon niet worden gelezen.");
-        text = parseData.text;
+        text = pages.join("\n\n");
 
       } else {
         throw new Error(`Bestandstype .${ext} wordt niet ondersteund.`);
