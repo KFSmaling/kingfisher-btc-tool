@@ -17,47 +17,17 @@ const BLOCKS = [
   { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide" },
 ];
 
+// Helper to convert string arrays to bullet objects for examples
+const eb = (texts, source) => texts.map(text => ({ text, source }));
+
 const EXAMPLE_BULLETS = {
-  strategy: [
-    "Vision: Best HNW Global insurer, excelling in customer service",
-    "Pivot: from Maintain & Sell to Invest & Grow",
-    "Driver A: Customer & partner centricity — omnichannel excellence",
-    "Driver B: Product differentiation — new propositions in 6 months",
-    "Goal: Double value creation by 2028",
-  ],
-  principles: [
-    "Customer focus: treat HNWI by CLV — no one-size-fits-all",
-    "Personalisation: 360° customer view across all channels",
-    "Product modularisation: reusable components, white-label ready",
-    "Convenience: omnichannel consistency — same request, same outcome",
-  ],
-  customers: [
-    "Segment Affluent+/HNW: 750K–1M wealth, 85% of policies",
-    "Segment HNW+: 3M–10M wealth, 20% of total sum assured",
-    "Channel: International brokers (primary, fed by private banks)",
-    "Geography: HK, Singapore, Bermuda + DIFC hub",
-  ],
-  processes: [
-    "Standardise and automate: AI, OCR, chatbots where value-adding",
-    "Decouple front (CX) from back (admin and efficiency)",
-    "Agile way of working: multidisciplinary teams, fixed-budget sprints",
-  ],
-  people: [
-    "Performance: clear goals, accountable, recognised",
-    "Talent management: succession planning, career conversations",
-    "Digital savviness: AI/data literacy across all staff",
-  ],
-  technology: [
-    "Flexibility: modular, API-based, no redundant IT solutions",
-    "Cloud-native platform: cyber-secure, scalable, as-a-service",
-    "Data as asset: analytics across distribution, UW, claims, servicing",
-  ],
-  portfolio: [
-    "Hygiene: Brand and presence, pricing benchmark, LifePro upgrade",
-    "Scenario I: WOL launch HK/Bermuda, broker portal uplift",
-    "Scenario I: Global sales build-out, customer journey redesign",
-    "Scenario II: DIFC hub, FA proposition Singapore, CRM platform",
-  ],
+  strategy:   eb(["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Goal: Double value creation by 2028"], "example-strategy.pdf"),
+  principles: eb(["Customer focus: treat HNWI by CLV — no one-size-fits-all","Personalisation: 360° customer view across all channels","Product modularisation: reusable components, white-label ready","Convenience: omnichannel consistency — same request, same outcome"], "example-principles.pdf"),
+  customers:  eb(["Segment Affluent+/HNW: 750K–1M wealth, 85% of policies","Segment HNW+: 3M–10M wealth, 20% of total sum assured","Channel: International brokers (primary, fed by private banks)","Geography: HK, Singapore, Bermuda + DIFC hub"], "example-customers.pdf"),
+  processes:  eb(["Standardise and automate: AI, OCR, chatbots where value-adding","Decouple front (CX) from back (admin and efficiency)","Agile way of working: multidisciplinary teams, fixed-budget sprints"], "example-processes.pdf"),
+  people:     eb(["Performance: clear goals, accountable, recognised","Talent management: succession planning, career conversations","Digital savviness: AI/data literacy across all staff"], "example-people.pdf"),
+  technology: eb(["Flexibility: modular, API-based, no redundant IT solutions","Cloud-native platform: cyber-secure, scalable, as-a-service","Data as asset: analytics across distribution, UW, claims, servicing"], "example-technology.pdf"),
+  portfolio:  eb(["Hygiene: Brand and presence, pricing benchmark, LifePro upgrade","Scenario I: WOL launch HK/Bermuda, broker portal uplift","Scenario I: Global sales build-out, customer journey redesign","Scenario II: DIFC hub, FA proposition Singapore, CRM platform"], "example-portfolio.pdf"),
 };
 
 // ── AI extraction via serverless function ────────────────────────────────────
@@ -91,7 +61,8 @@ async function extractWithAI(blockKey, documentText) {
 
 // ── Local scoring engine ─────────────────────────────────────────────────────
 function scoreBlock(bullets) {
-  const filled = bullets.filter(b => b.trim().length > 3);
+  const texts = (bullets || []).map(b => typeof b === "string" ? b : b.text);
+  const filled = texts.filter(b => b.trim().length > 3);
   if (filled.length === 0) return 0;
   let score = 30;
   score += Math.min(filled.length * 8, 40);
@@ -183,7 +154,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
           {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
             <div key={i} className="flex items-start gap-2">
               <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
-              <span className="text-[11px] text-slate-600 leading-snug">{b}</span>
+              <span className="text-[11px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
             </div>
           ))}
           {(bullets || []).length === 0 && (
@@ -228,7 +199,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
       const text = await file.text();
       if (!text || text.trim().length < 20) throw new Error("File appears to be empty or binary.");
       const items = await extractWithAI(block.id, text);
-      const newInsights = items.map((text, i) => ({ id: Date.now() + i, text, status: "pending" }));
+      const newInsights = items.map((text, i) => ({ id: Date.now() + i, text, status: "pending", source: file.name }));
       onDocsChange(block.id, file.name, newInsights);
       setActiveTab("extract");
     } catch (err) {
@@ -336,15 +307,28 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">← Back to upload</button>
               </div>
             )}
+
+            {/* Counter */}
+            {(pendingInsights.length > 0 || acceptedInsights.length > 0) && (
+              <div className="flex gap-4 pb-3 border-b border-slate-100">
+                <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">{pendingInsights.length} pending</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-green-600">{acceptedInsights.length} accepted</span>
+              </div>
+            )}
+
+            {/* Pending insights — accept or reject only */}
             {pendingInsights.map(ins => (
               <div key={ins.id} className="p-5 bg-slate-50 border border-slate-200 border-l-4 border-l-[#00AEEF] rounded-sm">
                 <p className="text-sm text-slate-800 leading-relaxed mb-4">{ins.text}</p>
+                {ins.source && (
+                  <p className="text-[9px] text-slate-400 mb-3 italic">Bron: {ins.source}</p>
+                )}
                 <div className="flex gap-4 pt-3 border-t border-slate-100">
                   <button
-                    onClick={() => { onInsightAccept(block.id, ins.id); setActiveTab("review"); }}
-                    className="text-[10px] font-black text-green-600 uppercase tracking-widest hover:underline"
+                    onClick={() => onInsightAccept(block.id, ins.id)}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-green-600 uppercase tracking-widest hover:underline"
                   >
-                    ✓ Accept &amp; review
+                    ✓ Accept
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
@@ -355,12 +339,27 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 </div>
               </div>
             ))}
-            {pendingInsights.length === 0 && acceptedInsights.length > 0 && (
-              <div className="text-center py-8">
-                <CheckCircle2 size={28} className="mx-auto text-green-500 mb-3" />
-                <p className="text-xs text-slate-500">All insights reviewed</p>
-                <button onClick={() => setActiveTab("review")} className="mt-3 text-xs text-[#00AEEF] font-bold hover:underline">Go to Review →</button>
+
+            {/* Accepted summary cards */}
+            {acceptedInsights.length > 0 && (
+              <div className="space-y-2">
+                {acceptedInsights.map(ins => (
+                  <div key={ins.id} className="flex items-start gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-sm">
+                    <CheckCircle2 size={14} className="text-green-500 shrink-0 mt-0.5" />
+                    <span className="text-xs text-slate-700 leading-snug flex-1">{ins.text}</span>
+                  </div>
+                ))}
               </div>
+            )}
+
+            {/* Go to review — only when no more pending */}
+            {pendingInsights.length === 0 && acceptedInsights.length > 0 && (
+              <button
+                onClick={() => setActiveTab("review")}
+                className="w-full py-3 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors mt-2"
+              >
+                Review &amp; edit {acceptedInsights.length} accepted insight{acceptedInsights.length !== 1 ? "s" : ""} →
+              </button>
             )}
           </div>
         )}
@@ -378,7 +377,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
             {acceptedInsights.length > 0 && (
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                  {acceptedInsights.length} insight{acceptedInsights.length !== 1 ? "s" : ""} ready — edit if needed
+                  {acceptedInsights.length} insight{acceptedInsights.length !== 1 ? "s" : ""} — bewerk indien nodig
                 </p>
                 <button
                   onClick={() => {
@@ -390,15 +389,18 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                   }}
                   className="text-[9px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
-                  Add all to Canvas →
+                  Alles naar canvas →
                 </button>
               </div>
             )}
             {acceptedInsights.map(ins => (
               <div key={ins.id} className="p-4 border border-slate-200 bg-white rounded-sm shadow-sm space-y-3">
-                <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest block">
-                  Edit before adding to canvas
-                </span>
+                {ins.source && (
+                  <div className="flex items-center gap-1.5">
+                    <FileText size={11} className="text-slate-300 shrink-0" />
+                    <span className="text-[9px] text-slate-400 italic">{ins.source}</span>
+                  </div>
+                )}
                 <textarea
                   value={editedInsightTexts[ins.id] ?? ins.text}
                   onChange={e => setEditedInsightTexts(prev => ({ ...prev, [ins.id]: e.target.value }))}
@@ -413,13 +415,13 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                     }}
                     className="flex-1 py-2.5 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
                   >
-                    Add to Canvas →
+                    Naar canvas →
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
                     className="px-4 py-2.5 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest border border-slate-200 rounded-sm hover:border-red-200 transition-colors"
                   >
-                    Remove
+                    Verwijder
                   </button>
                 </div>
               </div>
@@ -442,30 +444,45 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               )}
             </div>
 
-            {blockBullets.map((bullet, i) => (
-              <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
-                <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
-                {editingIdx === i ? (
-                  <div className="flex-1 flex gap-2">
-                    <input
-                      autoFocus
-                      value={editVal}
-                      onChange={e => setEditVal(e.target.value)}
-                      className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
-                      onKeyDown={e => { if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal }, i); setEditingIdx(null); } if (e.key === "Escape") setEditingIdx(null); }}
-                    />
-                    <button onClick={() => { onMoveToBullets(block.id, { text: editVal }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
-                    <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
+            {blockBullets.map((bullet, i) => {
+              const bulletText   = typeof bullet === "string" ? bullet : bullet.text;
+              const bulletSource = typeof bullet === "string" ? null  : bullet.source;
+              return (
+                <div key={i} className="group flex items-start gap-3 p-4 bg-white border border-slate-200 rounded-sm hover:shadow-sm transition-all">
+                  <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    {editingIdx === i ? (
+                      <div className="flex gap-2">
+                        <input
+                          autoFocus
+                          value={editVal}
+                          onChange={e => setEditVal(e.target.value)}
+                          className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
+                          onKeyDown={e => {
+                            if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
+                            if (e.key === "Escape") setEditingIdx(null);
+                          }}
+                        />
+                        <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
+                        <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
+                    )}
+                    {bulletSource && editingIdx !== i && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <FileText size={10} className="text-slate-300 shrink-0" />
+                        <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <span className="flex-1 text-sm text-slate-700 leading-snug">{bullet}</span>
-                )}
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <button onClick={() => { setEditingIdx(i); setEditVal(bullet); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
-                  <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
+                    <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {addingBullet && (
               <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
@@ -612,18 +629,18 @@ export default function App() {
   };
 
   const handleMoveToBullets = (blockId, insight, editIdx = null, isEdit = false) => {
+    const bulletObj = { text: insight.text, source: insight.source || null };
     if (isEdit && editIdx !== null) {
       setBullets(p => {
         const arr = [...(p[blockId] || [])];
-        arr[editIdx] = insight.text;
+        arr[editIdx] = bulletObj;
         return { ...p, [blockId]: arr };
       });
     } else {
       setBullets(p => ({
         ...p,
-        [blockId]: [...(p[blockId] || []).filter(b => b !== insight.text), insight.text],
+        [blockId]: [...(p[blockId] || []).filter(b => (typeof b === "string" ? b : b.text) !== insight.text), bulletObj],
       }));
-      // Remove from insights (it's been promoted)
       if (!isEdit) {
         setInsights(p => ({
           ...p,
@@ -638,7 +655,7 @@ export default function App() {
   };
 
   const handleAddBullet = (blockId, text) => {
-    setBullets(p => ({ ...p, [blockId]: [...(p[blockId] || []), text] }));
+    setBullets(p => ({ ...p, [blockId]: [...(p[blockId] || []), { text, source: null }] }));
   };
 
   const allDone = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
