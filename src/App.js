@@ -457,7 +457,6 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                       const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     });
-                    setActiveTab("canvas");
                   }}
                   className="text-[9px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
@@ -483,11 +482,11 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                   <button
                     onClick={() => {
                       const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
-                      if (text) { onMoveToBullets(block.id, { ...ins, text }); setActiveTab("canvas"); }
+                      if (text) onMoveToBullets(block.id, { ...ins, text });
                     }}
                     className="flex-1 py-2.5 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
                   >
-                    Naar canvas →
+                    ✓ Naar canvas
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
@@ -567,7 +566,18 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                                 </div>
                               )}
                             </div>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 items-center">
+                              {/* Move to other sub-tab */}
+                              <select
+                                value={activeSubTab}
+                                onChange={e => onMoveToBullets(block.id, { text: bulletText, source: bulletSource, subtab: e.target.value }, i, true)}
+                                className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#00AEEF] cursor-pointer"
+                                title="Verplaats naar…"
+                              >
+                                {SUBTABS.map(s => (
+                                  <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{s.label}</option>
+                                ))}
+                              </select>
                               <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
                               <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
@@ -780,24 +790,27 @@ function saveAllCanvases(list) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
-function CanvasMenu({ currentName, currentState, onLoad, onNew }) {
+// CanvasMenu renders as the central canvas-name element in the header (Optie A)
+function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) {
   const [open, setOpen] = useState(false);
   const [canvases, setCanvases] = useState(loadAllCanvases);
   const [saving, setSaving] = useState(false);
-  const [saveName, setSaveName] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
 
   const handleSave = () => {
-    const name = saveName.trim() || currentName || "Naamloos canvas";
+    const name = (saving && draftName.trim()) ? draftName.trim() : (currentName || "Naamloos canvas");
     const now = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
     const existing = canvases.findIndex(c => c.name === name);
-    const entry = { name, savedAt: now, state: currentState };
+    const entry = { name, savedAt: now, state: { ...currentState, scope: name } };
     const updated = existing >= 0
       ? canvases.map((c, i) => i === existing ? entry : c)
       : [entry, ...canvases];
     saveAllCanvases(updated);
     setCanvases(updated);
     setSaving(false);
-    setSaveName("");
+    setDraftName("");
+    onNameChange(name);
   };
 
   const handleDelete = (name, e) => {
@@ -807,61 +820,87 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew }) {
     setCanvases(updated);
   };
 
-  const handleLoadExample = () => {
-    onLoad("example");
-    setOpen(false);
-  };
+  const displayName = currentName || "Naamloos canvas";
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 py-2 rounded-sm hover:bg-white/10"
-      >
-        <List size={15} />
-        <span className="text-[10px] font-bold uppercase tracking-widest">Canvassen</span>
-        <ChevronRight size={12} className={`transition-transform ${open ? "rotate-90" : ""}`} />
-      </button>
+    <div className="relative flex items-center">
+      {/* Central canvas name — click to open menu */}
+      {editingName ? (
+        <input
+          autoFocus
+          value={draftName}
+          onChange={e => setDraftName(e.target.value)}
+          onBlur={() => { if (draftName.trim()) onNameChange(draftName.trim()); setEditingName(false); }}
+          onKeyDown={e => {
+            if (e.key === "Enter") { if (draftName.trim()) onNameChange(draftName.trim()); setEditingName(false); }
+            if (e.key === "Escape") setEditingName(false);
+          }}
+          className="bg-transparent border-b border-white/60 text-white text-base font-semibold outline-none w-64 pb-0.5 placeholder-white/40"
+          placeholder="Canvas naam…"
+        />
+      ) : (
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-2.5 group"
+        >
+          <div className="flex flex-col items-start">
+            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">Actief canvas</span>
+            <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#00AEEF] transition-colors">
+              {displayName}
+            </span>
+          </div>
+          <svg width="10" height="6" viewBox="0 0 10 6" className={`text-white/40 group-hover:text-[#00AEEF] transition-all mt-2 ${open ? "rotate-180" : ""}`} fill="currentColor">
+            <path d="M0 0l5 6 5-6H0z"/>
+          </svg>
+        </button>
+      )}
 
+      {/* Edit name pencil */}
+      {!editingName && (
+        <button
+          onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
+          className="ml-2 mt-1 text-white/20 hover:text-white/70 transition-colors"
+          title="Naam bewerken"
+        >
+          <Edit3 size={12} />
+        </button>
+      )}
+
+      {/* Dropdown */}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-sm shadow-2xl border border-slate-200 z-50 overflow-hidden">
-            {/* Header */}
-            <div className="px-4 py-3 bg-[#001f33] flex items-center justify-between">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">Mijn canvassen</span>
-              <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white"><X size={14} /></button>
-            </div>
+          <div className="absolute left-0 top-full mt-3 w-72 bg-white rounded-sm shadow-2xl border border-slate-200 z-50 overflow-hidden">
 
-            <div className="p-3 space-y-1">
+            <div className="p-3 space-y-1 border-b border-slate-100">
               {/* New canvas */}
               <button
                 onClick={() => { onNew(); setOpen(false); }}
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#00AEEF] transition-colors"
               >
-                <Plus size={13} className="text-[#00AEEF]" />
+                <Plus size={13} className="text-[#00AEEF] shrink-0" />
                 <span className="font-semibold">Nieuw canvas</span>
               </button>
-
               {/* Load example */}
               <button
-                onClick={handleLoadExample}
+                onClick={() => { onLoad("example"); setOpen(false); }}
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors"
               >
-                <FileText size={13} className="text-slate-400" />
-                <span>Voorbeeld laden (Company BTP 2024)</span>
+                <FileText size={13} className="text-slate-400 shrink-0" />
+                <span>Voorbeeld laden</span>
               </button>
             </div>
 
             {/* Saved canvases */}
             {canvases.length > 0 && (
-              <div className="border-t border-slate-100 p-3 space-y-1">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">Opgeslagen</p>
+              <div className="p-3 space-y-1 border-b border-slate-100 max-h-52 overflow-y-auto">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">Opgeslagen canvassen</p>
                 {canvases.map(c => (
                   <button
                     key={c.name}
                     onClick={() => { onLoad(c.state); setOpen(false); }}
-                    className="w-full text-left px-3 py-2.5 rounded-sm hover:bg-blue-50 flex items-center justify-between group transition-colors"
+                    className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
+                      ${c.name === currentName ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50"}`}
                   >
                     <div>
                       <p className="text-xs font-semibold text-slate-700">{c.name}</p>
@@ -869,33 +908,33 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew }) {
                     </div>
                     <button
                       onClick={(e) => handleDelete(c.name, e)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"
+                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </button>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Save current */}
-            <div className="border-t border-slate-100 p-3">
+            {/* Save */}
+            <div className="p-3">
               {saving ? (
                 <div className="flex gap-2">
                   <input
                     autoFocus
-                    value={saveName}
-                    onChange={e => setSaveName(e.target.value)}
+                    value={draftName}
+                    onChange={e => setDraftName(e.target.value)}
                     placeholder={currentName || "Canvas naam…"}
                     className="flex-1 text-xs border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#00AEEF]"
                     onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setSaving(false); }}
                   />
                   <button onClick={handleSave} className="px-3 py-2 bg-[#001f33] text-white text-xs rounded-sm hover:bg-[#00AEEF] transition-colors font-bold">✓</button>
-                  <button onClick={() => setSaving(false)} className="text-slate-400 hover:text-red-500"><X size={14} /></button>
+                  <button onClick={() => setSaving(false)} className="text-slate-400 hover:text-red-500 px-1"><X size={14} /></button>
                 </div>
               ) : (
                 <button
-                  onClick={() => setSaving(true)}
+                  onClick={() => { setSaving(true); setDraftName(currentName || ""); }}
                   className="w-full py-2 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
                 >
                   Huidig canvas opslaan
@@ -1005,42 +1044,32 @@ export default function App() {
     <div className="min-h-screen bg-[#F4F7F9] text-[#1A365D] font-sans">
 
       {/* Header */}
-      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between shadow-xl z-20 border-b-4 border-[#00AEEF] shrink-0">
+      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between shadow-xl z-20 border-b-2 border-[#00AEEF]/50 shrink-0">
 
-        {/* Left: canvas menu + logo + title */}
-        <div className="flex items-center h-full">
-          {/* Canvas manager menu — left of logo */}
-          <div className="px-4 h-full flex items-center border-r border-white/10">
-            <CanvasMenu
-              currentName={scope}
-              currentState={currentCanvasState}
-              onLoad={handleLoadCanvas}
-              onNew={handleNewCanvas}
-            />
-          </div>
-
-          {/* Logo */}
-          <div className="bg-white px-3 py-1.5 flex items-center shrink-0 h-full">
+        {/* Left: logo + app title */}
+        <div className="flex items-center h-full shrink-0">
+          <div className="bg-white px-4 flex items-center h-full shrink-0 border-r border-slate-200/20">
             <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
           </div>
-
-          <div className="w-px h-8 bg-white/20 mx-6" />
-
-          {/* App title */}
-          <div>
-            <h1 className="text-sm font-semibold tracking-widest uppercase text-white leading-tight">Business Transformation Canvas</h1>
-            <p className="text-[10px] tracking-[0.25em] text-[#00AEEF] mt-0.5 uppercase font-light">From strategy to execution</p>
+          <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
+            <h1 className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/90 leading-none">Business Transformation Canvas</h1>
+            <p className="text-[9px] tracking-[0.2em] text-[#00AEEF]/70 mt-1 uppercase font-light">From strategy to execution</p>
           </div>
         </div>
 
-        {/* Right: scope input + consistency check */}
-        <div className="flex items-center gap-4 px-10">
-          <input
-            value={scope}
-            onChange={e => setScope(e.target.value)}
-            placeholder="Organisation / project name…"
-            className="bg-white/10 border border-white/20 text-white placeholder-white/40 text-xs px-4 py-2 rounded-sm outline-none focus:border-[#00AEEF] w-56"
+        {/* Centre: canvas name as interactive element */}
+        <div className="flex-1 flex items-center justify-center px-8">
+          <CanvasMenu
+            currentName={scope}
+            currentState={currentCanvasState}
+            onLoad={handleLoadCanvas}
+            onNew={handleNewCanvas}
+            onNameChange={setScope}
           />
+        </div>
+
+        {/* Right: consistency check */}
+        <div className="flex items-center gap-4 px-8 shrink-0">
           <button
             onClick={() => setShowConsistency(true)}
             className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
