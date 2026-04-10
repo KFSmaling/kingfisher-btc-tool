@@ -286,16 +286,24 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
     setUploadPhase("validating");
     setUploadError(null);
     setValidation(null);
+
+    // Binary formats (pdf, pptx, docx) can't be read as plain text client-side
+    // — skip validation and go straight to extraction
+    const ext = file.name.split(".").pop().toLowerCase();
+    const isBinary = ["pdf", "pptx", "docx"].includes(ext);
+
     try {
       const text = await file.text();
       if (!text || text.trim().length < 20) throw new Error("Bestand lijkt leeg of binair.");
 
-      // Phase 1: Validate
-      const validResult = await validateDocument(text);
-      if (!validResult.isValid) {
-        throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
+      // Phase 1: Validate (alleen voor leesbare tekstformaten)
+      if (!isBinary) {
+        const validResult = await validateDocument(text);
+        if (!validResult.isValid) {
+          throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
+        }
+        setValidation(validResult);
       }
-      setValidation(validResult);
 
       // Phase 2: Extract
       setUploadPhase("extracting");
