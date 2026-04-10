@@ -163,7 +163,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       className={`
         p-6 border rounded-sm shadow-sm hover:shadow-xl cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
         ${STATUS_COLORS[status]}
-        ${isWide ? "col-span-4" : isHalf ? "col-span-2" : "col-span-1"}
+        ${isWide ? "col-span-12" : isHalf ? "col-span-6" : "col-span-4"}
       `}
     >
       <div>
@@ -685,42 +685,13 @@ export default function App() {
       </header>
 
       {/* Dashboard */}
-      <main className="p-10 relative">
+      <main className="p-10">
 
-        {/* Novius diamond watermark */}
-        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-10 py-10">
-          <svg viewBox="0 0 440 260" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-            {/* Outer diamond */}
-            <polygon
-              points="220,6 434,130 220,254 6,130"
-              fill="none"
-              stroke="#00AEEF"
-              strokeWidth="1.2"
-              opacity="0.12"
-            />
-            {/* Inner diamond */}
-            <polygon
-              points="220,30 410,130 220,230 30,130"
-              fill="none"
-              stroke="#00AEEF"
-              strokeWidth="0.6"
-              opacity="0.07"
-            />
-            {/* Corner accents — four apex dots */}
-            <circle cx="220" cy="6"   r="3" fill="#00AEEF" opacity="0.2" />
-            <circle cx="434" cy="130" r="3" fill="#00AEEF" opacity="0.2" />
-            <circle cx="220" cy="254" r="3" fill="#00AEEF" opacity="0.2" />
-            <circle cx="6"   cy="130" r="3" fill="#00AEEF" opacity="0.2" />
-            {/* Center diamond ornament */}
-            <rect x="215" y="125" width="10" height="10" fill="none" stroke="#00AEEF" strokeWidth="0.8" opacity="0.25" transform="rotate(45 220 130)" />
-          </svg>
-        </div>
+        {/* Canvas grid — BTC layout (12-col for even thirds on row 3) */}
+        <div className="grid grid-cols-12 gap-5">
 
-        {/* Canvas grid — BTC layout */}
-        <div className="relative grid grid-cols-4 gap-5">
-
-          {/* Row 1: Strategy (wide) + Principles (half → 2 cols) */}
-          {BLOCKS.filter(b => ["strategy", "principles"].includes(b.id)).map(block => (
+          {/* Row 1: Strategy — full width (col-span-12) */}
+          {BLOCKS.filter(b => b.id === "strategy").map(block => (
             <BlockCard
               key={block.id}
               block={block}
@@ -731,8 +702,8 @@ export default function App() {
             />
           ))}
 
-          {/* Row 2: Customers + Processes + People + Technology (quarter = 1 col each) */}
-          {BLOCKS.filter(b => ["customers", "processes", "people", "technology"].includes(b.id)).map(block => (
+          {/* Row 2: Principles + Customers — half width each (col-span-6) */}
+          {BLOCKS.filter(b => ["principles", "customers"].includes(b.id)).map(block => (
             <BlockCard
               key={block.id}
               block={block}
@@ -743,7 +714,19 @@ export default function App() {
             />
           ))}
 
-          {/* Row 3: Portfolio (wide) */}
+          {/* Row 3: Processes + People + Technology — equal thirds (col-span-4 each) */}
+          {BLOCKS.filter(b => ["processes", "people", "technology"].includes(b.id)).map(block => (
+            <BlockCard
+              key={block.id}
+              block={block}
+              status={getBlockStatus(block.id, docs, insights, bullets)}
+              bullets={bullets[block.id]}
+              insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
+              onClick={() => setActiveBlockId(block.id)}
+            />
+          ))}
+
+          {/* Row 4: Portfolio — full width (col-span-12) */}
           <BlockCard
             key="portfolio"
             block={BLOCKS.find(b => b.id === "portfolio")}
