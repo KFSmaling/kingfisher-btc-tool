@@ -212,6 +212,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const [editVal, setEditVal] = useState("");
   const [newBullet, setNewBullet] = useState("");
   const [addingBullet, setAddingBullet] = useState(false);
+  const [editedInsightTexts, setEditedInsightTexts] = useState({});
   const fileRef = useRef();
 
   const blockDocs = docs[block.id] || [];
@@ -343,7 +344,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                     onClick={() => { onInsightAccept(block.id, ins.id); setActiveTab("review"); }}
                     className="text-[10px] font-black text-green-600 uppercase tracking-widest hover:underline"
                   >
-                    ✓ Accept
+                    ✓ Accept &amp; review
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
@@ -374,16 +375,53 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">← Back to Extract</button>
               </div>
             )}
-            {acceptedInsights.map(ins => (
-              <div key={ins.id} className="p-5 border border-green-200 bg-green-50/30 rounded-sm relative">
-                <span className="text-[9px] font-black text-green-600 uppercase tracking-widest block mb-2">Accepted — ready for canvas</span>
-                <p className="text-sm font-medium text-slate-800 leading-relaxed mb-4">{ins.text}</p>
+            {acceptedInsights.length > 0 && (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  {acceptedInsights.length} insight{acceptedInsights.length !== 1 ? "s" : ""} ready — edit if needed
+                </p>
                 <button
-                  onClick={() => { onMoveToBullets(block.id, ins); setActiveTab("canvas"); }}
-                  className="w-full py-3 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
+                  onClick={() => {
+                    acceptedInsights.forEach(ins => {
+                      const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
+                      if (text) onMoveToBullets(block.id, { ...ins, text });
+                    });
+                    setActiveTab("canvas");
+                  }}
+                  className="text-[9px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
-                  Add to Canvas →
+                  Add all to Canvas →
                 </button>
+              </div>
+            )}
+            {acceptedInsights.map(ins => (
+              <div key={ins.id} className="p-4 border border-slate-200 bg-white rounded-sm shadow-sm space-y-3">
+                <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest block">
+                  Edit before adding to canvas
+                </span>
+                <textarea
+                  value={editedInsightTexts[ins.id] ?? ins.text}
+                  onChange={e => setEditedInsightTexts(prev => ({ ...prev, [ins.id]: e.target.value }))}
+                  rows={3}
+                  className="w-full text-sm text-slate-800 leading-relaxed border border-slate-200 rounded-sm p-3 resize-none focus:outline-none focus:border-[#00AEEF] bg-slate-50 transition-colors"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
+                      if (text) { onMoveToBullets(block.id, { ...ins, text }); setActiveTab("canvas"); }
+                    }}
+                    className="flex-1 py-2.5 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
+                  >
+                    Add to Canvas →
+                  </button>
+                  <button
+                    onClick={() => onInsightReject(block.id, ins.id)}
+                    className="px-4 py-2.5 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest border border-slate-200 rounded-sm hover:border-red-200 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
           </div>
