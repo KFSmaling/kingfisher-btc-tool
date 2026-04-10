@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
+import JSZip from "jszip";
 
 // ── BTC Block definitions ────────────────────────────────────────────────────
 
@@ -287,31 +288,57 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
     setValidation(null);
 
     try {
-      // ── Stap 1: Parse (server-side, 0 tokens) ─────────────────────────────
+      // ── Stap 1: Parse (0 tokens) ───────────────────────────────────────────
       setUploadPhase("validating");
+      const ext = file.name.split(".").pop().toLowerCase();
       const arrayBuf = await file.arrayBuffer();
+      let text = "";
 
-      // Chunked base64 — voorkomt stack overflow bij grote bestanden
-      const uint8 = new Uint8Array(arrayBuf);
-      let binary = "";
-      const chunkSize = 8192;
-      for (let i = 0; i < uint8.length; i += chunkSize) {
-        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+      if (ext === "txt" || ext === "csv") {
+        // Client-side — direct leesbaar
+        text = new TextDecoder("utf-8").decode(arrayBuf);
+
+      } else if (ext === "pptx" || ext === "docx") {
+        // Client-side via JSZip — geen server nodig, geen size-limiet
+        const zip = await JSZip.loadAsync(arrayBuf);
+        const xmlFiles = [];
+        zip.forEach((path, zipFile) => {
+          if (
+            (ext === "pptx" && /^ppt\/slides\/slide\d+\.xml$/.test(path)) ||
+            (ext === "docx" && path === "word/document.xml")
+          ) xmlFiles.push(zipFile);
+        });
+        const xmlContents = await Promise.all(xmlFiles.map(f => f.async("string")));
+        text = xmlContents
+          .map(xml => xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+          .join("\n\n");
+
+      } else if (ext === "pdf") {
+        // Server-side — pdf-parse kan niet in browser draaien
+        const uint8 = new Uint8Array(arrayBuf);
+        let binary = "";
+        for (let i = 0; i < uint8.length; i += 8192) {
+          binary += String.fromCharCode(...uint8.subarray(i, i + 8192));
+        }
+        const base64 = btoa(binary);
+        const parseRes = await fetch("/api/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, filename: file.name }),
+        });
+        const parseText = await parseRes.text();
+        let parseData;
+        try { parseData = JSON.parse(parseText); }
+        catch { throw new Error(`PDF server error: ${parseText.slice(0, 120)}`); }
+        if (!parseRes.ok) throw new Error(parseData.error || "PDF kon niet worden gelezen.");
+        text = parseData.text;
+
+      } else {
+        throw new Error(`Bestandstype .${ext} wordt niet ondersteund.`);
       }
-      const base64 = btoa(binary);
 
-      const parseRes = await fetch("/api/parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64, filename: file.name }),
-      });
-      // Veilig JSON parsen — voorkomt crash als server HTML-error teruggeeft
-      const parseText = await parseRes.text();
-      let parseData;
-      try { parseData = JSON.parse(parseText); }
-      catch { throw new Error(`Parse server error: ${parseText.slice(0, 120)}`); }
-      if (!parseRes.ok) throw new Error(parseData.error || "Bestand kon niet worden gelezen.");
-      const text = parseData.text;
+      text = text.trim();
+      if (text.length < 30) throw new Error("Bestand bevat geen leesbare tekst.");
 
       // ── Stap 2: Validate (goedkoop model, weinig tokens) ──────────────────
       const validResult = await validateDocument(text);
