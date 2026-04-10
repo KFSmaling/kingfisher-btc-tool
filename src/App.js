@@ -1088,16 +1088,17 @@ const TIPS = {
   },
 };
 
-const TIPS_NAV = [
-  { key: "algemeen", label: "Algemeen" },
-  ...BLOCKS.map(b => ({ key: b.id, label: b.title })),
-];
+// TIPS_NAV wordt dynamisch gebouwd in de TipsModal via useLang()
 
 // ── Tips Modal ────────────────────────────────────────────────────────────────
 function TipsModal({ onClose, initialSection }) {
   const { t } = useLang();
   const [activeSection, setActiveSection] = useState(initialSection || "algemeen");
   const section = TIPS[activeSection] || TIPS.algemeen;
+  const TIPS_NAV = [
+    { key: "algemeen", label: t("tips.general") },
+    ...BLOCKS.map(b => ({ key: b.id, label: t(b.titleKey) })),
+  ];
 
   return (
     <div className="fixed inset-0 bg-[#001f33]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">

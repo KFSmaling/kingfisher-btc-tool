@@ -67,11 +67,23 @@ module.exports = async function handler(req, res) {
     if (!response.ok) return res.status(response.status).json({ error: data.error?.message || "API error" });
 
     const text = (data.content || []).map(c => c.text || "").join("");
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start === -1 || end === -1) throw new Error("Geen geldige JSON van validator ontvangen");
 
-    const result = JSON.parse(text.slice(start, end + 1));
+    // Zoek het eerste volledige JSON-object — robuust tegen preamble/postamble tekst
+    let result = null;
+    const start = text.indexOf("{");
+    if (start !== -1) {
+      // Balanceer { } om het juiste einde te vinden
+      let depth = 0, end = -1;
+      for (let i = start; i < text.length; i++) {
+        if (text[i] === "{") depth++;
+        else if (text[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end !== -1) {
+        try { result = JSON.parse(text.slice(start, end + 1)); } catch { result = null; }
+      }
+    }
+
+    if (!result) throw new Error("Validator gaf geen geldige JSON terug");
     return res.status(200).json(result);
   } catch (err) {
     return res.status(500).json({ error: err.message });
