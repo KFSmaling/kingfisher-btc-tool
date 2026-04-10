@@ -5,6 +5,7 @@ import {
   AlertTriangle, FileText, BookOpen, Lightbulb
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
+import { validateDocument } from "./services/btcValidator";
 
 // ── BTC Block definitions ────────────────────────────────────────────────────
 
@@ -264,7 +265,8 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 // ── Sliding Panel ────────────────────────────────────────────────────────────
 function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
   const [activeTab, setActiveTab] = useState("upload");
-  const [uploading, setUploading] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState(null); // null | 'validating' | 'extracting'
+  const [validation, setValidation] = useState(null);
   const [uploadError, setUploadError] = useState(null);
   const [editingIdx, setEditingIdx] = useState(null);
   const [editVal, setEditVal] = useState("");
@@ -281,19 +283,30 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const acceptedInsights = blockInsights.filter(i => i.status === "accepted");
 
   const handleUpload = async (file) => {
-    setUploading(true);
+    setUploadPhase("validating");
     setUploadError(null);
+    setValidation(null);
     try {
       const text = await file.text();
-      if (!text || text.trim().length < 20) throw new Error("File appears to be empty or binary.");
+      if (!text || text.trim().length < 20) throw new Error("Bestand lijkt leeg of binair.");
+
+      // Phase 1: Validate
+      const validResult = await validateDocument(text);
+      if (!validResult.isValid) {
+        throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
+      }
+      setValidation(validResult);
+
+      // Phase 2: Extract
+      setUploadPhase("extracting");
       const items = await extractWithAI(block.id, text);
-      const newInsights = items.map((text, i) => ({ id: Date.now() + i, text, status: "pending", source: file.name }));
+      const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
       onDocsChange(block.id, file.name, newInsights);
       setActiveTab("extract");
     } catch (err) {
       setUploadError(err.message);
     } finally {
-      setUploading(false);
+      setUploadPhase(null);
     }
   };
 
@@ -349,15 +362,33 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
         {activeTab === "upload" && (
           <div className="space-y-6">
             <div
-              onClick={() => !uploading && fileRef.current?.click()}
-              className={`border-2 border-dashed rounded-sm p-16 text-center transition-all cursor-pointer group
-                ${uploading ? "border-orange-300 bg-orange-50" : "border-slate-200 bg-slate-50 hover:border-[#00AEEF] hover:bg-blue-50"}`}
+              onClick={() => !uploadPhase && fileRef.current?.click()}
+              className={`border-2 border-dashed rounded-sm p-12 text-center transition-all cursor-pointer group
+                ${uploadPhase === "validating" ? "border-violet-300 bg-violet-50" :
+                  uploadPhase === "extracting" ? "border-orange-300 bg-orange-50" :
+                  "border-slate-200 bg-slate-50 hover:border-[#00AEEF] hover:bg-blue-50"}`}
             >
-              <Upload size={40} className={`mx-auto mb-4 ${uploading ? "text-orange-400 animate-pulse" : "text-slate-300 group-hover:text-[#00AEEF]"}`} />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                {uploading ? "Extracting with AI…" : "Click to upload a document"}
-              </p>
-              <p className="text-[9px] text-slate-300 mt-1">PDF · PPTX · DOCX · TXT</p>
+              {uploadPhase === "validating" && (
+                <>
+                  <ShieldCheck size={40} className="mx-auto mb-4 text-violet-400 animate-pulse" />
+                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">Document wordt gescand…</p>
+                  <p className="text-[9px] text-violet-300 mt-1">Poortwachter controleert relevantie</p>
+                </>
+              )}
+              {uploadPhase === "extracting" && (
+                <>
+                  <Zap size={40} className="mx-auto mb-4 text-orange-400 animate-pulse" />
+                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">AI haalt inzichten op…</p>
+                  <p className="text-[9px] text-orange-300 mt-1">Extractie gestart op basis van scan</p>
+                </>
+              )}
+              {!uploadPhase && (
+                <>
+                  <Upload size={40} className="mx-auto mb-4 text-slate-300 group-hover:text-[#00AEEF]" />
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Klik om een document te uploaden</p>
+                  <p className="text-[9px] text-slate-300 mt-1">PDF · PPTX · DOCX · TXT</p>
+                </>
+              )}
               <input
                 ref={fileRef}
                 type="file"
@@ -371,6 +402,35 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm text-red-700 text-xs">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>{uploadError}</span>
+              </div>
+            )}
+
+            {/* Validatieresultaat */}
+            {validation && !uploadPhase && (
+              <div className="border border-slate-200 rounded-sm overflow-hidden">
+                <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                  <ShieldCheck size={13} className="text-[#2d6e4e]" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Scan resultaat</span>
+                  <span className="ml-auto text-[9px] text-slate-400 italic">{validation.overallReason}</span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {Object.entries(validation.confidenceScores || {}).map(([blockId, data]) => {
+                    const score = data?.score ?? 0;
+                    const color = score >= 70 ? "bg-[#2d6e4e]" : score >= 30 ? "bg-orange-400" : "bg-slate-200";
+                    const textColor = score >= 70 ? "text-[#2d6e4e]" : score >= 30 ? "text-orange-500" : "text-slate-400";
+                    const label = BLOCKS.find(b => b.id === blockId)?.title || blockId;
+                    const isCurrentBlock = blockId === block.id;
+                    return (
+                      <div key={blockId} className={`flex items-center gap-3 px-4 py-2 ${isCurrentBlock ? "bg-blue-50" : ""}`}>
+                        <span className={`text-[9px] font-black uppercase w-36 shrink-0 ${isCurrentBlock ? "text-[#001f33]" : "text-slate-500"}`}>{label}</span>
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${score}%` }} />
+                        </div>
+                        <span className={`text-[9px] font-black w-8 text-right ${textColor}`}>{score}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
