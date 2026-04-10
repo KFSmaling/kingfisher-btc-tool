@@ -283,29 +283,32 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const acceptedInsights = blockInsights.filter(i => i.status === "accepted");
 
   const handleUpload = async (file) => {
-    setUploadPhase("validating");
     setUploadError(null);
     setValidation(null);
 
-    // Binary formats (pdf, pptx, docx) can't be read as plain text client-side
-    // — skip validation and go straight to extraction
-    const ext = file.name.split(".").pop().toLowerCase();
-    const isBinary = ["pdf", "pptx", "docx"].includes(ext);
-
     try {
-      const text = await file.text();
-      if (!text || text.trim().length < 20) throw new Error("Bestand lijkt leeg of binair.");
+      // ── Stap 1: Parse (server-side, 0 tokens) ─────────────────────────────
+      setUploadPhase("validating");
+      const arrayBuf = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
 
-      // Phase 1: Validate (alleen voor leesbare tekstformaten)
-      if (!isBinary) {
-        const validResult = await validateDocument(text);
-        if (!validResult.isValid) {
-          throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
-        }
-        setValidation(validResult);
+      const parseRes = await fetch("/api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64, filename: file.name }),
+      });
+      const parseData = await parseRes.json();
+      if (!parseRes.ok) throw new Error(parseData.error || "Bestand kon niet worden gelezen.");
+      const text = parseData.text;
+
+      // ── Stap 2: Validate (goedkoop model, weinig tokens) ──────────────────
+      const validResult = await validateDocument(text);
+      if (!validResult.isValid) {
+        throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
       }
+      setValidation(validResult);
 
-      // Phase 2: Extract
+      // ── Stap 3: Extract (premium model, alleen bij goedkeuring) ───────────
       setUploadPhase("extracting");
       const items = await extractWithAI(block.id, text);
       const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
