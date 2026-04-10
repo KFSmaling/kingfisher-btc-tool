@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
-  AlertTriangle, FileText
+  AlertTriangle, FileText, BookOpen, Lightbulb
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 
@@ -246,7 +246,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 }
 
 // ── Sliding Panel ────────────────────────────────────────────────────────────
-function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet }) {
+function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
   const [activeTab, setActiveTab] = useState("upload");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -291,12 +291,24 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   return (
     <aside className="fixed right-0 top-0 bottom-0 w-[520px] bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.12)] z-30 flex flex-col">
       {/* Panel header */}
-      <div className="px-8 py-6 bg-[#001f33] flex items-center justify-between shrink-0">
+      <div className="px-8 py-5 bg-[#001f33] flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-white font-black text-lg uppercase tracking-tight">{block.title}</h2>
           <p className="text-[#00AEEF] text-[10px] uppercase tracking-widest mt-0.5">{block.sub}</p>
         </div>
-        <button onClick={onClose} className="text-white/40 hover:text-white transition-colors"><X size={24} /></button>
+        <div className="flex items-center gap-3">
+          {TIPS[block.id] && (
+            <button
+              onClick={() => onShowTips(block.id)}
+              className="flex items-center gap-1.5 text-white/40 hover:text-[#00AEEF] transition-colors"
+              title="Tips voor dit blok"
+            >
+              <BookOpen size={15} />
+              <span className="text-[9px] font-bold uppercase tracking-widest">Tips</span>
+            </button>
+          )}
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors ml-1"><X size={22} /></button>
+        </div>
       </div>
 
       {/* Tab nav */}
@@ -780,6 +792,285 @@ function ConsistencyModal({ bullets, onClose }) {
   );
 }
 
+// ── Tips & Tricks data ───────────────────────────────────────────────────────
+const TIPS = {
+  algemeen: {
+    title: "Algemeen",
+    icon: Lightbulb,
+    intro: "Op basis van het boek Business Transformatie Canvas van Marc Beijen, Ruben Heetebrij en Roos Tigchelaar.",
+    tips: [
+      {
+        kop: "Gebruik het als kapstok, niet als kookboek",
+        tekst: "Het canvas is een framework om een aanpak op maat te maken, geen rigide stappenplan dat blind gevolgd moet worden.",
+      },
+      {
+        kop: "Focus op samenhang",
+        tekst: "De kracht van het canvas zit in de verbinding tussen de bouwstenen (horizontale samenhang) en de vertaling van strategie naar uitvoering (verticale samenhang).",
+      },
+      {
+        kop: "Time-boxing",
+        tekst: "Ga uit van een iteratief proces. Het is vaak beter om in vier weken een 80%-versie te hebben dan in een half jaar een 100%-versie.",
+      },
+      {
+        kop: "Het magische getal is 7",
+        tekst: "Beperk uitwerkingen tot de essentie om overzicht te behouden — maximaal zeven strategische thema's of veranderinitiatieven per blok.",
+      },
+      {
+        kop: "Gebruik wat er al is",
+        tekst: "Het is niet de bedoeling alles opnieuw te bedenken. Vlecht bestaande marketingplannen of IT-architecturen in de structuur van het canvas.",
+      },
+      {
+        kop: "Begeleid de onderstroom",
+        tekst: "Succes hangt niet alleen af van het harde ontwerp (de bovenstroom), maar vooral van hoe mensen de verandering begrijpen, willen en kunnen toepassen.",
+      },
+    ],
+  },
+  strategy: {
+    title: "Strategy",
+    icon: null,
+    intro: "De strategie vormt het fundament van het hele canvas. Alles wat volgt moet hieruit logisch afleiden.",
+    tips: [
+      {
+        kop: "Maak het inspirerend",
+        tekst: "Een strategie moet vooral motiveren en de neuzen dezelfde kant op krijgen. Kies krachtige taal boven management-jargon.",
+      },
+      {
+        kop: "Outside-in & Inside-out",
+        tekst: "Combineer een omgevingsanalyse (kansen/bedreigingen) met een eerlijke blik op de eigen organisatie (sterkten/zwakten). Beide lenzen zijn nodig.",
+      },
+      {
+        kop: "BCG-matrix",
+        tekst: "Gebruik dit hulpmiddel om scherpe keuzes te maken in welke product/markt-combinaties je investeert of waarvan je afscheid neemt.",
+      },
+    ],
+  },
+  principles: {
+    title: "Guiding Principles",
+    icon: null,
+    intro: "Leidende principes zijn de spelregels die alle keuzes in de vier pijlers sturen en begrenzen.",
+    tips: [
+      {
+        kop: "'Tight-loose' karakter",
+        tekst: "Bepaal per principe of het strak (verplichtend voor synergie) of los (vrijheidsgraden voor autonomie) moet zijn.",
+      },
+      {
+        kop: "Formuleer implicaties",
+        tekst: "Een principe is pas duidelijk als ook de consequenties zijn benoemd: 'wat betekent dit concreet voor ons?'",
+      },
+      {
+        kop: "Wisselwerking",
+        tekst: "Gebruik de principes om de keuzevrijheid in de andere pijlers bewust te beperken en zo consistentie te borgen.",
+      },
+    ],
+  },
+  customers: {
+    title: "Customers & Services",
+    icon: null,
+    intro: "Wie bedien je, hoe bereik je ze, en wat lever je hen? Dit blok verbindt de strategie met de dagelijkse klantbeleving.",
+    tips: [
+      {
+        kop: "Life events als triggers",
+        tekst: "Denk bij klantbehoeften aan gebeurtenissen in het leven van de klant (zoals verhuizen of trouwen) om relevante proposities te ontwerpen.",
+      },
+      {
+        kop: "Omnichannel-denken",
+        tekst: "Zorg dat de klantervaring naadloos is over alle kanalen heen. De klant ervaart geen kanaalwisseling — de organisatie mag dat ook niet.",
+      },
+      {
+        kop: "Maak het visueel",
+        tekst: "Vat klantgroepen, klantreizen en distributiekanalen samen op één pagina voor maximale adoptie binnen de organisatie.",
+      },
+    ],
+  },
+  processes: {
+    title: "Processes & Organisation",
+    icon: null,
+    intro: "Hoe richt je de organisatie en processen in om de klantambities en strategie daadwerkelijk waar te maken?",
+    tips: [
+      {
+        kop: "Waardestromen als basis",
+        tekst: "Richt de organisatie in langs de weg waarop waarde voor de klant wordt gecreëerd, in plaats van puur functionele afdelingen.",
+      },
+      {
+        kop: "Vereenvoudig",
+        tekst: "Gebruik de transformatie om ballast uit het verleden weg te snijden. Complexiteit die ooit nuttig was, is dat nu misschien niet meer.",
+      },
+      {
+        kop: "Standaardiseer waar mogelijk",
+        tekst: "Stop met doen alsof alles uniek is. Gebruik marktstandaarden voor ondersteunende processen en focus maatwerk op de unieke 10–20%.",
+      },
+    ],
+  },
+  people: {
+    title: "People & Competencies",
+    icon: null,
+    intro: "Transformatie staat of valt met mensen. Wat vraagt de nieuwe koers van leiderschap, teams en cultuur?",
+    tips: [
+      {
+        kop: "Maak de zachte kant 'hard'",
+        tekst: "Benoem expliciet welke kennis, vaardigheden en leiderschapsstijl nodig zijn om de strategie te laten slagen. Maak het concreet en meetbaar.",
+      },
+      {
+        kop: "Betrek de werkvloer",
+        tekst: "De beste ideeën voor verbetering komen vaak van de mensen die het dichtst bij de klant staan. Organiseer dat structureel.",
+      },
+      {
+        kop: "Focus op verandervermogen",
+        tekst: "Veranderen is tegenwoordig een kerncompetentie. Investeer in een cultuur van continu leren — niet alleen in dit traject.",
+      },
+    ],
+  },
+  technology: {
+    title: "Information & Technology",
+    icon: null,
+    intro: "Technologie en data als versneller van de transformatie, niet als beperkende factor.",
+    tips: [
+      {
+        kop: "IT als versneller",
+        tekst: "Zie technologie niet als een kostenpost of 'lastig domein', maar als een inspiratiebron en enabler voor nieuwe businessmodellen.",
+      },
+      {
+        kop: "Data als asset",
+        tekst: "Geavanceerde analyses zijn noodzakelijk om klantgedrag te begrijpen en gepersonaliseerde diensten te bieden. Data is strategie.",
+      },
+      {
+        kop: "Cloud-first",
+        tekst: "Infrastructuur moet 'als water uit de kraan' komen, zodat de focus kan liggen op connectiviteit, veiligheid en innovatie.",
+      },
+    ],
+  },
+  portfolio: {
+    title: "Change Portfolio",
+    icon: null,
+    intro: "Het veranderportfolio vertaalt de ambities naar concrete initiatieven met prioriteit, fasering en eigenaarschap.",
+    tips: [
+      {
+        kop: "Eet de olifant in stukjes",
+        tekst: "Cluster losse veranderacties tot behapbare initiatieven met een logische fasering. Groot denken, klein beginnen.",
+      },
+      {
+        kop: "Objectieve prioritering",
+        tekst: "Voorkom dat de manager die het hardst roept altijd voorrang krijgt. Weeg initiatieven af op businesswaarde én haalbaarheid.",
+      },
+      {
+        kop: "Continu herijken",
+        tekst: "Een roadmap is niet in beton gegoten. Stuur bij op basis van feedback en veranderende externe omstandigheden.",
+      },
+    ],
+  },
+};
+
+const TIPS_NAV = [
+  { key: "algemeen", label: "Algemeen" },
+  ...BLOCKS.map(b => ({ key: b.id, label: b.title })),
+];
+
+// ── Tips Modal ────────────────────────────────────────────────────────────────
+function TipsModal({ onClose, initialSection }) {
+  const [activeSection, setActiveSection] = useState(initialSection || "algemeen");
+  const section = TIPS[activeSection] || TIPS.algemeen;
+
+  return (
+    <div className="fixed inset-0 bg-[#001f33]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#00AEEF] flex overflow-hidden" style={{ height: "80vh" }}>
+
+        {/* Left nav */}
+        <div className="w-52 bg-[#001f33] flex flex-col shrink-0">
+          <div className="px-5 py-5 border-b border-white/10">
+            <div className="flex items-center gap-2 mb-0.5">
+              <BookOpen size={14} className="text-[#00AEEF]" />
+              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">Tips & werkwijze</span>
+            </div>
+            <p className="text-[9px] text-white/30 leading-snug mt-1">Gebaseerd op het boek Business Transformatie Canvas</p>
+          </div>
+          <nav className="flex-1 overflow-y-auto py-3">
+            {TIPS_NAV.map((item, idx) => {
+              const isActive = activeSection === item.key;
+              const isFirst = idx === 0;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveSection(item.key)}
+                  className={`w-full text-left px-5 py-2.5 text-xs transition-all flex items-center gap-2
+                    ${isActive
+                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[#00AEEF]"
+                      : "text-white/50 hover:text-white/80 hover:bg-white/5"}
+                    ${isFirst ? "mb-1" : ""}`}
+                >
+                  {isFirst && <Lightbulb size={12} className={isActive ? "text-[#00AEEF]" : "text-white/30"} />}
+                  {!isFirst && <div className={`w-1.5 h-1.5 rotate-45 shrink-0 ${isActive ? "bg-orange-400" : "bg-white/20"}`} />}
+                  <span className={isFirst ? "text-[10px] uppercase tracking-wider" : ""}>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="px-5 py-4 border-t border-white/10">
+            <p className="text-[8px] text-white/20 leading-relaxed">Beijen, Heetebrij & Tigchelaar — Business Transformatie Canvas</p>
+          </div>
+        </div>
+
+        {/* Right content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Content header */}
+          <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between shrink-0">
+            <div>
+              <h2 className="text-[#001f33] font-black text-xl uppercase tracking-tight">{section.title}</h2>
+              {section.intro && (
+                <p className="text-slate-500 text-xs mt-2 leading-relaxed max-w-lg">{section.intro}</p>
+              )}
+            </div>
+            <button onClick={onClose} className="text-slate-300 hover:text-red-500 transition-colors ml-4 shrink-0 mt-1">
+              <X size={22} />
+            </button>
+          </div>
+
+          {/* Tips list */}
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
+            {section.tips.map((tip, i) => (
+              <div key={i} className="flex gap-4 p-5 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#00AEEF]/30 transition-colors">
+                <div className="shrink-0 mt-1">
+                  <div className="w-2 h-2 bg-orange-500 rotate-45" />
+                </div>
+                <div>
+                  <h3 className="text-[#001f33] font-black text-sm mb-1">{tip.kop}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">{tip.tekst}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer nav */}
+          <div className="px-8 py-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
+            <button
+              onClick={() => {
+                const idx = TIPS_NAV.findIndex(t => t.key === activeSection);
+                if (idx > 0) setActiveSection(TIPS_NAV[idx - 1].key);
+              }}
+              disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === 0}
+              className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
+            >
+              ← Vorige
+            </button>
+            <span className="text-[9px] text-slate-300 uppercase tracking-widest">
+              {TIPS_NAV.findIndex(t => t.key === activeSection) + 1} / {TIPS_NAV.length}
+            </span>
+            <button
+              onClick={() => {
+                const idx = TIPS_NAV.findIndex(t => t.key === activeSection);
+                if (idx < TIPS_NAV.length - 1) setActiveSection(TIPS_NAV[idx + 1].key);
+              }}
+              disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === TIPS_NAV.length - 1}
+              className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
+            >
+              Volgende →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Canvas Manager (localStorage) ───────────────────────────────────────────
 const STORAGE_KEY = "btc_canvases";
 
@@ -952,6 +1243,8 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
 export default function App() {
   const [activeBlockId, setActiveBlockId] = useState(null);
   const [showConsistency, setShowConsistency] = useState(null);
+  const [showTips, setShowTips] = useState(false);
+  const [tipsSection, setTipsSection] = useState("algemeen");
   const [scope, setScope] = useState("");
 
   // Per-block state
@@ -1068,8 +1361,15 @@ export default function App() {
           />
         </div>
 
-        {/* Right: consistency check */}
-        <div className="flex items-center gap-4 px-8 shrink-0">
+        {/* Right: tips + consistency check */}
+        <div className="flex items-center gap-3 px-8 shrink-0">
+          <button
+            onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
+            className="flex items-center gap-2 text-white/60 hover:text-white border border-white/20 hover:border-white/50 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
+            title="Tips & werkwijze"
+          >
+            <BookOpen size={14} /> Tips
+          </button>
           <button
             onClick={() => setShowConsistency(true)}
             className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
@@ -1180,6 +1480,7 @@ export default function App() {
             onMoveToBullets={handleMoveToBullets}
             onDeleteBullet={handleDeleteBullet}
             onAddBullet={handleAddBullet}
+            onShowTips={(blockId) => { setTipsSection(blockId); setShowTips(true); }}
           />
         </>
       )}
@@ -1187,6 +1488,14 @@ export default function App() {
       {/* Consistency modal */}
       {showConsistency && (
         <ConsistencyModal bullets={bullets} onClose={() => setShowConsistency(false)} />
+      )}
+
+      {/* Tips modal */}
+      {showTips && (
+        <TipsModal
+          initialSection={tipsSection}
+          onClose={() => setShowTips(false)}
+        />
       )}
     </div>
   );
