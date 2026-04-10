@@ -290,14 +290,26 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
       // ── Stap 1: Parse (server-side, 0 tokens) ─────────────────────────────
       setUploadPhase("validating");
       const arrayBuf = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+
+      // Chunked base64 — voorkomt stack overflow bij grote bestanden
+      const uint8 = new Uint8Array(arrayBuf);
+      let binary = "";
+      const chunkSize = 8192;
+      for (let i = 0; i < uint8.length; i += chunkSize) {
+        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
 
       const parseRes = await fetch("/api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ base64, filename: file.name }),
       });
-      const parseData = await parseRes.json();
+      // Veilig JSON parsen — voorkomt crash als server HTML-error teruggeeft
+      const parseText = await parseRes.text();
+      let parseData;
+      try { parseData = JSON.parse(parseText); }
+      catch { throw new Error(`Parse server error: ${parseText.slice(0, 120)}`); }
       if (!parseRes.ok) throw new Error(parseData.error || "Bestand kon niet worden gelezen.");
       const text = parseData.text;
 
