@@ -4,8 +4,9 @@
  * Converteert PDF / PPTX / DOCX / TXT naar platte tekst. 0 AI-tokens.
  */
 
-const pdfParse = require("pdf-parse");
-const JSZip   = require("jszip");
+// pdf-parse/lib/pdf-parse.js omzeilt de test-file fs.readFileSync die crasht op Vercel
+const pdfParse = require("pdf-parse/lib/pdf-parse.js");
+const JSZip    = require("jszip");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
