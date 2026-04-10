@@ -316,7 +316,11 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
       } else if (ext === "pdf") {
         // Client-side via pdfjs-dist — geen server, geen size-limiet
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // Worker uit npm-pakket zelf, geen CDN-afhankelijkheid
+        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          "pdfjs-dist/build/pdf.worker.min.mjs",
+          import.meta.url
+        ).toString();
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuf) }).promise;
         const pages = [];
         for (let p = 1; p <= pdf.numPages; p++) {
