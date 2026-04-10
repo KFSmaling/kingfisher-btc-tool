@@ -647,46 +647,37 @@ export default function App() {
     <div className="min-h-screen bg-[#F4F7F9] text-[#1A365D] font-sans">
 
       {/* Header */}
-      <header className="h-[72px] bg-[#001f33] text-white flex items-stretch justify-between shadow-xl z-20 border-b-2 border-[#00AEEF]/40 shrink-0">
+      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between px-10 shadow-xl z-20 border-b-4 border-[#00AEEF] shrink-0">
 
-        {/* Left: logo panel flush with header edges */}
-        <div className="flex items-stretch">
-          <div className="bg-white flex items-center justify-center px-6 border-r border-slate-100 min-w-[200px]">
-            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
-          </div>
-
-          {/* App title */}
-          <div className="flex flex-col justify-center px-8 border-r border-white/10">
-            <h1 className="text-[13px] font-semibold tracking-[0.15em] uppercase text-white leading-tight">
-              Business Transformation Canvas
-            </h1>
-            <p className="text-[10px] tracking-[0.25em] text-[#00AEEF]/80 mt-0.5 uppercase font-light">
-              From strategy to execution
-            </p>
+        {/* Left: logo + title */}
+        <div className="flex items-center gap-6">
+          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-11 object-contain brightness-0 invert" />
+          <div className="w-px h-8 bg-white/20" />
+          <div>
+            <h1 className="text-sm font-semibold tracking-widest uppercase text-white leading-tight">Business Transformation Canvas</h1>
+            <p className="text-[10px] tracking-[0.25em] text-[#00AEEF] mt-0.5 uppercase font-light">From strategy to execution</p>
           </div>
         </div>
 
         {/* Right: controls */}
-        <div className="flex items-center gap-3 px-8">
+        <div className="flex items-center gap-4">
           <input
             value={scope}
             onChange={e => setScope(e.target.value)}
             placeholder="Organisation / project name…"
-            className="bg-white/8 border border-white/15 text-white placeholder-white/35 text-xs px-4 py-2 rounded-sm outline-none focus:border-[#00AEEF] focus:bg-white/12 w-56 transition-all"
+            className="bg-white/10 border border-white/20 text-white placeholder-white/40 text-xs px-4 py-2 rounded-sm outline-none focus:border-[#00AEEF] w-52"
           />
-          <div className="w-px h-6 bg-white/15 mx-1" />
-          <button onClick={loadExample} className="text-[10px] font-semibold text-white/50 hover:text-white/90 uppercase tracking-wider transition-colors px-2">
+          <button onClick={loadExample} className="text-[10px] font-bold text-white/60 hover:text-white uppercase tracking-wider transition-colors">
             Load example
           </button>
-          <button onClick={reset} className="text-[10px] font-semibold text-white/30 hover:text-white/70 uppercase tracking-wider transition-colors px-2">
+          <button onClick={reset} className="text-[10px] font-bold text-white/40 hover:text-white/80 uppercase tracking-wider transition-colors">
             Reset
           </button>
-          <div className="w-px h-6 bg-white/15 mx-1" />
           <button
             onClick={() => setShowConsistency(true)}
-            className="flex items-center gap-2 bg-[#00AEEF] hover:bg-[#0099d4] text-white px-5 py-2 rounded-sm font-bold text-[10px] shadow-md transition-all uppercase tracking-widest border border-[#00AEEF]/50"
+            className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
           >
-            <ShieldCheck size={14} /> Consistency Check
+            <ShieldCheck size={15} /> Consistency Check
           </button>
         </div>
       </header>
