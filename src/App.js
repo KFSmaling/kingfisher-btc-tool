@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { LangProvider, useLang } from "./i18n";
 import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
@@ -13,27 +14,28 @@ import * as pdfjsLib from "pdfjs-dist";
 
 // Sub-tab sets — pillar blocks use Current/To-Be/Change
 // Guiding Principles uses the 4 pillar names as subtabs
+// Subtabs en blocks zijn ID-gebaseerd; labels worden via t() opgehaald
 const PILLAR_SUBTABS = [
-  { id: "current", label: "As Is",          dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
-  { id: "tobe",    label: "To-Be",          dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
-  { id: "change",  label: "Change Actions", dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
+  { id: "current", labelKey: "subtab.current", dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
+  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
+  { id: "change",  labelKey: "subtab.change",  dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
 const PRINCIPLES_SUBTABS = [
-  { id: "customers",  label: "Customers",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",      color: "border-blue-400 text-blue-600"      },
-  { id: "processes",  label: "Processes",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",  color: "border-violet-500 text-violet-600"  },
-  { id: "people",     label: "People",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",    color: "border-green-500 text-green-600"    },
-  { id: "technology", label: "Technology", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",   color: "border-slate-500 text-slate-600"    },
+  { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",      color: "border-blue-400 text-blue-600"      },
+  { id: "processes",  labelKey: "block.processes.title",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",  color: "border-violet-500 text-violet-600"  },
+  { id: "people",     labelKey: "block.people.title",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",    color: "border-green-500 text-green-600"    },
+  { id: "technology", labelKey: "block.technology.title", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",   color: "border-slate-500 text-slate-600"    },
 ];
 
 const BLOCKS = [
-  { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide",    hasSubs: false, subTabs: null           },
-  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "wide",    hasSubs: true,  subTabs: PRINCIPLES_SUBTABS },
-  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
-  { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
-  { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
-  { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
-  { id: "portfolio",  title: "Change Portfolio",         sub: "Initiatives · Value · Complexity · Owner",    layout: "wide",    hasSubs: false, subTabs: null           },
+  { id: "strategy",   titleKey: "block.strategy.title",   subKey: "block.strategy.sub",   layout: "wide",    hasSubs: false, subTabs: null           },
+  { id: "principles", titleKey: "block.principles.title", subKey: "block.principles.sub", layout: "wide",    hasSubs: true,  subTabs: PRINCIPLES_SUBTABS },
+  { id: "customers",  titleKey: "block.customers.title",  subKey: "block.customers.sub",  layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "processes",  titleKey: "block.processes.title",  subKey: "block.processes.sub",  layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "people",     titleKey: "block.people.title",     subKey: "block.people.sub",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "technology", titleKey: "block.technology.title", subKey: "block.technology.sub", layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "portfolio",  titleKey: "block.portfolio.title",  subKey: "block.portfolio.sub",  layout: "wide",    hasSubs: false, subTabs: null           },
 ];
 
 // Helper to convert string arrays to bullet objects
@@ -72,7 +74,7 @@ const EXAMPLE_BULLETS = {
 };
 
 // ── AI extraction via serverless function ────────────────────────────────────
-async function extractWithAI(blockKey, documentText) {
+async function extractWithAI(blockKey, documentText, langInstruction = "Respond in Dutch.") {
   const prompt = BLOCK_PROMPTS[blockKey];
   if (!prompt) throw new Error(`No prompt found for block: ${blockKey}`);
 
@@ -81,7 +83,7 @@ async function extractWithAI(blockKey, documentText) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       blockKey,
-      documentText: prompt + "\n\n" + documentText.slice(0, 8000),
+      documentText: langInstruction + "\n\n" + prompt + "\n\n" + documentText.slice(0, 8000),
     }),
   });
 
@@ -165,10 +167,13 @@ const SEV_TEXT  = { high: "text-red-600", medium: "text-orange-600", low: "text-
 
 // ── Block Card (dashboard) ───────────────────────────────────────────────────
 function BlockCard({ block, status, bullets, insightCount, onClick }) {
+  const { t } = useLang();
   const badge = STATUS_BADGE[status];
   const isWide    = block.layout === "wide";
   const isHalf    = block.layout === "half";
   const isQuarter = block.layout === "quarter";
+  const title = t(block.titleKey);
+  const sub   = t(block.subKey);
 
   return (
     <div
@@ -182,8 +187,8 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       <div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-[#001f33] font-black text-sm uppercase tracking-widest">{block.title}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{block.sub}</p>
+            <h3 className="text-[#001f33] font-black text-sm uppercase tracking-widest">{title}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{sub}</p>
           </div>
           {badge && (
             <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shrink-0 ml-2 ${badge.color}`}>
@@ -194,14 +199,13 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 
         {/* Bullet preview */}
         {block.hasSubs ? (
-          // Pillar blocks: show bullets grouped by subtab label
           <div className="space-y-1 mt-3">
             {(block.subTabs || PILLAR_SUBTABS).map(st => {
               const stBullets = (bullets || []).filter(b => b.subtab === st.id);
               if (stBullets.length === 0) return null;
               return (
                 <div key={st.id}>
-                  <span className={`text-[8px] font-black uppercase tracking-widest ${st.color.split(" ")[1]}`}>{st.label}</span>
+                  <span className={`text-[8px] font-black uppercase tracking-widest ${st.color.split(" ")[1]}`}>{t(st.labelKey)}</span>
                   {stBullets.slice(0, 2).map((b, i) => (
                     <div key={i} className="flex items-start gap-2 mt-0.5">
                       <div className={`mt-1.5 w-1 h-1 rotate-45 shrink-0 ${st.dot}`} />
@@ -212,11 +216,10 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
               );
             })}
             {(bullets || []).length === 0 && (
-              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">No data yet</p>
+              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">{t("status.empty")}</p>
             )}
           </div>
         ) : (
-          // Other blocks: flat bullet list
           <div className="space-y-1.5 mt-3">
             {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
               <div key={i} className="flex items-start gap-2">
@@ -225,7 +228,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
               </div>
             ))}
             {(bullets || []).length === 0 && (
-              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">No data yet</p>
+              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">{t("status.empty")}</p>
             )}
           </div>
         )}
@@ -233,9 +236,8 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 
       <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100">
         {insightCount > 0 ? (
-          <span className="text-[9px] font-bold text-orange-500 uppercase">{insightCount} insight{insightCount !== 1 ? "s" : ""} pending</span>
+          <span className="text-[9px] font-bold text-orange-500 uppercase">{insightCount} {t("status.insights")}</span>
         ) : block.hasSubs ? (
-          // Show filled sub-tab pills as visible status indicators
           <div className="flex items-center gap-1.5">
             {(block.subTabs || PILLAR_SUBTABS).map(st => {
               const count = (bullets || []).filter(b => b.subtab === st.id).length;
@@ -250,13 +252,13 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
                         : "bg-orange-100 border-orange-300 text-orange-700"
                       : "bg-white border-slate-200 text-slate-300"}`}
                 >
-                  {st.label}{filled ? ` · ${count}` : ""}
+                  {t(st.labelKey)}{filled ? ` · ${count}` : ""}
                 </span>
               );
             })}
           </div>
         ) : (
-          <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullet{(bullets || []).length !== 1 ? "s" : ""}</span>
+          <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullets</span>
         )}
         <ChevronRight size={18} className="text-slate-200 group-hover:text-[#00AEEF] transition-colors" />
       </div>
@@ -266,6 +268,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 
 // ── Sliding Panel ────────────────────────────────────────────────────────────
 function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
+  const { t } = useLang();
   const [activeTab, setActiveTab] = useState("upload");
   const [uploadPhase, setUploadPhase] = useState(null); // null | 'validating' | 'extracting'
   const [validation, setValidation] = useState(null);
@@ -346,7 +349,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
       // ── Stap 3: Extract (premium model, alleen bij goedkeuring) ───────────
       setUploadPhase("extracting");
-      const items = await extractWithAI(block.id, text);
+      const items = await extractWithAI(block.id, text, t("ai.language"));
       const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
       onDocsChange(block.id, file.name, newInsights);
       setActiveTab("extract");
@@ -358,10 +361,10 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   };
 
   const TABS = [
-    { id: "upload",   label: "1. Upload",    icon: Upload },
-    { id: "extract",  label: "2. Extract",   icon: Zap },
-    { id: "review",   label: "3. Review",    icon: CheckSquare },
-    { id: "canvas",   label: "4. Canvas",    icon: List },
+    { id: "upload",   labelKey: "panel.tab.upload",  icon: Upload },
+    { id: "extract",  labelKey: "panel.tab.extract", icon: Zap },
+    { id: "review",   labelKey: "panel.tab.review",  icon: CheckSquare },
+    { id: "canvas",   labelKey: "panel.tab.canvas",  icon: List },
   ];
 
   return (
@@ -369,15 +372,15 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
       {/* Panel header */}
       <div className="px-8 py-5 bg-[#001f33] flex items-center justify-between shrink-0">
         <div>
-          <h2 className="text-white font-black text-lg uppercase tracking-tight">{block.title}</h2>
-          <p className="text-[#00AEEF] text-[10px] uppercase tracking-widest mt-0.5">{block.sub}</p>
+          <h2 className="text-white font-black text-lg uppercase tracking-tight">{t(block.titleKey)}</h2>
+          <p className="text-[#00AEEF] text-[10px] uppercase tracking-widest mt-0.5">{t(block.subKey)}</p>
         </div>
         <div className="flex items-center gap-3">
           {TIPS[block.id] && (
             <button
               onClick={() => onShowTips(block.id)}
               className="flex items-center gap-1.5 text-white/40 hover:text-[#00AEEF] transition-colors"
-              title="Tips voor dit blok"
+              title={t("tips.panel.button")}
             >
               <BookOpen size={15} />
               <span className="text-[9px] font-bold uppercase tracking-widest">Tips</span>
@@ -397,7 +400,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               ${activeTab === tab.id ? "border-orange-500 text-[#001f33] bg-white" : "border-transparent text-slate-400 hover:text-[#001f33]"}`}
           >
             <tab.icon size={16} />
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -418,22 +421,22 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               {uploadPhase === "validating" && (
                 <>
                   <ShieldCheck size={40} className="mx-auto mb-4 text-violet-400 animate-pulse" />
-                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">Document wordt gescand…</p>
-                  <p className="text-[9px] text-violet-300 mt-1">Poortwachter controleert relevantie</p>
+                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">{t("upload.scanning")}</p>
+                  <p className="text-[9px] text-violet-300 mt-1">{t("upload.scanning.sub")}</p>
                 </>
               )}
               {uploadPhase === "extracting" && (
                 <>
                   <Zap size={40} className="mx-auto mb-4 text-orange-400 animate-pulse" />
-                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">AI haalt inzichten op…</p>
-                  <p className="text-[9px] text-orange-300 mt-1">Extractie gestart op basis van scan</p>
+                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">{t("upload.extracting")}</p>
+                  <p className="text-[9px] text-orange-300 mt-1">{t("upload.extracting.sub")}</p>
                 </>
               )}
               {!uploadPhase && (
                 <>
                   <Upload size={40} className="mx-auto mb-4 text-slate-300 group-hover:text-[#00AEEF]" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Klik om een document te uploaden</p>
-                  <p className="text-[9px] text-slate-300 mt-1">PDF · PPTX · DOCX · TXT</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("upload.cta")}</p>
+                  <p className="text-[9px] text-slate-300 mt-1">{t("upload.formats")}</p>
                 </>
               )}
               <input
@@ -457,7 +460,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               <div className="border border-slate-200 rounded-sm overflow-hidden">
                 <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
                   <ShieldCheck size={13} className="text-[#2d6e4e]" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Scan resultaat</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("upload.scan.result")}</span>
                   <span className="ml-auto text-[9px] text-slate-400 italic">{validation.overallReason}</span>
                 </div>
                 <div className="divide-y divide-slate-100">
@@ -465,7 +468,8 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                     const score = data?.score ?? 0;
                     const color = score >= 70 ? "bg-[#2d6e4e]" : score >= 30 ? "bg-orange-400" : "bg-slate-200";
                     const textColor = score >= 70 ? "text-[#2d6e4e]" : score >= 30 ? "text-orange-500" : "text-slate-400";
-                    const label = BLOCKS.find(b => b.id === blockId)?.title || blockId;
+                    const blockDef = BLOCKS.find(b => b.id === blockId);
+                    const label = blockDef ? t(blockDef.titleKey) : blockId;
                     const isCurrentBlock = blockId === block.id;
                     return (
                       <div key={blockId} className={`flex items-center gap-3 px-4 py-2 ${isCurrentBlock ? "bg-blue-50" : ""}`}>
@@ -483,7 +487,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
             {blockDocs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Uploaded documents</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">{t("upload.docs.label")}</p>
                 {blockDocs.map((doc, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-sm text-xs text-slate-700">
                     <FileText size={14} className="text-[#00AEEF] shrink-0" />
@@ -498,7 +502,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 onClick={() => setActiveTab("extract")}
                 className="w-full py-3 bg-[#001f33] text-white text-xs font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
               >
-                View {blockInsights.length} extracted insights →
+                {t("upload.view.insights", { n: blockInsights.length })}
               </button>
             )}
           </div>
@@ -510,16 +514,16 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
             {pendingInsights.length === 0 && acceptedInsights.length === 0 && (
               <div className="text-center py-16">
                 <Zap size={32} className="mx-auto text-slate-200 mb-4" />
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest">Upload a document to extract insights</p>
-                <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">← Back to upload</button>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("extract.empty")}</p>
+                <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">{t("extract.back")}</button>
               </div>
             )}
 
             {/* Counter */}
             {(pendingInsights.length > 0 || acceptedInsights.length > 0) && (
               <div className="flex gap-4 pb-3 border-b border-slate-100">
-                <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">{pendingInsights.length} pending</span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-green-600">{acceptedInsights.length} accepted</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-orange-500">{t("extract.pending", { n: pendingInsights.length })}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-green-600">{t("extract.accepted", { n: acceptedInsights.length })}</span>
               </div>
             )}
 
@@ -528,20 +532,20 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               <div key={ins.id} className="p-5 bg-slate-50 border border-slate-200 border-l-4 border-l-[#00AEEF] rounded-sm">
                 <p className="text-sm text-slate-800 leading-relaxed mb-4">{ins.text}</p>
                 {ins.source && (
-                  <p className="text-[9px] text-slate-400 mb-3 italic">Bron: {ins.source}</p>
+                  <p className="text-[9px] text-slate-400 mb-3 italic">{t("extract.source")} {ins.source}</p>
                 )}
                 <div className="flex gap-4 pt-3 border-t border-slate-100">
                   <button
                     onClick={() => onInsightAccept(block.id, ins.id)}
                     className="flex items-center gap-1.5 text-[10px] font-black text-green-600 uppercase tracking-widest hover:underline"
                   >
-                    ✓ Accept
+                    {t("extract.accept")}
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
                     className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500"
                   >
-                    × Reject
+                    {t("extract.reject")}
                   </button>
                 </div>
               </div>
@@ -565,7 +569,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 onClick={() => setActiveTab("review")}
                 className="w-full py-3 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors mt-2"
               >
-                Review &amp; edit {acceptedInsights.length} accepted insight{acceptedInsights.length !== 1 ? "s" : ""} →
+                {t("extract.go.review", { n: acceptedInsights.length })}
               </button>
             )}
           </div>
@@ -577,14 +581,14 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
             {acceptedInsights.length === 0 && (
               <div className="text-center py-16">
                 <CheckSquare size={32} className="mx-auto text-slate-200 mb-4" />
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest">No accepted insights yet</p>
-                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">← Back to Extract</button>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("review.empty")}</p>
+                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">{t("review.back")}</button>
               </div>
             )}
             {acceptedInsights.length > 0 && (
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                  {acceptedInsights.length} insight{acceptedInsights.length !== 1 ? "s" : ""} — bewerk indien nodig
+                  {t("review.subtitle", { n: acceptedInsights.length })}
                 </p>
                 <button
                   onClick={() => {
@@ -595,7 +599,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                   }}
                   className="text-[9px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
-                  Alles naar canvas →
+                  {t("review.all.to.canvas")}
                 </button>
               </div>
             )}
@@ -621,13 +625,13 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                     }}
                     className="flex-1 py-2.5 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
                   >
-                    ✓ Naar canvas
+                    {t("review.to.canvas")}
                   </button>
                   <button
                     onClick={() => onInsightReject(block.id, ins.id)}
                     className="px-4 py-2.5 text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest border border-slate-200 rounded-sm hover:border-red-200 transition-colors"
                   >
-                    Verwijder
+                    {t("review.delete")}
                   </button>
                 </div>
               </div>
@@ -655,7 +659,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                           ${isActive ? st.activeBg + " " + st.color.split(" ")[1] : "border-slate-100 text-slate-400 bg-white hover:border-slate-200"}`}
                       >
                         <div className={`w-1.5 h-1.5 rotate-45 mb-0.5 ${isActive ? st.dot : "bg-slate-300"}`} />
-                        {st.label}
+                        {t(st.labelKey)}
                         {count > 0 && <span className="text-[8px]">{count}</span>}
                       </button>
                     );
@@ -707,10 +711,10 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                                 value={activeSubTab}
                                 onChange={e => onMoveToBullets(block.id, { text: bulletText, source: bulletSource, subtab: e.target.value }, i, true)}
                                 className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#00AEEF] cursor-pointer"
-                                title="Verplaats naar…"
+                                title={t("canvas.move.to")}
                               >
                                 {(block.subTabs || PILLAR_SUBTABS).map(s => (
-                                  <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{s.label}</option>
+                                  <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{t(s.labelKey)}</option>
                                 ))}
                               </select>
                               <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
@@ -727,7 +731,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                             autoFocus
                             value={newBullet}
                             onChange={e => setNewBullet(e.target.value)}
-                            placeholder={`Voeg ${st.label.toLowerCase()} bullet toe…`}
+                            placeholder={`${t("canvas.add.manual")} ${t(st.labelKey).toLowerCase()}…`}
                             className="flex-1 text-sm outline-none text-slate-800"
                             onKeyDown={e => {
                               if (e.key === "Enter" && newBullet.trim()) {
@@ -745,8 +749,8 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                       {stBullets.length === 0 && !addingBullet && (
                         <div className="text-center py-8">
                           <div className={`w-4 h-4 rotate-45 mx-auto mb-3 ${st.dot} opacity-20`} />
-                          <p className="text-[10px] text-slate-400 uppercase tracking-widest">{st.label} — nog leeg</p>
-                          <p className="text-[9px] text-slate-300 mt-1">Voeg handmatig toe of push vanuit Review</p>
+                          <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("canvas.empty.sub", { label: t(st.labelKey) })}</p>
+                          <p className="text-[9px] text-slate-300 mt-1">{t("canvas.empty.hint")}</p>
                         </div>
                       )}
 
@@ -754,7 +758,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                         onClick={() => setAddingBullet(true)}
                         className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
                       >
-                        <Plus size={14} /> Handmatig toevoegen
+                        <Plus size={14} /> {t("canvas.add.manual")}
                       </button>
                     </div>
                   );
@@ -764,13 +768,13 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
               /* ── Non-pillar blocks: flat list (unchanged) ── */
               <>
                 <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                  <span className="text-[9px] font-black text-[#001f33] uppercase tracking-widest">Canvas bullets ({blockBullets.length}/7)</span>
+                  <span className="text-[9px] font-black text-[#001f33] uppercase tracking-widest">{t("canvas.bullets.count", { n: blockBullets.length })}</span>
                   {blockBullets.length < 7 && (
                     <button
                       onClick={() => setAddingBullet(true)}
                       className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
                     >
-                      <Plus size={14} /> Add manually
+                      <Plus size={14} /> {t("canvas.add.manual")}
                     </button>
                   )}
                 </div>
@@ -822,7 +826,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                       autoFocus
                       value={newBullet}
                       onChange={e => setNewBullet(e.target.value)}
-                      placeholder="Type bullet point…"
+                      placeholder={t("canvas.placeholder")}
                       className="flex-1 text-sm outline-none text-slate-800"
                       onKeyDown={e => {
                         if (e.key === "Enter" && newBullet.trim()) {
@@ -840,8 +844,8 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
                 {blockBullets.length === 0 && !addingBullet && (
                   <div className="text-center py-12">
                     <List size={28} className="mx-auto text-slate-200 mb-3" />
-                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">No bullets yet</p>
-                    <p className="text-[9px] text-slate-300 mt-1">Accept insights in the Review tab, or add manually</p>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("canvas.empty.flat")}</p>
+                    <p className="text-[9px] text-slate-300 mt-1">{t("canvas.empty.flat.hint")}</p>
                   </div>
                 )}
               </>
@@ -855,6 +859,7 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
 
 // ── Consistency Check Modal ──────────────────────────────────────────────────
 function ConsistencyModal({ bullets, onClose }) {
+  const { t } = useLang();
   const { scores, issues, overall } = runConsistencyCheck(bullets);
   const scoreColor = v => v >= 70 ? "text-green-600" : v >= 45 ? "text-orange-500" : "text-red-500";
   const barColor  = v => v >= 70 ? "bg-green-500" : v >= 45 ? "bg-orange-400" : "bg-red-400";
@@ -864,8 +869,8 @@ function ConsistencyModal({ bullets, onClose }) {
       <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#00AEEF] max-h-[90vh] overflow-y-auto">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
-            <h2 className="text-[#001f33] font-black text-2xl uppercase tracking-tighter">Canvas Consistency Check</h2>
-            <p className="text-slate-400 text-xs mt-1">Overall score: <span className={`font-black text-lg ${scoreColor(overall)}`}>{overall}/100</span></p>
+            <h2 className="text-[#001f33] font-black text-2xl uppercase tracking-tighter">{t("consistency.title")}</h2>
+            <p className="text-slate-400 text-xs mt-1">{t("consistency.overall")} <span className={`font-black text-lg ${scoreColor(overall)}`}>{overall}/100</span></p>
           </div>
           <button onClick={onClose} className="text-slate-300 hover:text-red-500 transition-colors"><X size={28} /></button>
         </div>
@@ -873,14 +878,14 @@ function ConsistencyModal({ bullets, onClose }) {
         <div className="p-8 grid grid-cols-2 gap-8">
           {/* Per block scores */}
           <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Per block</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">{t("consistency.per.block")}</p>
             <div className="space-y-3">
               {BLOCKS.map(b => {
                 const s = scores[b.id] || 0;
                 return (
                   <div key={b.id}>
                     <div className="flex justify-between mb-1">
-                      <span className="text-xs text-slate-700">{b.title}</span>
+                      <span className="text-xs text-slate-700">{t(b.titleKey)}</span>
                       <span className={`text-xs font-black ${scoreColor(s)}`}>{s}</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 rounded-full">
@@ -894,7 +899,7 @@ function ConsistencyModal({ bullets, onClose }) {
 
           {/* Issues */}
           <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Issues & observations</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">{t("consistency.issues")}</p>
             <div className="space-y-3">
               {issues.map((iss, i) => (
                 <div key={i} className={`p-4 border-l-4 rounded-sm ${SEV_COLOR[iss.severity]}`}>
@@ -1090,6 +1095,7 @@ const TIPS_NAV = [
 
 // ── Tips Modal ────────────────────────────────────────────────────────────────
 function TipsModal({ onClose, initialSection }) {
+  const { t } = useLang();
   const [activeSection, setActiveSection] = useState(initialSection || "algemeen");
   const section = TIPS[activeSection] || TIPS.algemeen;
 
@@ -1102,9 +1108,9 @@ function TipsModal({ onClose, initialSection }) {
           <div className="px-5 py-5 border-b border-white/10">
             <div className="flex items-center gap-2 mb-0.5">
               <BookOpen size={14} className="text-[#00AEEF]" />
-              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">Tips & werkwijze</span>
+              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">{t("tips.title")}</span>
             </div>
-            <p className="text-[9px] text-white/30 leading-snug mt-1">Gebaseerd op het boek Business Transformatie Canvas</p>
+            <p className="text-[9px] text-white/30 leading-snug mt-1">{t("tips.subtitle")}</p>
           </div>
           <nav className="flex-1 overflow-y-auto py-3">
             {TIPS_NAV.map((item, idx) => {
@@ -1128,7 +1134,7 @@ function TipsModal({ onClose, initialSection }) {
             })}
           </nav>
           <div className="px-5 py-4 border-t border-white/10">
-            <p className="text-[8px] text-white/20 leading-relaxed">Beijen, Heetebrij & Tigchelaar — Business Transformatie Canvas</p>
+            <p className="text-[8px] text-white/20 leading-relaxed">{t("tips.footer")}</p>
           </div>
         </div>
 
@@ -1172,7 +1178,7 @@ function TipsModal({ onClose, initialSection }) {
               disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === 0}
               className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
             >
-              ← Vorige
+              {t("tips.prev")}
             </button>
             <span className="text-[9px] text-slate-300 uppercase tracking-widest">
               {TIPS_NAV.findIndex(t => t.key === activeSection) + 1} / {TIPS_NAV.length}
@@ -1185,7 +1191,7 @@ function TipsModal({ onClose, initialSection }) {
               disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === TIPS_NAV.length - 1}
               className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
             >
-              Volgende →
+              {t("tips.next")}
             </button>
           </div>
         </div>
@@ -1206,6 +1212,7 @@ function saveAllCanvases(list) {
 
 // CanvasMenu renders as the central canvas-name element in the header (Optie A)
 function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [canvases, setCanvases] = useState(loadAllCanvases);
   const [saving, setSaving] = useState(false);
@@ -1213,7 +1220,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
   const [draftName, setDraftName] = useState("");
 
   const handleSave = () => {
-    const name = (saving && draftName.trim()) ? draftName.trim() : (currentName || "Naamloos canvas");
+    const name = (saving && draftName.trim()) ? draftName.trim() : (currentName || t("menu.unnamed"));
     const now = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
     const existing = canvases.findIndex(c => c.name === name);
     const entry = { name, savedAt: now, state: { ...currentState, scope: name } };
@@ -1234,7 +1241,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
     setCanvases(updated);
   };
 
-  const displayName = currentName || "Naamloos canvas";
+  const displayName = currentName || t("menu.unnamed");
 
   return (
     <div className="relative flex items-center">
@@ -1258,7 +1265,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
           className="flex items-center gap-2.5 group"
         >
           <div className="flex flex-col items-start">
-            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">Actief canvas</span>
+            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
             <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#00AEEF] transition-colors">
               {displayName}
             </span>
@@ -1274,7 +1281,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
         <button
           onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
           className="ml-2 mt-1 text-white/20 hover:text-white/70 transition-colors"
-          title="Naam bewerken"
+          title={t("menu.edit.name")}
         >
           <Edit3 size={12} />
         </button>
@@ -1293,7 +1300,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#00AEEF] transition-colors"
               >
                 <Plus size={13} className="text-[#00AEEF] shrink-0" />
-                <span className="font-semibold">Nieuw canvas</span>
+                <span className="font-semibold">{ t("menu.new.canvas") }</span>
               </button>
               {/* Load example */}
               <button
@@ -1301,14 +1308,14 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors"
               >
                 <FileText size={13} className="text-slate-400 shrink-0" />
-                <span>Voorbeeld laden</span>
+                <span>{ t("menu.load.example") }</span>
               </button>
             </div>
 
             {/* Saved canvases */}
             {canvases.length > 0 && (
               <div className="p-3 space-y-1 border-b border-slate-100 max-h-52 overflow-y-auto">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">Opgeslagen canvassen</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">{ t("menu.saved") }</p>
                 {canvases.map(c => (
                   <button
                     key={c.name}
@@ -1351,7 +1358,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
                   onClick={() => { setSaving(true); setDraftName(currentName || ""); }}
                   className="w-full py-2 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
                 >
-                  Huidig canvas opslaan
+                  { t("menu.save") }
                 </button>
               )}
             </div>
@@ -1363,7 +1370,8 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
 }
 
 // ── Main App ─────────────────────────────────────────────────────────────────
-export default function App() {
+function AppInner() {
+  const { t, lang, setLang } = useLang();
   const [activeBlockId, setActiveBlockId] = useState(null);
   const [showConsistency, setShowConsistency] = useState(null);
   const [showTips, setShowTips] = useState(false);
@@ -1484,20 +1492,30 @@ export default function App() {
           />
         </div>
 
-        {/* Right: tips + consistency check */}
+        {/* Right: lang toggle + tips + consistency check */}
         <div className="flex items-center gap-3 px-8 shrink-0">
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === "nl" ? "en" : "nl")}
+            className="flex items-center gap-1.5 text-white/50 hover:text-white border border-white/20 hover:border-white/40 px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+            title="Switch language"
+          >
+            <span className={lang === "nl" ? "text-white" : "text-white/30"}>NL</span>
+            <span className="text-white/20">|</span>
+            <span className={lang === "en" ? "text-white" : "text-white/30"}>EN</span>
+          </button>
           <button
             onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
             className="flex items-center gap-2 text-white/60 hover:text-white border border-white/20 hover:border-white/50 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
-            title="Tips & werkwijze"
+            title={t("tips.title")}
           >
-            <BookOpen size={14} /> Tips
+            <BookOpen size={14} /> {t("header.tips")}
           </button>
           <button
             onClick={() => setShowConsistency(true)}
             className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
           >
-            <ShieldCheck size={15} /> Consistency Check
+            <ShieldCheck size={15} /> {t("header.consistency")}
           </button>
         </div>
       </header>
@@ -1575,7 +1593,7 @@ export default function App() {
               onClick={() => setShowConsistency(true)}
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-sm text-xs font-black uppercase tracking-widest shadow-md transition-colors"
             >
-              <ShieldCheck size={14} /> All blocks done — Run full analysis
+              <ShieldCheck size={14} /> {t("progress.all.done")}
             </button>
           )}
           <p className="text-[9px] text-slate-300 uppercase tracking-widest">
@@ -1621,5 +1639,13 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LangProvider>
+      <AppInner />
+    </LangProvider>
   );
 }
