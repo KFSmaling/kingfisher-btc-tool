@@ -611,13 +611,12 @@ export default function App() {
       {/* Header */}
       <header className="h-20 bg-[#001f33] text-white flex items-center justify-between px-10 shadow-xl z-20 border-b-4 border-[#00AEEF] shrink-0">
         <div className="flex items-center gap-8">
-          <div className="bg-white px-5 py-2.5 rounded-sm shadow-md">
-            <div className="text-[#001f33] font-black text-base tracking-tighter uppercase leading-none">KINGFISHER</div>
-            <div className="text-[#00AEEF] font-bold text-[8px] tracking-[0.35em] uppercase leading-none mt-0.5">& PARTNERS</div>
+          <div className="bg-white px-4 py-2 rounded-sm shadow-md flex items-center justify-center h-14">
+            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-full object-contain" />
           </div>
           <div className="border-l border-white/20 pl-8">
-            <h1 className="text-sm font-light tracking-widest uppercase italic">Business Transformation Canvas</h1>
-            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-orange-400 mt-1">From strategy to execution</p>
+            <h1 className="text-sm font-light tracking-widest uppercase text-white">Business Transformation Canvas</h1>
+            <p className="text-[9px] font-medium uppercase tracking-[0.3em] text-[#00AEEF] mt-1">From strategy to execution</p>
           </div>
         </div>
 
