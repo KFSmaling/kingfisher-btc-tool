@@ -11,9 +11,9 @@ import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 // Sub-tab sets — pillar blocks use Current/To-Be/Change
 // Guiding Principles uses the 4 pillar names as subtabs
 const PILLAR_SUBTABS = [
-  { id: "current", label: "Current",    dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
-  { id: "tobe",    label: "To-Be",      dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
-  { id: "change",  label: "Change",     dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
+  { id: "current", label: "As Is",          dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
+  { id: "tobe",    label: "To-Be",          dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
+  { id: "change",  label: "Change Actions", dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
 const PRINCIPLES_SUBTABS = [
@@ -25,8 +25,8 @@ const PRINCIPLES_SUBTABS = [
 
 const BLOCKS = [
   { id: "strategy",   title: "Strategy",                 sub: "Mission · Vision · Themes · KPIs",            layout: "wide",    hasSubs: false, subTabs: null           },
-  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "half",    hasSubs: true,  subTabs: PRINCIPLES_SUBTABS },
-  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "half",    hasSubs: true,  subTabs: PILLAR_SUBTABS },
+  { id: "principles", title: "Guiding Principles",       sub: "Design rules for all pillars",                layout: "wide",    hasSubs: true,  subTabs: PRINCIPLES_SUBTABS },
+  { id: "customers",  title: "Customers & Services",     sub: "Groups · Journeys · Channels · Products",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
   { id: "processes",  title: "Processes & Organisation", sub: "Process model · Org design · Governance",     layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
   { id: "people",     title: "People & Competencies",    sub: "Leadership · Skills · Culture",               layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
   { id: "technology", title: "Information & Technology", sub: "Data · Applications · Platforms",             layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
@@ -163,8 +163,9 @@ const SEV_TEXT  = { high: "text-red-600", medium: "text-orange-600", low: "text-
 // ── Block Card (dashboard) ───────────────────────────────────────────────────
 function BlockCard({ block, status, bullets, insightCount, onClick }) {
   const badge = STATUS_BADGE[status];
-  const isWide = block.layout === "wide";
-  const isHalf = block.layout === "half";
+  const isWide    = block.layout === "wide";
+  const isHalf    = block.layout === "half";
+  const isQuarter = block.layout === "quarter";
 
   return (
     <div
@@ -172,7 +173,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       className={`
         p-6 border rounded-sm shadow-sm hover:shadow-xl cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
         ${STATUS_COLORS[status]}
-        ${isWide ? "col-span-12" : isHalf ? "col-span-6" : "col-span-4"}
+        ${isWide ? "col-span-12" : isHalf ? "col-span-6" : isQuarter ? "col-span-3" : "col-span-4"}
       `}
     >
       <div>
@@ -1397,7 +1398,7 @@ export default function App() {
       {/* Dashboard */}
       <main className="p-10">
 
-        {/* Canvas grid — BTC layout (12-col for even thirds on row 3) */}
+        {/* Canvas grid — BTC layout (12-col) */}
         <div className="grid grid-cols-12 gap-5">
 
           {/* Row 1: Strategy — full width (col-span-12) */}
@@ -1412,8 +1413,8 @@ export default function App() {
             />
           ))}
 
-          {/* Row 2: Principles + Customers — half width each (col-span-6) */}
-          {BLOCKS.filter(b => ["principles", "customers"].includes(b.id)).map(block => (
+          {/* Row 2: Guiding Principles — full width (col-span-12) */}
+          {BLOCKS.filter(b => b.id === "principles").map(block => (
             <BlockCard
               key={block.id}
               block={block}
@@ -1424,8 +1425,8 @@ export default function App() {
             />
           ))}
 
-          {/* Row 3: Processes + People + Technology — equal thirds (col-span-4 each) */}
-          {BLOCKS.filter(b => ["processes", "people", "technology"].includes(b.id)).map(block => (
+          {/* Row 3: 4 Segments — equal quarters (col-span-3 each) */}
+          {BLOCKS.filter(b => ["customers", "processes", "people", "technology"].includes(b.id)).map(block => (
             <BlockCard
               key={block.id}
               block={block}
@@ -1436,7 +1437,7 @@ export default function App() {
             />
           ))}
 
-          {/* Row 4: Portfolio — full width (col-span-12) */}
+          {/* Row 4: Portfolio Roadmap — full width (col-span-12) */}
           <BlockCard
             key="portfolio"
             block={BLOCKS.find(b => b.id === "portfolio")}
