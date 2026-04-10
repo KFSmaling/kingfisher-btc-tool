@@ -163,8 +163,8 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       <div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-[#001f33] font-black text-xs uppercase tracking-widest">{block.title}</h3>
-            <p className="text-[10px] text-slate-400 mt-0.5 tracking-wide">{block.sub}</p>
+            <h3 className="text-[#001f33] font-black text-sm uppercase tracking-widest">{block.title}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{block.sub}</p>
           </div>
           {badge && (
             <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shrink-0 ml-2 ${badge.color}`}>
@@ -186,14 +186,14 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
                   {stBullets.slice(0, 2).map((b, i) => (
                     <div key={i} className="flex items-start gap-2 mt-0.5">
                       <div className={`mt-1.5 w-1 h-1 rotate-45 shrink-0 ${st.dot}`} />
-                      <span className="text-[10px] text-slate-600 leading-snug">{b.text}</span>
+                      <span className="text-[11px] text-slate-600 leading-snug">{b.text}</span>
                     </div>
                   ))}
                 </div>
               );
             })}
             {(bullets || []).length === 0 && (
-              <p className="text-[10px] text-slate-300 italic uppercase tracking-tight">No data yet</p>
+              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">No data yet</p>
             )}
           </div>
         ) : (
@@ -202,11 +202,11 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
             {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
               <div key={i} className="flex items-start gap-2">
                 <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
-                <span className="text-[11px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
+                <span className="text-[12px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
               </div>
             ))}
             {(bullets || []).length === 0 && (
-              <p className="text-[10px] text-slate-300 italic uppercase tracking-tight">No data yet</p>
+              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">No data yet</p>
             )}
           </div>
         )}
@@ -216,15 +216,23 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         {insightCount > 0 ? (
           <span className="text-[9px] font-bold text-orange-500 uppercase">{insightCount} insight{insightCount !== 1 ? "s" : ""} pending</span>
         ) : block.hasSubs ? (
-          // Show filled sub-tab dots as status indicators
-          <div className="flex items-center gap-2">
+          // Show filled sub-tab pills as visible status indicators
+          <div className="flex items-center gap-1.5">
             {SUBTABS.map(st => {
               const count = (bullets || []).filter(b => b.subtab === st.id).length;
+              const filled = count > 0;
               return (
-                <div key={st.id} className="flex items-center gap-1">
-                  <div className={`w-1.5 h-1.5 rotate-45 ${count > 0 ? st.dot : "bg-slate-200"}`} />
-                  <span className={`text-[8px] uppercase tracking-wider ${count > 0 ? "text-slate-500" : "text-slate-300"}`}>{st.label}</span>
-                </div>
+                <span
+                  key={st.id}
+                  className={`text-[8px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider border transition-all
+                    ${filled
+                      ? st.id === "current" ? "bg-slate-100 border-slate-300 text-slate-600"
+                        : st.id === "tobe"    ? "bg-blue-100 border-blue-300 text-blue-700"
+                        : "bg-orange-100 border-orange-300 text-orange-700"
+                      : "bg-white border-slate-200 text-slate-300"}`}
+                >
+                  {st.label}{filled ? ` · ${count}` : ""}
+                </span>
               );
             })}
           </div>
@@ -762,6 +770,145 @@ function ConsistencyModal({ bullets, onClose }) {
   );
 }
 
+// ── Canvas Manager (localStorage) ───────────────────────────────────────────
+const STORAGE_KEY = "btc_canvases";
+
+function loadAllCanvases() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
+}
+function saveAllCanvases(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function CanvasMenu({ currentName, currentState, onLoad, onNew }) {
+  const [open, setOpen] = useState(false);
+  const [canvases, setCanvases] = useState(loadAllCanvases);
+  const [saving, setSaving] = useState(false);
+  const [saveName, setSaveName] = useState("");
+
+  const handleSave = () => {
+    const name = saveName.trim() || currentName || "Naamloos canvas";
+    const now = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+    const existing = canvases.findIndex(c => c.name === name);
+    const entry = { name, savedAt: now, state: currentState };
+    const updated = existing >= 0
+      ? canvases.map((c, i) => i === existing ? entry : c)
+      : [entry, ...canvases];
+    saveAllCanvases(updated);
+    setCanvases(updated);
+    setSaving(false);
+    setSaveName("");
+  };
+
+  const handleDelete = (name, e) => {
+    e.stopPropagation();
+    const updated = canvases.filter(c => c.name !== name);
+    saveAllCanvases(updated);
+    setCanvases(updated);
+  };
+
+  const handleLoadExample = () => {
+    onLoad("example");
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 py-2 rounded-sm hover:bg-white/10"
+      >
+        <List size={15} />
+        <span className="text-[10px] font-bold uppercase tracking-widest">Canvassen</span>
+        <ChevronRight size={12} className={`transition-transform ${open ? "rotate-90" : ""}`} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-sm shadow-2xl border border-slate-200 z-50 overflow-hidden">
+            {/* Header */}
+            <div className="px-4 py-3 bg-[#001f33] flex items-center justify-between">
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Mijn canvassen</span>
+              <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white"><X size={14} /></button>
+            </div>
+
+            <div className="p-3 space-y-1">
+              {/* New canvas */}
+              <button
+                onClick={() => { onNew(); setOpen(false); }}
+                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#00AEEF] transition-colors"
+              >
+                <Plus size={13} className="text-[#00AEEF]" />
+                <span className="font-semibold">Nieuw canvas</span>
+              </button>
+
+              {/* Load example */}
+              <button
+                onClick={handleLoadExample}
+                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+              >
+                <FileText size={13} className="text-slate-400" />
+                <span>Voorbeeld laden (Company BTP 2024)</span>
+              </button>
+            </div>
+
+            {/* Saved canvases */}
+            {canvases.length > 0 && (
+              <div className="border-t border-slate-100 p-3 space-y-1">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">Opgeslagen</p>
+                {canvases.map(c => (
+                  <button
+                    key={c.name}
+                    onClick={() => { onLoad(c.state); setOpen(false); }}
+                    className="w-full text-left px-3 py-2.5 rounded-sm hover:bg-blue-50 flex items-center justify-between group transition-colors"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700">{c.name}</p>
+                      <p className="text-[9px] text-slate-400">{c.savedAt}</p>
+                    </div>
+                    <button
+                      onClick={(e) => handleDelete(c.name, e)}
+                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Save current */}
+            <div className="border-t border-slate-100 p-3">
+              {saving ? (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={saveName}
+                    onChange={e => setSaveName(e.target.value)}
+                    placeholder={currentName || "Canvas naam…"}
+                    className="flex-1 text-xs border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#00AEEF]"
+                    onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setSaving(false); }}
+                  />
+                  <button onClick={handleSave} className="px-3 py-2 bg-[#001f33] text-white text-xs rounded-sm hover:bg-[#00AEEF] transition-colors font-bold">✓</button>
+                  <button onClick={() => setSaving(false)} className="text-slate-400 hover:text-red-500"><X size={14} /></button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSaving(true)}
+                  className="w-full py-2 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
+                >
+                  Huidig canvas opslaan
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [activeBlockId, setActiveBlockId] = useState(null);
@@ -769,22 +916,31 @@ export default function App() {
   const [scope, setScope] = useState("");
 
   // Per-block state
-  const [docs, setDocs] = useState({});       // { blockId: [filename, ...] }
-  const [insights, setInsights] = useState({}); // { blockId: [{ id, text, status }] }
-  const [bullets, setBullets] = useState({});  // { blockId: [string, ...] }
+  const [docs, setDocs] = useState({});
+  const [insights, setInsights] = useState({});
+  const [bullets, setBullets] = useState({});
 
   const activeBlock = BLOCKS.find(b => b.id === activeBlockId);
 
-  // Load example
-  const loadExample = () => {
-    setBullets(EXAMPLE_BULLETS);
-    setScope("Company Example — BTP 2024");
-    setDocs({});
-    setInsights({});
+  // Canvas state snapshot for saving
+  const currentCanvasState = { scope, docs, insights, bullets };
+
+  const handleLoadCanvas = (stateOrKey) => {
+    if (stateOrKey === "example") {
+      setBullets(EXAMPLE_BULLETS);
+      setScope("Company Example — BTP 2024");
+      setDocs({});
+      setInsights({});
+    } else {
+      setScope(stateOrKey.scope || "");
+      setDocs(stateOrKey.docs || {});
+      setInsights(stateOrKey.insights || {});
+      setBullets(stateOrKey.bullets || {});
+    }
     setActiveBlockId(null);
   };
 
-  const reset = () => {
+  const handleNewCanvas = () => {
     setDocs({}); setInsights({}); setBullets({}); setScope(""); setActiveBlockId(null);
   };
 
@@ -849,34 +1005,42 @@ export default function App() {
     <div className="min-h-screen bg-[#F4F7F9] text-[#1A365D] font-sans">
 
       {/* Header */}
-      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between px-10 shadow-xl z-20 border-b-4 border-[#00AEEF] shrink-0">
+      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between shadow-xl z-20 border-b-4 border-[#00AEEF] shrink-0">
 
-        {/* Left: logo + title */}
-        <div className="flex items-center gap-6">
-          <div className="bg-white px-3 py-1.5 flex items-center shrink-0">
+        {/* Left: canvas menu + logo + title */}
+        <div className="flex items-center h-full">
+          {/* Canvas manager menu — left of logo */}
+          <div className="px-4 h-full flex items-center border-r border-white/10">
+            <CanvasMenu
+              currentName={scope}
+              currentState={currentCanvasState}
+              onLoad={handleLoadCanvas}
+              onNew={handleNewCanvas}
+            />
+          </div>
+
+          {/* Logo */}
+          <div className="bg-white px-3 py-1.5 flex items-center shrink-0 h-full">
             <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
           </div>
-          <div className="w-px h-8 bg-white/20" />
+
+          <div className="w-px h-8 bg-white/20 mx-6" />
+
+          {/* App title */}
           <div>
             <h1 className="text-sm font-semibold tracking-widest uppercase text-white leading-tight">Business Transformation Canvas</h1>
             <p className="text-[10px] tracking-[0.25em] text-[#00AEEF] mt-0.5 uppercase font-light">From strategy to execution</p>
           </div>
         </div>
 
-        {/* Right: controls */}
-        <div className="flex items-center gap-4">
+        {/* Right: scope input + consistency check */}
+        <div className="flex items-center gap-4 px-10">
           <input
             value={scope}
             onChange={e => setScope(e.target.value)}
             placeholder="Organisation / project name…"
-            className="bg-white/10 border border-white/20 text-white placeholder-white/40 text-xs px-4 py-2 rounded-sm outline-none focus:border-[#00AEEF] w-52"
+            className="bg-white/10 border border-white/20 text-white placeholder-white/40 text-xs px-4 py-2 rounded-sm outline-none focus:border-[#00AEEF] w-56"
           />
-          <button onClick={loadExample} className="text-[10px] font-bold text-white/60 hover:text-white uppercase tracking-wider transition-colors">
-            Load example
-          </button>
-          <button onClick={reset} className="text-[10px] font-bold text-white/40 hover:text-white/80 uppercase tracking-wider transition-colors">
-            Reset
-          </button>
           <button
             onClick={() => setShowConsistency(true)}
             className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
