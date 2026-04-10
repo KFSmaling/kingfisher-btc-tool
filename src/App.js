@@ -898,7 +898,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
                 {canvases.map(c => (
                   <button
                     key={c.name}
-                    onClick={() => { onLoad(c.state); setOpen(false); }}
+                    onClick={() => { onLoad({ ...c.state, scope: c.name }); setOpen(false); }}
                     className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
                       ${c.name === currentName ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50"}`}
                   >
@@ -926,7 +926,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
                     value={draftName}
                     onChange={e => setDraftName(e.target.value)}
                     placeholder={currentName || "Canvas naam…"}
-                    className="flex-1 text-xs border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#00AEEF]"
+                    className="flex-1 text-xs text-slate-800 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#00AEEF]"
                     onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setSaving(false); }}
                   />
                   <button onClick={handleSave} className="px-3 py-2 bg-[#001f33] text-white text-xs rounded-sm hover:bg-[#00AEEF] transition-colors font-bold">✓</button>
