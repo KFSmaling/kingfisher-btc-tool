@@ -151,10 +151,6 @@ function runConsistencyCheck(bullets) {
 }
 
 // ── Status helpers ───────────────────────────────────────────────────────────
-// Huisstijl kleuren
-const KF_BLUE  = "#1a365d";
-const KF_GREEN = "#2c7a4b";
-
 const STATUS_COLORS = {
   empty:    "border border-slate-200 bg-white",
   uploaded: "border border-slate-200 bg-white border-l-[3px] border-l-[#1a365d]",
