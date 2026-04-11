@@ -41,6 +41,9 @@ export async function loadUserCanvases(userId) {
  */
 export async function createCanvas({ userId, name, language = "nl" }) {
   if (!supabase) return { data: null, error: "Supabase niet geconfigureerd" };
+
+  console.log("[createCanvas] inserting:", { userId, name, language });
+
   const { data, error } = await supabase
     .from("canvases")
     .insert({
@@ -51,26 +54,42 @@ export async function createCanvas({ userId, name, language = "nl" }) {
     })
     .select()
     .single();
-  if (error) console.error("Canvas aanmaken mislukt:", error.message);
+
+  if (error) {
+    console.error("[createCanvas] mislukt:", error.code, error.message, error.details);
+  } else {
+    console.log("[createCanvas] success:", data);
+  }
   return { data, error };
 }
 
 /**
  * Sla de huidige canvas staat op (autosave).
- * Last-write-wins via updated_at.
+ * Last-write-wins. updated_at wordt weggelaten voor schema-compatibiliteit.
  */
 export async function upsertCanvas(id, { scope, docs, insights, bullets, language }) {
   if (!supabase) return { error: "Supabase niet geconfigureerd" };
-  const { error } = await supabase
+
+  const payload = {
+    name:     scope || null,
+    blocks:   { docs, insights, bullets },
+    language: language || "nl",
+  };
+
+  console.log("[autosave] updating canvas", id, payload);
+
+  const { data, error } = await supabase
     .from("canvases")
-    .update({
-      name:       scope || null,
-      blocks:     { docs, insights, bullets },
-      language:   language || "nl",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-  if (error) console.error("Autosave mislukt:", error.message);
+    .update(payload)
+    .eq("id", id)
+    .select("id, name, updated_at")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[autosave] mislukt:", error.code, error.message, error.details);
+  } else {
+    console.log("[autosave] success:", data);
+  }
   return { error };
 }
 

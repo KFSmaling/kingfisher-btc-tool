@@ -1376,13 +1376,18 @@ function AppInner() {
     const today = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
 
     loadUserCanvases(user.id).then(async ({ data, error }) => {
-      if (error) { console.error("Canvassen laden mislukt:", error.message); return; }
+      if (error) {
+        console.error("[init] Canvassen laden mislukt:", error.code, error.message);
+        return;
+      }
+
+      console.log("[init] canvassen geladen:", data?.length, data);
 
       if (data && data.length > 0) {
         setCanvases(data);
-        // Laad het meest recente canvas
         const latest = data[0];
-        const { data: full } = await loadCanvasById(latest.id);
+        const { data: full, error: loadErr } = await loadCanvasById(latest.id);
+        console.log("[init] canvas laden:", full, loadErr);
         if (full) {
           suppressSaveRef.current = true;
           setActiveCanvasId(full.id);
@@ -1395,11 +1400,12 @@ function AppInner() {
       } else {
         // Geen canvassen — maak direct een nieuw canvas aan
         const name = `Canvas ${today}`;
-        const { data: created } = await createCanvas({ userId: user.id, name, language: lang });
+        const { data: created, error: createErr } = await createCanvas({ userId: user.id, name, language: lang });
+        console.log("[init] nieuw canvas:", created, createErr);
         if (created) {
           setCanvases([created]);
           setActiveCanvasId(created.id);
-          setScope(created.name);
+          setScope(created.name || name);
         }
       }
     });
@@ -1408,7 +1414,9 @@ function AppInner() {
 
   // ── Autosave (500ms debounce, last-write-wins) ───────────────────────────
   useEffect(() => {
-    if (!activeCanvasId || !user || suppressSaveRef.current) return;
+    if (!activeCanvasId) { console.log("[autosave] skip: geen activeCanvasId"); return; }
+    if (!user)           { console.log("[autosave] skip: geen user"); return; }
+    if (suppressSaveRef.current) { console.log("[autosave] skip: suppress actief"); return; }
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
 
@@ -1417,9 +1425,8 @@ function AppInner() {
       const { error } = await upsertCanvas(activeCanvasId, { scope, docs, insights, bullets, language: lang });
       if (!error) {
         setSaveStatus("saved");
-        // Actualiseer naam in lokale canvassenlijst
         setCanvases(prev => prev.map(c =>
-          c.id === activeCanvasId ? { ...c, name: scope, updated_at: new Date().toISOString() } : c
+          c.id === activeCanvasId ? { ...c, name: scope } : c
         ));
         setTimeout(() => setSaveStatus("idle"), 2500);
       } else {
