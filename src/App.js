@@ -1737,13 +1737,9 @@ function AppInner() {
         </div>
       </main>
 
-      {/* Sliding panel overlay */}
+      {/* Sliding panel */}
       {activeBlockId && (
         <>
-          <div
-            className="fixed inset-0 bg-[#001f33]/20 z-20 backdrop-blur-[1px]"
-            onClick={() => setActiveBlockId(null)}
-          />
           <BlockPanel
             block={activeBlock}
             docs={docs}
