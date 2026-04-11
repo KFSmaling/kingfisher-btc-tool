@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
+import { saveCanvasUpload } from "./services/canvasStorage";
 import JSZip from "jszip";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -353,6 +354,16 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
       const items = await extractWithAI(block.id, text, t("ai.language"));
       const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
       onDocsChange(block.id, file.name, newInsights);
+
+      // ── Stap 4: Opslaan in Supabase ───────────────────────────────────────
+      saveCanvasUpload({
+        fileName: file.name,
+        rawText:  text,
+        insights: items,
+        blockKey: block.id,
+        language: t("ai.language").includes("Dutch") ? "nl" : "en",
+      });
+
       setActiveTab("extract");
     } catch (err) {
       setUploadError(err.message);
