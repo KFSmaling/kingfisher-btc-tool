@@ -292,6 +292,12 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
     setUploadError(null);
     setValidation(null);
 
+    // Voorkom dubbele uploads
+    if (blockDocs.includes(file.name)) {
+      setUploadError(`"${file.name}" is al geüpload voor dit blok.`);
+      return;
+    }
+
     try {
       // ── Stap 1: Parse (0 tokens) ───────────────────────────────────────────
       setUploadPhase("validating");
