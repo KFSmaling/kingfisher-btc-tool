@@ -1,13 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { LangProvider, useLang } from "./i18n";
 import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
-  AlertTriangle, FileText, BookOpen, Lightbulb
+  AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
-import { saveCanvasUpload } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById } from "./services/canvasStorage";
+import { AuthProvider, useAuth } from "./services/authContext";
+import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -269,7 +271,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 }
 
 // ── Sliding Panel ────────────────────────────────────────────────────────────
-function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
+function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
   const { t } = useLang();
   const [activeTab, setActiveTab] = useState("upload");
   const [uploadPhase, setUploadPhase] = useState(null); // null | 'validating' | 'extracting'
@@ -292,6 +294,12 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
   const handleUpload = async (file) => {
     setUploadError(null);
     setValidation(null);
+
+    // Duplicate check — voorkom dubbele uploads per blok
+    if ((docs[block.id] || []).includes(file.name)) {
+      setUploadError(`"${file.name}" is al geüpload voor dit blok.`);
+      return;
+    }
 
     try {
       // ── Stap 1: Parse (0 tokens) ───────────────────────────────────────────
@@ -355,13 +363,15 @@ function BlockPanel({ block, docs, insights, bullets, onClose, onDocsChange, onI
       const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
       onDocsChange(block.id, file.name, newInsights);
 
-      // ── Stap 4: Opslaan in Supabase ───────────────────────────────────────
+      // ── Stap 4: Opslaan in Supabase (canvas_uploads) ─────────────────────
       saveCanvasUpload({
         fileName: file.name,
         rawText:  text,
         insights: items,
         blockKey: block.id,
         language: t("ai.language").includes("Dutch") ? "nl" : "en",
+        canvasId: canvasId || null,
+        userId:   userId   || null,
       });
 
       setActiveTab("extract");
@@ -1205,70 +1215,43 @@ function TipsModal({ onClose, initialSection }) {
   );
 }
 
-// ── Canvas Manager (localStorage) ───────────────────────────────────────────
-const STORAGE_KEY = "btc_canvases";
+// ── Canvas Manager (Supabase) ────────────────────────────────────────────────
 
-function loadAllCanvases() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; }
-}
-function saveAllCanvases(list) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-// CanvasMenu renders as the central canvas-name element in the header (Optie A)
-function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) {
+/**
+ * CanvasMenu — toont huidige canvas naam + dropdown met alle canvassen.
+ * Props worden van AppInner doorgegeven; geen eigen state voor de lijst.
+ */
+function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, onRename, onLoadExample }) {
   const { t } = useLang();
-  const [open, setOpen] = useState(false);
-  const [canvases, setCanvases] = useState(loadAllCanvases);
-  const [saving, setSaving] = useState(false);
+  const [open, setOpen]               = useState(false);
   const [editingName, setEditingName] = useState(false);
-  const [draftName, setDraftName] = useState("");
-
-  const handleSave = () => {
-    const name = (saving && draftName.trim()) ? draftName.trim() : (currentName || t("menu.unnamed"));
-    const now = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
-    const existing = canvases.findIndex(c => c.name === name);
-    const entry = { name, savedAt: now, state: { ...currentState, scope: name } };
-    const updated = existing >= 0
-      ? canvases.map((c, i) => i === existing ? entry : c)
-      : [entry, ...canvases];
-    saveAllCanvases(updated);
-    setCanvases(updated);
-    setSaving(false);
-    setDraftName("");
-    onNameChange(name);
-  };
-
-  const handleDelete = (name, e) => {
-    e.stopPropagation();
-    const updated = canvases.filter(c => c.name !== name);
-    saveAllCanvases(updated);
-    setCanvases(updated);
-  };
+  const [draftName, setDraftName]     = useState("");
 
   const displayName = currentName || t("menu.unnamed");
 
+  const commitRename = () => {
+    if (draftName.trim()) onRename(draftName.trim());
+    setEditingName(false);
+  };
+
   return (
     <div className="relative flex items-center">
-      {/* Central canvas name — click to open menu */}
+      {/* Canvas naam (klikbaar) of inline edit */}
       {editingName ? (
         <input
           autoFocus
           value={draftName}
           onChange={e => setDraftName(e.target.value)}
-          onBlur={() => { if (draftName.trim()) onNameChange(draftName.trim()); setEditingName(false); }}
+          onBlur={commitRename}
           onKeyDown={e => {
-            if (e.key === "Enter") { if (draftName.trim()) onNameChange(draftName.trim()); setEditingName(false); }
+            if (e.key === "Enter")  commitRename();
             if (e.key === "Escape") setEditingName(false);
           }}
           className="bg-transparent border-b border-white/60 text-white text-base font-semibold outline-none w-64 pb-0.5 placeholder-white/40"
           placeholder="Canvas naam…"
         />
       ) : (
-        <button
-          onClick={() => setOpen(o => !o)}
-          className="flex items-center gap-2.5 group"
-        >
+        <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2.5 group">
           <div className="flex flex-col items-start">
             <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
             <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#00AEEF] transition-colors">
@@ -1281,7 +1264,7 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
         </button>
       )}
 
-      {/* Edit name pencil */}
+      {/* Potlood: naam bewerken */}
       {!editingName && (
         <button
           onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
@@ -1299,74 +1282,54 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
           <div className="absolute left-0 top-full mt-3 w-72 bg-white rounded-sm shadow-2xl border border-slate-200 z-50 overflow-hidden">
 
             <div className="p-3 space-y-1 border-b border-slate-100">
-              {/* New canvas */}
+              {/* Nieuw canvas */}
               <button
                 onClick={() => { onNew(); setOpen(false); }}
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#00AEEF] transition-colors"
               >
                 <Plus size={13} className="text-[#00AEEF] shrink-0" />
-                <span className="font-semibold">{ t("menu.new.canvas") }</span>
+                <span className="font-semibold">{t("menu.new.canvas")}</span>
               </button>
-              {/* Load example */}
+              {/* Voorbeeld laden */}
               <button
-                onClick={() => { onLoad("example"); setOpen(false); }}
+                onClick={() => { onLoadExample(); setOpen(false); }}
                 className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors"
               >
                 <FileText size={13} className="text-slate-400 shrink-0" />
-                <span>{ t("menu.load.example") }</span>
+                <span>{t("menu.load.example")}</span>
               </button>
             </div>
 
-            {/* Saved canvases */}
+            {/* Opgeslagen canvassen uit Supabase */}
             {canvases.length > 0 && (
-              <div className="p-3 space-y-1 border-b border-slate-100 max-h-52 overflow-y-auto">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">{ t("menu.saved") }</p>
-                {canvases.map(c => (
-                  <button
-                    key={c.name}
-                    onClick={() => { onLoad({ ...c.state, scope: c.name }); setOpen(false); }}
-                    className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
-                      ${c.name === currentName ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50"}`}
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-slate-700">{c.name}</p>
-                      <p className="text-[9px] text-slate-400">{c.savedAt}</p>
-                    </div>
+              <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">{t("menu.saved")}</p>
+                {canvases.map(c => {
+                  const savedAt = c.updated_at
+                    ? new Date(c.updated_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })
+                    : "";
+                  return (
                     <button
-                      onClick={(e) => handleDelete(c.name, e)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all p-1"
+                      key={c.id}
+                      onClick={() => { onSelect(c); setOpen(false); }}
+                      className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
+                        ${c.id === activeCanvasId ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50"}`}
                     >
-                      <Trash2 size={12} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-700 truncate">{c.name || t("menu.unnamed")}</p>
+                        <p className="text-[9px] text-slate-400">{savedAt}</p>
+                      </div>
                     </button>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {/* Save */}
-            <div className="p-3">
-              {saving ? (
-                <div className="flex gap-2">
-                  <input
-                    autoFocus
-                    value={draftName}
-                    onChange={e => setDraftName(e.target.value)}
-                    placeholder={currentName || "Canvas naam…"}
-                    className="flex-1 text-xs text-slate-800 bg-white border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#00AEEF]"
-                    onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setSaving(false); }}
-                  />
-                  <button onClick={handleSave} className="px-3 py-2 bg-[#001f33] text-white text-xs rounded-sm hover:bg-[#00AEEF] transition-colors font-bold">✓</button>
-                  <button onClick={() => setSaving(false)} className="text-slate-400 hover:text-red-500 px-1"><X size={14} /></button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => { setSaving(true); setDraftName(currentName || ""); }}
-                  className="w-full py-2 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
-                >
-                  { t("menu.save") }
-                </button>
-              )}
-            </div>
+            {canvases.length === 0 && (
+              <div className="p-4 text-center">
+                <p className="text-[10px] text-slate-400">Nog geen opgeslagen canvassen</p>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1377,39 +1340,154 @@ function CanvasMenu({ currentName, currentState, onLoad, onNew, onNameChange }) 
 // ── Main App ─────────────────────────────────────────────────────────────────
 function AppInner() {
   const { t, lang, setLang } = useLang();
+  const { user, signOut }    = useAuth();
+
   const [activeBlockId, setActiveBlockId] = useState(null);
   const [showConsistency, setShowConsistency] = useState(null);
-  const [showTips, setShowTips] = useState(false);
+  const [showTips, setShowTips]   = useState(false);
   const [tipsSection, setTipsSection] = useState("algemeen");
-  const [scope, setScope] = useState("");
+
+  // Canvas identiteit
+  const [activeCanvasId, setActiveCanvasId] = useState(null);
+  const [canvases, setCanvases] = useState([]);
+  const [scope, setScope]       = useState("");
 
   // Per-block state
-  const [docs, setDocs] = useState({});
+  const [docs, setDocs]         = useState({});
   const [insights, setInsights] = useState({});
-  const [bullets, setBullets] = useState({});
+  const [bullets, setBullets]   = useState({});
+
+  // Autosave status
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
+
+  // Multi-tab waarschuwing
+  const [multiTabWarning, setMultiTabWarning] = useState(false);
+
+  // Ref om autosave te onderdrukken tijdens canvas-laden
+  const suppressSaveRef  = useRef(false);
+  const autosaveTimerRef = useRef(null);
 
   const activeBlock = BLOCKS.find(b => b.id === activeBlockId);
 
-  // Canvas state snapshot for saving
-  const currentCanvasState = { scope, docs, insights, bullets };
+  // ── Laad canvassen bij inloggen ──────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
 
-  const handleLoadCanvas = (stateOrKey) => {
-    if (stateOrKey === "example") {
-      setBullets(EXAMPLE_BULLETS);
-      setScope("Company Example — BTP 2024");
-      setDocs({});
-      setInsights({});
-    } else {
-      setScope(stateOrKey.scope || "");
-      setDocs(stateOrKey.docs || {});
-      setInsights(stateOrKey.insights || {});
-      setBullets(stateOrKey.bullets || {});
+    const today = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+
+    loadUserCanvases(user.id).then(async ({ data, error }) => {
+      if (error) { console.error("Canvassen laden mislukt:", error.message); return; }
+
+      if (data && data.length > 0) {
+        setCanvases(data);
+        // Laad het meest recente canvas
+        const latest = data[0];
+        const { data: full } = await loadCanvasById(latest.id);
+        if (full) {
+          suppressSaveRef.current = true;
+          setActiveCanvasId(full.id);
+          setScope(full.name || "");
+          setDocs(full.blocks?.docs || {});
+          setInsights(full.blocks?.insights || {});
+          setBullets(full.blocks?.bullets || {});
+          setTimeout(() => { suppressSaveRef.current = false; }, 100);
+        }
+      } else {
+        // Geen canvassen — maak direct een nieuw canvas aan
+        const name = `Canvas ${today}`;
+        const { data: created } = await createCanvas({ userId: user.id, name, language: lang });
+        if (created) {
+          setCanvases([created]);
+          setActiveCanvasId(created.id);
+          setScope(created.name);
+        }
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // ── Autosave (500ms debounce, last-write-wins) ───────────────────────────
+  useEffect(() => {
+    if (!activeCanvasId || !user || suppressSaveRef.current) return;
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+
+    autosaveTimerRef.current = setTimeout(async () => {
+      setSaveStatus("saving");
+      const { error } = await upsertCanvas(activeCanvasId, { scope, docs, insights, bullets, language: lang });
+      if (!error) {
+        setSaveStatus("saved");
+        // Actualiseer naam in lokale canvassenlijst
+        setCanvases(prev => prev.map(c =>
+          c.id === activeCanvasId ? { ...c, name: scope, updated_at: new Date().toISOString() } : c
+        ));
+        setTimeout(() => setSaveStatus("idle"), 2500);
+      } else {
+        setSaveStatus("error");
+      }
+    }, 500);
+
+    return () => clearTimeout(autosaveTimerRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, docs, insights, bullets, activeCanvasId]);
+
+  // ── Multi-tab detectie ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!("BroadcastChannel" in window)) return;
+    let warned = false;
+    const bc = new BroadcastChannel("kingfisher_btc");
+    bc.postMessage("ping");
+    bc.onmessage = (e) => {
+      if (e.data === "ping") bc.postMessage("pong");
+      if (e.data === "pong" && !warned) { warned = true; setMultiTabWarning(true); }
+    };
+    return () => bc.close();
+  }, []);
+
+  // ── Canvas handlers ──────────────────────────────────────────────────────
+  const handleNewCanvas = async () => {
+    const today = new Date().toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+    const name  = `Canvas ${today}`;
+    const { data, error } = await createCanvas({ userId: user.id, name, language: lang });
+    if (!error && data) {
+      setCanvases(prev => [data, ...prev]);
+      suppressSaveRef.current = true;
+      setActiveCanvasId(data.id);
+      setScope(data.name);
+      setDocs({}); setInsights({}); setBullets({});
+      setActiveBlockId(null);
+      setTimeout(() => { suppressSaveRef.current = false; }, 100);
     }
-    setActiveBlockId(null);
   };
 
-  const handleNewCanvas = () => {
-    setDocs({}); setInsights({}); setBullets({}); setScope(""); setActiveBlockId(null);
+  const handleSelectCanvas = async (canvasRecord) => {
+    const { data: full } = await loadCanvasById(canvasRecord.id);
+    if (full) {
+      suppressSaveRef.current = true;
+      setActiveCanvasId(full.id);
+      setScope(full.name || "");
+      setDocs(full.blocks?.docs || {});
+      setInsights(full.blocks?.insights || {});
+      setBullets(full.blocks?.bullets || {});
+      setActiveBlockId(null);
+      setTimeout(() => { suppressSaveRef.current = false; }, 100);
+    }
+  };
+
+  const handleRenameCanvas = (newName) => {
+    setScope(newName);
+    // Autosave pikt de gewijzigde scope op via het debounce-effect
+  };
+
+  const handleLoadExample = () => {
+    suppressSaveRef.current = true;
+    setBullets(EXAMPLE_BULLETS);
+    setScope("Company Example — BTP 2024");
+    setDocs({});
+    setInsights({});
+    setActiveBlockId(null);
+    // Voorbeeld laadt in huidig canvas (wordt 500ms later opgeslagen)
+    setTimeout(() => { suppressSaveRef.current = false; }, 100);
   };
 
   // Handlers passed to panel
@@ -1490,15 +1568,35 @@ function AppInner() {
         <div className="flex-1 flex items-center justify-center px-8">
           <CanvasMenu
             currentName={scope}
-            currentState={currentCanvasState}
-            onLoad={handleLoadCanvas}
+            activeCanvasId={activeCanvasId}
+            canvases={canvases}
             onNew={handleNewCanvas}
-            onNameChange={setScope}
+            onSelect={handleSelectCanvas}
+            onRename={handleRenameCanvas}
+            onLoadExample={handleLoadExample}
           />
         </div>
 
-        {/* Right: lang toggle + tips + consistency check */}
-        <div className="flex items-center gap-3 px-8 shrink-0">
+        {/* Right: autosave indicator + lang + tips + consistency + logout */}
+        <div className="flex items-center gap-3 px-6 shrink-0">
+
+          {/* Autosave indicator */}
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1.5 text-[9px] text-white/40 uppercase tracking-widest">
+              <Save size={11} className="animate-pulse" /> Opslaan…
+            </span>
+          )}
+          {saveStatus === "saved" && (
+            <span className="flex items-center gap-1.5 text-[9px] text-green-400 uppercase tracking-widest">
+              <CheckCircle2 size={11} /> Opgeslagen
+            </span>
+          )}
+          {saveStatus === "error" && (
+            <span className="flex items-center gap-1.5 text-[9px] text-red-400 uppercase tracking-widest">
+              <AlertOctagon size={11} /> Opslaan mislukt
+            </span>
+          )}
+
           {/* Language toggle */}
           <button
             onClick={() => setLang(lang === "nl" ? "en" : "nl")}
@@ -1509,6 +1607,7 @@ function AppInner() {
             <span className="text-white/20">|</span>
             <span className={lang === "en" ? "text-white" : "text-white/30"}>EN</span>
           </button>
+
           <button
             onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
             className="flex items-center gap-2 text-white/60 hover:text-white border border-white/20 hover:border-white/50 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
@@ -1516,14 +1615,37 @@ function AppInner() {
           >
             <BookOpen size={14} /> {t("header.tips")}
           </button>
+
           <button
             onClick={() => setShowConsistency(true)}
             className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
           >
             <ShieldCheck size={15} /> {t("header.consistency")}
           </button>
+
+          {/* Uitloggen */}
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-white/30 hover:text-white/80 transition-colors ml-1"
+            title="Uitloggen"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
+
+      {/* Multi-tab waarschuwing */}
+      {multiTabWarning && (
+        <div className="bg-orange-500 text-white px-6 py-2 flex items-center justify-between text-xs">
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={14} />
+            De app is al geopend in een ander tabblad. Wijzigingen in dit tabblad kunnen overschreven worden.
+          </span>
+          <button onClick={() => setMultiTabWarning(false)} className="text-white/70 hover:text-white ml-4">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Dashboard */}
       <main className="p-10">
@@ -1619,6 +1741,8 @@ function AppInner() {
             docs={docs}
             insights={insights}
             bullets={bullets}
+            canvasId={activeCanvasId}
+            userId={user?.id}
             onClose={() => setActiveBlockId(null)}
             onDocsChange={handleDocsChange}
             onInsightAccept={handleInsightAccept}
@@ -1647,10 +1771,32 @@ function AppInner() {
   );
 }
 
+// ── Auth-guard wrapper ────────────────────────────────────────────────────────
+function AuthGate() {
+  const { session } = useAuth();
+
+  // Laden — sessie nog niet bepaald
+  if (session === undefined) {
+    return (
+      <div className="min-h-screen bg-[#001f33] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#00AEEF] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Niet ingelogd → toon LoginScreen
+  if (!session) return <LoginScreen />;
+
+  // Ingelogd → toon canvas app
+  return <AppInner />;
+}
+
 export default function App() {
   return (
-    <LangProvider>
-      <AppInner />
-    </LangProvider>
+    <AuthProvider>
+      <LangProvider>
+        <AuthGate />
+      </LangProvider>
+    </AuthProvider>
   );
 }
