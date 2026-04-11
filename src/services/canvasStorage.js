@@ -9,7 +9,7 @@ export async function saveCanvasUpload({ fileName, rawText, insights, blockKey, 
 
   const { data, error } = await supabase
     .from("canvas_uploads")
-    .insert({
+    .upsert({
       file_name:  fileName,
       raw_text:   rawText.slice(0, 10000),
       content:    JSON.stringify({ blockKey, insights }),
@@ -17,22 +17,23 @@ export async function saveCanvasUpload({ fileName, rawText, insights, blockKey, 
       block_key:  blockKey,
       canvas_id:  canvasId  || null,
       user_id:    userId    || null,
-    });
+    }, { onConflict: "user_id,file_name" });
 
-  if (error) console.error("Supabase upload opslag mislukt:", error.message);
+  if (error) console.error("[upload] Supabase opslag mislukt:", error.code, error.message);
   return { data, error };
 }
 
 /**
  * Laad alle canvassen van een gebruiker, gesorteerd op meest recent.
+ * Gebruik alleen kolommen die zeker bestaan: id, name, created_at.
  */
 export async function loadUserCanvases(userId) {
   if (!supabase) return { data: [], error: null };
   return supabase
     .from("canvases")
-    .select("id, name, language, updated_at, created_at")
+    .select("id, name, created_at")
     .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+    .order("created_at", { ascending: false });
 }
 
 /**
@@ -47,10 +48,9 @@ export async function createCanvas({ userId, name, language = "nl" }) {
   const { data, error } = await supabase
     .from("canvases")
     .insert({
-      user_id:  userId,
-      name:     name,
-      blocks:   {},
-      language: language,
+      user_id: userId,
+      name:    name,
+      blocks:  {},
     })
     .select()
     .single();
@@ -71,9 +71,8 @@ export async function upsertCanvas(id, { scope, docs, insights, bullets, languag
   if (!supabase) return { error: "Supabase niet geconfigureerd" };
 
   const payload = {
-    name:     scope || null,
-    blocks:   { docs, insights, bullets },
-    language: language || "nl",
+    name:   scope || null,
+    blocks: { docs, insights, bullets },
   };
 
   console.log("[autosave] updating canvas", id, payload);
