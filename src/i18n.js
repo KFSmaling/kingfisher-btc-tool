@@ -10,19 +10,19 @@ import { createContext, useContext, useState } from "react";
 const TRANSLATIONS = {
   nl: {
     // Blocks
-    "block.strategy.title":   "Strategy",
+    "block.strategy.title":   "Strategie",
     "block.strategy.sub":     "Missie · Visie · Thema's · KPIs",
-    "block.principles.title": "Guiding Principles",
+    "block.principles.title": "Richtlijnen",
     "block.principles.sub":   "Spelregels voor alle pijlers",
-    "block.customers.title":  "Customers & Services",
+    "block.customers.title":  "Klanten & Diensten",
     "block.customers.sub":    "Groepen · Journeys · Kanalen · Producten",
-    "block.processes.title":  "Processes & Organisation",
+    "block.processes.title":  "Proces & Organisatie",
     "block.processes.sub":    "Procesmodel · Org-design · Governance",
-    "block.people.title":     "People & Competencies",
+    "block.people.title":     "Mensen & Competenties",
     "block.people.sub":       "Leiderschap · Skills · Cultuur",
-    "block.technology.title": "Information & Technology",
+    "block.technology.title": "Informatie & Technologie",
     "block.technology.sub":   "Data · Applicaties · Platformen",
-    "block.portfolio.title":  "Change Portfolio",
+    "block.portfolio.title":  "Veranderprogramma",
     "block.portfolio.sub":    "Initiatieven · Waarde · Complexiteit · Eigenaar",
 
     // Sub-tabs
@@ -112,6 +112,20 @@ const TRANSLATIONS = {
     "tips.next":             "Volgende →",
     "tips.footer":           "Beijen, Heetebrij & Tigchelaar — Business Transformatie Canvas",
     "tips.panel.button":     "Tips voor dit blok",
+
+    // Consistency issues
+    "check.issue.strategy_portfolio":  "Strategie heeft meerdere thema's maar het veranderportfolio is onderontwikkeld.",
+    "check.issue.people_technology":   "Sterke technologieagenda maar People & Competencies is onderontwikkeld — uitvoeringsrisico.",
+    "check.issue.principles":          "Leidende principes zijn dun — deze zouden beslissingen in alle 4 pijlers moeten sturen.",
+    "check.issue.customers_processes": "Klantambities zijn gedefinieerd, maar het operating model om ze waar te maken ontbreekt.",
+    "check.issue.default":             "Controleer of elk leidend principe een strategische keuze direct versterkt.",
+
+    // Consistency issues
+    "check.issue.strategy_portfolio":  "Strategie heeft meerdere thema's maar het veranderprogramma is onderontwikkeld.",
+    "check.issue.people_technology":   "Sterke technologieagenda maar Mensen & Competenties is onderontwikkeld — uitvoeringsrisico.",
+    "check.issue.principles":          "Richtlijnen zijn dun — deze zouden beslissingen in alle 4 pijlers moeten sturen.",
+    "check.issue.customers_processes": "Klantambities zijn gedefinieerd, maar het operating model om ze waar te maken ontbreekt.",
+    "check.issue.default":             "Controleer of elke richtlijn een strategische keuze direct versterkt.",
 
     // AI prompt language instruction
     "ai.language":           "Respond in Dutch.",
@@ -221,6 +235,20 @@ const TRANSLATIONS = {
     "tips.next":             "Next →",
     "tips.footer":           "Beijen, Heetebrij & Tigchelaar — Business Transformation Canvas",
     "tips.panel.button":     "Tips for this block",
+
+    // Consistency issues
+    "check.issue.strategy_portfolio":  "Strategy has multiple themes but the change portfolio is underdeveloped.",
+    "check.issue.people_technology":   "Strong technology agenda but People & Competencies is underdeveloped — execution risk.",
+    "check.issue.principles":          "Guiding principles are thin — these should constrain decisions in all 4 pillars.",
+    "check.issue.customers_processes": "Customer ambitions are set, but the operating model to deliver them is not defined.",
+    "check.issue.default":             "Check that each guiding principle directly enforces a strategic choice.",
+
+    // Consistency issues
+    "check.issue.strategy_portfolio":  "Strategy has multiple themes but the change portfolio is underdeveloped.",
+    "check.issue.people_technology":   "Strong technology agenda but People & Competencies is underdeveloped — execution risk.",
+    "check.issue.principles":          "Guiding principles are thin — these should constrain decisions in all 4 pillars.",
+    "check.issue.customers_processes": "Customer ambitions are set, but the operating model to deliver them is not defined.",
+    "check.issue.default":             "Check that each guiding principle directly enforces a strategic choice.",
 
     // AI prompt language instruction
     "ai.language":           "Respond in English.",
