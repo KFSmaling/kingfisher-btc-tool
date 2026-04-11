@@ -152,17 +152,17 @@ function runConsistencyCheck(bullets) {
 
 // ── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  empty:    "border border-slate-200 bg-white",
-  uploaded: "border border-slate-200 bg-white border-l-[3px] border-l-[#1a365d]",
-  insights: "border border-slate-200 bg-white border-l-[3px] border-l-amber-400",
-  done:     "border border-slate-200 bg-white border-l-[3px] border-l-[#2c7a4b]",
+  empty:    "border-l-4 border-l-transparent border border-slate-100 bg-white",
+  uploaded: "border-l-4 border-l-[#1a365d] border border-slate-100 bg-white",
+  insights: "border-l-4 border-l-amber-400 border border-slate-100 bg-white",
+  done:     "border-l-4 border-l-[#8dc63f] border border-slate-100 bg-white",
 };
 
 const STATUS_BADGE_KEYS = {
   empty:    null,
   uploaded: { labelKey: "status.uploaded", color: "bg-[#1a365d]/10 text-[#1a365d]" },
   insights: { labelKey: "status.insights", color: "bg-amber-50 text-amber-700" },
-  done:     { labelKey: "status.done",     color: "bg-[#2c7a4b]/10 text-[#2c7a4b]" },
+  done:     { labelKey: "status.done",     color: "bg-[#8dc63f]/20 text-[#4a7c1f]" },
 };
 
 const SEV_COLOR = { high: "border-l-red-400 bg-red-50", medium: "border-l-amber-400 bg-amber-50", low: "border-l-slate-300 bg-slate-50" };
@@ -183,7 +183,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
     <div
       onClick={onClick}
       className={`
-        p-6 rounded-sm shadow-sm hover:shadow-md cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
+        p-6 rounded shadow-md hover:shadow-xl cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
         ${STATUS_COLORS[status]}
         ${isWide ? "col-span-12" : isHalf ? "col-span-6" : isQuarter ? "col-span-3" : "col-span-4"}
       `}
@@ -191,8 +191,8 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       <div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-[#001f33] font-black text-[15px] uppercase tracking-widest">{title}</h3>
-            <p className="text-xs text-slate-600 mt-0.5 tracking-wide">{sub}</p>
+            <h3 className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em] leading-tight" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
+            <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{sub}</p>
           </div>
           {badge && (
             <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shrink-0 ml-2 ${badge.color}`}>
@@ -264,7 +264,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         ) : (
           <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullets</span>
         )}
-        <ChevronRight size={18} className="text-slate-200 group-hover:text-[#2c7a4b] transition-colors" />
+        <ChevronRight size={18} className="text-slate-200 group-hover:text-[#8dc63f] transition-colors" />
       </div>
     </div>
   );
@@ -1247,18 +1247,18 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
             if (e.key === "Enter")  commitRename();
             if (e.key === "Escape") setEditingName(false);
           }}
-          className="bg-transparent border-b border-slate-400 text-[#1a365d] text-base font-semibold outline-none w-64 pb-0.5 placeholder-slate-300"
+          className="bg-transparent border-b border-white/40 text-white text-base font-semibold outline-none w-64 pb-0.5 placeholder-white/40"
           placeholder="Canvas naam…"
         />
       ) : (
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2.5 group">
           <div className="flex flex-col items-start">
-            <span className="text-[9px] text-slate-400 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
-            <span className="text-[#1a365d] font-semibold text-[15px] leading-none group-hover:text-[#2c7a4b] transition-colors">
+            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
+            <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#8dc63f] transition-colors">
               {displayName}
             </span>
           </div>
-          <svg width="10" height="6" viewBox="0 0 10 6" className={`text-slate-400 group-hover:text-[#1a365d] transition-all mt-2 ${open ? "rotate-180" : ""}`} fill="currentColor">
+          <svg width="10" height="6" viewBox="0 0 10 6" className={`text-white/40 group-hover:text-white transition-all mt-2 ${open ? "rotate-180" : ""}`} fill="currentColor">
             <path d="M0 0l5 6 5-6H0z"/>
           </svg>
         </button>
@@ -1268,7 +1268,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
       {!editingName && (
         <button
           onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
-          className="ml-2 mt-1 text-slate-300 hover:text-[#1a365d] transition-colors"
+          className="ml-2 mt-1 text-white/30 hover:text-white transition-colors"
           title={t("menu.edit.name")}
         >
           <Edit3 size={12} />
@@ -1555,19 +1555,21 @@ function AppInner() {
   const allDone = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
 
   return (
-    <div className="min-h-screen bg-white text-[#1a365d] font-sans">
+    <div className="min-h-screen bg-[#f8fafc] text-[#1a365d] font-sans">
 
       {/* Header */}
-      <header className="h-20 bg-white flex items-center justify-between shadow-sm z-20 border-b border-slate-200 shrink-0">
+      <header className="h-20 bg-[#1a365d] flex items-center justify-between z-20 border-b-2 border-[#8dc63f] shrink-0 shadow-lg">
 
         {/* Left: logo + app title */}
         <div className="flex items-center h-full shrink-0">
-          <div className="px-6 flex items-center justify-center h-full shrink-0 border-r border-slate-200">
-            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
+          <div className="px-6 flex items-center justify-center h-full shrink-0 border-r border-white/10">
+            <img src="/kf-logo-white.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center"
+              onError={e => { e.target.src = "/kf-logo.png"; }}
+            />
           </div>
-          <div className="px-6 border-r border-slate-200 h-full flex flex-col justify-center">
-            <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-[#1a365d] leading-none">Business Transformation Canvas</h1>
-            <p className="text-[10px] tracking-[0.12em] text-orange-500 mt-1.5 uppercase font-semibold">From strategy to execution</p>
+          <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
+            <h1 className="text-[15px] font-bold tracking-[0.14em] uppercase text-white leading-none">Business Transformation Canvas</h1>
+            <p className="text-[10px] tracking-[0.12em] text-[#8dc63f] mt-1.5 uppercase font-semibold">From strategy to execution</p>
           </div>
         </div>
 
@@ -1590,17 +1592,17 @@ function AppInner() {
           {/* Autosave indicator */}
           {/* Autosave indicator — klein en elegant */}
           {saveStatus === "saving" && (
-            <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-white/50 font-medium">
               <Save size={10} className="animate-pulse" /> Opslaan…
             </span>
           )}
           {saveStatus === "saved" && (
-            <span className="flex items-center gap-1 text-[10px] text-[#2c7a4b] font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-[#8dc63f] font-medium">
               <CheckCircle2 size={10} /> Opgeslagen
             </span>
           )}
           {saveStatus === "error" && (
-            <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-red-400 font-medium">
               <AlertOctagon size={10} /> Opslaan mislukt
             </span>
           )}
@@ -1608,17 +1610,17 @@ function AppInner() {
           {/* Language toggle */}
           <button
             onClick={() => setLang(lang === "nl" ? "en" : "nl")}
-            className="flex items-center gap-1.5 text-slate-500 hover:text-[#1a365d] border border-slate-200 hover:border-slate-400 px-3 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
+            className="flex items-center gap-1.5 text-white/60 hover:text-white border border-white/20 hover:border-white/40 px-3 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
             title="Switch language"
           >
-            <span className={lang === "nl" ? "text-[#1a365d] font-black" : "text-slate-300"}>NL</span>
-            <span className="text-slate-200">|</span>
-            <span className={lang === "en" ? "text-[#1a365d] font-black" : "text-slate-300"}>EN</span>
+            <span className={lang === "nl" ? "text-white font-black" : "text-white/30"}>NL</span>
+            <span className="text-white/20">|</span>
+            <span className={lang === "en" ? "text-white font-black" : "text-white/30"}>EN</span>
           </button>
 
           <button
             onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
-            className="flex items-center gap-2 text-slate-500 hover:text-[#1a365d] border border-slate-200 hover:border-slate-400 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
+            className="flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
             title={t("tips.title")}
           >
             <BookOpen size={14} /> {t("header.tips")}
@@ -1626,7 +1628,7 @@ function AppInner() {
 
           <button
             onClick={() => setShowConsistency(true)}
-            className="flex items-center gap-2 bg-[#1a365d] hover:bg-[#2c7a4b] text-white px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
+            className="flex items-center gap-2 bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
           >
             <ShieldCheck size={14} /> {t("header.consistency")}
           </button>
@@ -1634,7 +1636,7 @@ function AppInner() {
           {/* Uitloggen */}
           <button
             onClick={signOut}
-            className="flex items-center gap-1.5 text-slate-300 hover:text-slate-600 transition-colors ml-1"
+            className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors ml-1"
             title="Uitloggen"
           >
             <LogOut size={15} />
@@ -1782,8 +1784,8 @@ function AuthGate() {
   // Laden — sessie nog niet bepaald
   if (session === undefined) {
     return (
-      <div className="min-h-screen bg-[#001f33] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#1a365d] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#8dc63f] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
