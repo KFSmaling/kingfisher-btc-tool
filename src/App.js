@@ -191,11 +191,11 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       <div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-[#001f33] font-black text-sm uppercase tracking-widest">{title}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{sub}</p>
+            <h3 className="text-[#001f33] font-black text-[15px] uppercase tracking-widest">{title}</h3>
+            <p className="text-xs text-slate-600 mt-0.5 tracking-wide">{sub}</p>
           </div>
           {badge && (
-            <span className={`text-[9px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shrink-0 ml-2 ${badge.color}`}>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shrink-0 ml-2 ${badge.color}`}>
               {badge.label}
             </span>
           )}
@@ -209,18 +209,18 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
               if (stBullets.length === 0) return null;
               return (
                 <div key={st.id}>
-                  <span className={`text-[8px] font-black uppercase tracking-widest ${st.color.split(" ")[1]}`}>{t(st.labelKey)}</span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${st.color.split(" ")[1]}`}>{t(st.labelKey)}</span>
                   {stBullets.slice(0, 2).map((b, i) => (
                     <div key={i} className="flex items-start gap-2 mt-0.5">
                       <div className={`mt-1.5 w-1 h-1 rotate-45 shrink-0 ${st.dot}`} />
-                      <span className="text-[11px] text-slate-600 leading-snug">{b.text}</span>
+                      <span className="text-[13px] text-slate-700 leading-snug">{b.text}</span>
                     </div>
                   ))}
                 </div>
               );
             })}
             {(bullets || []).length === 0 && (
-              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">{t("status.empty")}</p>
+              <p className="text-xs text-slate-500 italic uppercase tracking-tight">{t("status.empty")}</p>
             )}
           </div>
         ) : (
@@ -228,11 +228,11 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
             {(bullets || []).slice(0, isWide ? 4 : 3).map((b, i) => (
               <div key={i} className="flex items-start gap-2">
                 <div className="mt-1.5 w-1.5 h-1.5 bg-orange-500 rotate-45 shrink-0" />
-                <span className="text-[12px] text-slate-600 leading-snug">{typeof b === "string" ? b : b.text}</span>
+                <span className="text-[13px] text-slate-700 leading-snug">{typeof b === "string" ? b : b.text}</span>
               </div>
             ))}
             {(bullets || []).length === 0 && (
-              <p className="text-[11px] text-slate-400 italic uppercase tracking-tight">{t("status.empty")}</p>
+              <p className="text-xs text-slate-500 italic uppercase tracking-tight">{t("status.empty")}</p>
             )}
           </div>
         )}
@@ -418,8 +418,8 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 py-4 flex flex-col items-center gap-1 text-[9px] font-black uppercase tracking-widest border-b-2 transition-all
-              ${activeTab === tab.id ? "border-orange-500 text-[#001f33] bg-white" : "border-transparent text-slate-400 hover:text-[#001f33]"}`}
+            className={`flex-1 py-4 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all
+              ${activeTab === tab.id ? "border-orange-500 text-[#001f33] bg-white" : "border-transparent text-slate-500 hover:text-[#001f33]"}`}
           >
             <tab.icon size={16} />
             {t(tab.labelKey)}
@@ -718,12 +718,12 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                                   <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
                                 </div>
                               ) : (
-                                <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
+                                <span className="text-[14px] text-slate-700 leading-snug block">{bulletText}</span>
                               )}
                               {bulletSource && editingIdx !== i && (
                                 <div className="flex items-center gap-1 mt-1">
                                   <FileText size={10} className="text-slate-300 shrink-0" />
-                                  <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
+                                  <span className="text-[10px] text-slate-500 italic truncate">{bulletSource}</span>
                                 </div>
                               )}
                             </div>
@@ -829,7 +829,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                         {bulletSource && editingIdx !== i && (
                           <div className="flex items-center gap-1 mt-1">
                             <FileText size={10} className="text-slate-300 shrink-0" />
-                            <span className="text-[9px] text-slate-400 italic truncate">{bulletSource}</span>
+                            <span className="text-[10px] text-slate-500 italic truncate">{bulletSource}</span>
                           </div>
                         )}
                       </div>
@@ -1562,12 +1562,12 @@ function AppInner() {
 
         {/* Left: logo + app title */}
         <div className="flex items-center h-full shrink-0">
-          <div className="bg-white px-4 flex items-center h-full shrink-0 border-r border-slate-200/20">
-            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
+          <div className="bg-white px-6 flex items-center justify-center h-full shrink-0 border-r border-slate-200/20">
+            <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
           </div>
           <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
-            <h1 className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/90 leading-none">Business Transformation Canvas</h1>
-            <p className="text-[9px] tracking-[0.2em] text-[#00AEEF]/70 mt-1 uppercase font-light">From strategy to execution</p>
+            <h1 className="text-[13px] font-bold tracking-[0.18em] uppercase text-white leading-none">Business Transformation Canvas</h1>
+            <p className="text-[10px] tracking-[0.15em] text-orange-400 mt-1.5 uppercase font-medium">From strategy to execution</p>
           </div>
         </div>
 
@@ -1589,7 +1589,7 @@ function AppInner() {
 
           {/* Autosave indicator */}
           {saveStatus === "saving" && (
-            <span className="flex items-center gap-1.5 text-[9px] text-white/40 uppercase tracking-widest">
+            <span className="flex items-center gap-1.5 text-[10px] text-white/60 uppercase tracking-widest">
               <Save size={11} className="animate-pulse" /> Opslaan…
             </span>
           )}
@@ -1607,7 +1607,7 @@ function AppInner() {
           {/* Language toggle */}
           <button
             onClick={() => setLang(lang === "nl" ? "en" : "nl")}
-            className="flex items-center gap-1.5 text-white/50 hover:text-white border border-white/20 hover:border-white/40 px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+            className="flex items-center gap-1.5 text-white/70 hover:text-white border border-white/30 hover:border-white/60 px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
             title="Switch language"
           >
             <span className={lang === "nl" ? "text-white" : "text-white/30"}>NL</span>
@@ -1617,7 +1617,7 @@ function AppInner() {
 
           <button
             onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
-            className="flex items-center gap-2 text-white/60 hover:text-white border border-white/20 hover:border-white/50 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
+            className="flex items-center gap-2 text-white/75 hover:text-white border border-white/30 hover:border-white/60 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
             title={t("tips.title")}
           >
             <BookOpen size={14} /> {t("header.tips")}
@@ -1633,7 +1633,7 @@ function AppInner() {
           {/* Uitloggen */}
           <button
             onClick={signOut}
-            className="flex items-center gap-1.5 text-white/30 hover:text-white/80 transition-colors ml-1"
+            className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors ml-1"
             title="Uitloggen"
           >
             <LogOut size={16} />

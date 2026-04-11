@@ -50,12 +50,12 @@ export default function LoginScreen() {
 
       {/* Header — zelfde stijl als app */}
       <header className="h-20 bg-[#001f33] text-white flex items-center shadow-xl border-b-2 border-[#00AEEF]/50">
-        <div className="bg-white px-4 flex items-center h-full border-r border-slate-200/20">
-          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-9 object-contain" />
+        <div className="bg-white px-6 flex items-center justify-center h-full border-r border-slate-200/20">
+          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
         </div>
         <div className="px-6">
-          <h1 className="text-[11px] font-bold tracking-[0.18em] uppercase text-white/90 leading-none">Business Transformation Canvas</h1>
-          <p className="text-[9px] tracking-[0.2em] text-[#00AEEF]/70 mt-1 uppercase font-light">From strategy to execution</p>
+          <h1 className="text-[13px] font-bold tracking-[0.18em] uppercase text-white leading-none">Business Transformation Canvas</h1>
+          <p className="text-[10px] tracking-[0.15em] text-orange-400 mt-1.5 uppercase font-medium">From strategy to execution</p>
         </div>
       </header>
 
