@@ -937,7 +937,7 @@ const TIPS_DATA = {
       ],
     },
     strategy: {
-      title: "Strategy", icon: null,
+      title: "Strategie", icon: null,
       intro: "De strategie vormt het fundament van het hele canvas. Alles wat volgt moet hieruit logisch afleiden.",
       tips: [
         { kop: "Maak het inspirerend", tekst: "Een strategie moet vooral motiveren en de neuzen dezelfde kant op krijgen. Kies krachtige taal boven management-jargon." },
@@ -946,8 +946,8 @@ const TIPS_DATA = {
       ],
     },
     principles: {
-      title: "Guiding Principles", icon: null,
-      intro: "Leidende principes zijn de spelregels die alle keuzes in de vier pijlers sturen en begrenzen.",
+      title: "Richtlijnen", icon: null,
+      intro: "Richtlijnen zijn de spelregels die alle keuzes in de vier pijlers sturen en begrenzen.",
       tips: [
         { kop: "'Tight-loose' karakter", tekst: "Bepaal per principe of het strak (verplichtend voor synergie) of los (vrijheidsgraden voor autonomie) moet zijn." },
         { kop: "Formuleer implicaties", tekst: "Een principe is pas duidelijk als ook de consequenties zijn benoemd: 'wat betekent dit concreet voor ons?'" },
@@ -955,7 +955,7 @@ const TIPS_DATA = {
       ],
     },
     customers: {
-      title: "Customers & Services", icon: null,
+      title: "Klanten & Diensten", icon: null,
       intro: "Wie bedien je, hoe bereik je ze, en wat lever je hen? Dit blok verbindt de strategie met de dagelijkse klantbeleving.",
       tips: [
         { kop: "Life events als triggers", tekst: "Denk bij klantbehoeften aan gebeurtenissen in het leven van de klant (zoals verhuizen of trouwen) om relevante proposities te ontwerpen." },
@@ -964,7 +964,7 @@ const TIPS_DATA = {
       ],
     },
     processes: {
-      title: "Processes & Organisation", icon: null,
+      title: "Proces & Organisatie", icon: null,
       intro: "Hoe richt je de organisatie en processen in om de klantambities en strategie daadwerkelijk waar te maken?",
       tips: [
         { kop: "Waardestromen als basis", tekst: "Richt de organisatie in langs de weg waarop waarde voor de klant wordt gecreëerd, in plaats van puur functionele afdelingen." },
@@ -973,7 +973,7 @@ const TIPS_DATA = {
       ],
     },
     people: {
-      title: "People & Competencies", icon: null,
+      title: "Mensen & Competenties", icon: null,
       intro: "Transformatie staat of valt met mensen. Wat vraagt de nieuwe koers van leiderschap, teams en cultuur?",
       tips: [
         { kop: "Maak de zachte kant 'hard'", tekst: "Benoem expliciet welke kennis, vaardigheden en leiderschapsstijl nodig zijn om de strategie te laten slagen. Maak het concreet en meetbaar." },
@@ -982,7 +982,7 @@ const TIPS_DATA = {
       ],
     },
     technology: {
-      title: "Information & Technology", icon: null,
+      title: "Informatie & Technologie", icon: null,
       intro: "Technologie en data als versneller van de transformatie, niet als beperkende factor.",
       tips: [
         { kop: "IT als versneller", tekst: "Zie technologie niet als een kostenpost of 'lastig domein', maar als een inspiratiebron en enabler voor nieuwe businessmodellen." },
@@ -991,8 +991,8 @@ const TIPS_DATA = {
       ],
     },
     portfolio: {
-      title: "Change Portfolio", icon: null,
-      intro: "Het veranderportfolio vertaalt de ambities naar concrete initiatieven met prioriteit, fasering en eigenaarschap.",
+      title: "Veranderprogramma", icon: null,
+      intro: "Het veranderprogramma vertaalt de ambities naar concrete initiatieven met prioriteit, fasering en eigenaarschap.",
       tips: [
         { kop: "Eet de olifant in stukjes", tekst: "Cluster losse veranderacties tot behapbare initiatieven met een logische fasering. Groot denken, klein beginnen." },
         { kop: "Objectieve prioritering", tekst: "Voorkom dat de manager die het hardst roept altijd voorrang krijgt. Weeg initiatieven af op businesswaarde én haalbaarheid." },
