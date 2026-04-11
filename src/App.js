@@ -20,7 +20,7 @@ import * as pdfjsLib from "pdfjs-dist";
 // Subtabs en blocks zijn ID-gebaseerd; labels worden via t() opgehaald
 const PILLAR_SUBTABS = [
   { id: "current", labelKey: "subtab.current", dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
-  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#00AEEF]",     color: "border-[#00AEEF] text-[#00AEEF]"    },
+  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#1a365d]",     color: "border-[#1a365d] text-[#1a365d]"    },
   { id: "change",  labelKey: "subtab.change",  dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
@@ -151,22 +151,26 @@ function runConsistencyCheck(bullets) {
 }
 
 // ── Status helpers ───────────────────────────────────────────────────────────
+// Huisstijl kleuren
+const KF_BLUE  = "#1a365d";
+const KF_GREEN = "#2c7a4b";
+
 const STATUS_COLORS = {
-  empty:    "border-slate-200 bg-white",
-  uploaded: "border-[#00AEEF] border-t-4 bg-white",
-  insights: "border-orange-400 border-t-4 bg-white",
-  done:     "border-[#00AEEF] border-t-4 bg-white",
+  empty:    "border border-slate-200 bg-white",
+  uploaded: "border border-slate-200 bg-white border-l-[3px] border-l-[#1a365d]",
+  insights: "border border-slate-200 bg-white border-l-[3px] border-l-amber-400",
+  done:     "border border-slate-200 bg-white border-l-[3px] border-l-[#2c7a4b]",
 };
 
 const STATUS_BADGE_KEYS = {
   empty:    null,
-  uploaded: { labelKey: "status.uploaded", color: "bg-blue-100 text-blue-700" },
-  insights: { labelKey: "status.insights", color: "bg-orange-100 text-orange-700" },
-  done:     { labelKey: "status.done",     color: "bg-green-100 text-green-700" },
+  uploaded: { labelKey: "status.uploaded", color: "bg-[#1a365d]/10 text-[#1a365d]" },
+  insights: { labelKey: "status.insights", color: "bg-amber-50 text-amber-700" },
+  done:     { labelKey: "status.done",     color: "bg-[#2c7a4b]/10 text-[#2c7a4b]" },
 };
 
-const SEV_COLOR = { high: "border-l-red-500 bg-red-50", medium: "border-l-orange-400 bg-orange-50", low: "border-l-slate-300 bg-slate-50" };
-const SEV_TEXT  = { high: "text-red-600", medium: "text-orange-600", low: "text-slate-500" };
+const SEV_COLOR = { high: "border-l-red-400 bg-red-50", medium: "border-l-amber-400 bg-amber-50", low: "border-l-slate-300 bg-slate-50" };
+const SEV_TEXT  = { high: "text-red-600", medium: "text-amber-700", low: "text-slate-500" };
 
 // ── Block Card (dashboard) ───────────────────────────────────────────────────
 function BlockCard({ block, status, bullets, insightCount, onClick }) {
@@ -183,7 +187,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
     <div
       onClick={onClick}
       className={`
-        p-6 border rounded-sm shadow-sm hover:shadow-xl cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
+        p-6 rounded-sm shadow-sm hover:shadow-md cursor-pointer transition-all group relative flex flex-col justify-between min-h-[160px]
         ${STATUS_COLORS[status]}
         ${isWide ? "col-span-12" : isHalf ? "col-span-6" : isQuarter ? "col-span-3" : "col-span-4"}
       `}
@@ -264,7 +268,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         ) : (
           <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullets</span>
         )}
-        <ChevronRight size={18} className="text-slate-200 group-hover:text-[#00AEEF] transition-colors" />
+        <ChevronRight size={18} className="text-slate-200 group-hover:text-[#2c7a4b] transition-colors" />
       </div>
     </div>
   );
@@ -392,16 +396,16 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
   return (
     <aside className="fixed right-0 top-0 bottom-0 w-[520px] bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.12)] z-30 flex flex-col">
       {/* Panel header */}
-      <div className="px-8 py-5 bg-[#001f33] flex items-center justify-between shrink-0">
+      <div className="px-8 py-5 bg-[#1a365d] flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-white font-black text-lg uppercase tracking-tight">{t(block.titleKey)}</h2>
-          <p className="text-[#00AEEF] text-[10px] uppercase tracking-widest mt-0.5">{t(block.subKey)}</p>
+          <p className="text-[#1a365d] text-[10px] uppercase tracking-widest mt-0.5">{t(block.subKey)}</p>
         </div>
         <div className="flex items-center gap-3">
           {TIPS_DATA.nl[block.id] && (
             <button
               onClick={() => onShowTips(block.id)}
-              className="flex items-center gap-1.5 text-white/40 hover:text-[#00AEEF] transition-colors"
+              className="flex items-center gap-1.5 text-white/40 hover:text-[#2c7a4b] transition-colors"
               title={t("tips.panel.button")}
             >
               <BookOpen size={15} />
@@ -438,7 +442,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               className={`border-2 border-dashed rounded-sm p-12 text-center transition-all cursor-pointer group
                 ${uploadPhase === "validating" ? "border-violet-300 bg-violet-50" :
                   uploadPhase === "extracting" ? "border-orange-300 bg-orange-50" :
-                  "border-slate-200 bg-slate-50 hover:border-[#00AEEF] hover:bg-blue-50"}`}
+                  "border-slate-200 bg-slate-50 hover:border-[#1a365d] hover:bg-blue-50"}`}
             >
               {uploadPhase === "validating" && (
                 <>
@@ -456,7 +460,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               )}
               {!uploadPhase && (
                 <>
-                  <Upload size={40} className="mx-auto mb-4 text-slate-300 group-hover:text-[#00AEEF]" />
+                  <Upload size={40} className="mx-auto mb-4 text-slate-300 group-hover:text-[#2c7a4b]" />
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("upload.cta")}</p>
                   <p className="text-[9px] text-slate-300 mt-1">{t("upload.formats")}</p>
                 </>
@@ -512,7 +516,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">{t("upload.docs.label")}</p>
                 {blockDocs.map((doc, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-sm text-xs text-slate-700">
-                    <FileText size={14} className="text-[#00AEEF] shrink-0" />
+                    <FileText size={14} className="text-[#1a365d] shrink-0" />
                     {doc}
                   </div>
                 ))}
@@ -537,7 +541,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               <div className="text-center py-16">
                 <Zap size={32} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("extract.empty")}</p>
-                <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">{t("extract.back")}</button>
+                <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#1a365d] font-bold hover:underline">{t("extract.back")}</button>
               </div>
             )}
 
@@ -604,7 +608,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               <div className="text-center py-16">
                 <CheckSquare size={32} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("review.empty")}</p>
-                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#00AEEF] font-bold hover:underline">{t("review.back")}</button>
+                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#1a365d] font-bold hover:underline">{t("review.back")}</button>
               </div>
             )}
             {acceptedInsights.length > 0 && (
@@ -619,7 +623,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     });
                   }}
-                  className="text-[9px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
+                  className="text-[9px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
                   {t("review.all.to.canvas")}
                 </button>
@@ -637,7 +641,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                   value={editedInsightTexts[ins.id] ?? ins.text}
                   onChange={e => setEditedInsightTexts(prev => ({ ...prev, [ins.id]: e.target.value }))}
                   rows={3}
-                  className="w-full text-sm text-slate-800 leading-relaxed border border-slate-200 rounded-sm p-3 resize-none focus:outline-none focus:border-[#00AEEF] bg-slate-50 transition-colors"
+                  className="w-full text-sm text-slate-800 leading-relaxed border border-slate-200 rounded-sm p-3 resize-none focus:outline-none focus:border-[#1a365d] bg-slate-50 transition-colors"
                 />
                 <div className="flex gap-2">
                   <button
@@ -645,7 +649,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     }}
-                    className="flex-1 py-2.5 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
+                    className="flex-1 py-2.5 bg-[#1a365d] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#2c7a4b] transition-colors"
                   >
                     {t("review.to.canvas")}
                   </button>
@@ -708,7 +712,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                                     autoFocus
                                     value={editVal}
                                     onChange={e => setEditVal(e.target.value)}
-                                    className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
+                                    className="flex-1 text-sm border-b border-[#1a365d] outline-none text-slate-800 bg-transparent"
                                     onKeyDown={e => {
                                       if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource, subtab: activeSubTab }, i, true); setEditingIdx(null); }
                                       if (e.key === "Escape") setEditingIdx(null);
@@ -732,14 +736,14 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                               <select
                                 value={activeSubTab}
                                 onChange={e => onMoveToBullets(block.id, { text: bulletText, source: bulletSource, subtab: e.target.value }, i, true)}
-                                className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#00AEEF] cursor-pointer"
+                                className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#1a365d] cursor-pointer"
                                 title={t("canvas.move.to")}
                               >
                                 {(block.subTabs || PILLAR_SUBTABS).map(s => (
                                   <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{t(s.labelKey)}</option>
                                 ))}
                               </select>
-                              <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
+                              <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#2c7a4b]"><Edit3 size={14} /></button>
                               <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
                           </div>
@@ -747,7 +751,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       })}
 
                       {addingBullet && (
-                        <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
+                        <div className="flex items-center gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
                           <div className={`w-2 h-2 rotate-45 shrink-0 ${st.dot}`} />
                           <input
                             autoFocus
@@ -778,7 +782,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
 
                       <button
                         onClick={() => setAddingBullet(true)}
-                        className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
+                        className="flex items-center gap-1 text-[10px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
                       >
                         <Plus size={14} /> {t("canvas.add.manual")}
                       </button>
@@ -794,7 +798,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                   {blockBullets.length < 7 && (
                     <button
                       onClick={() => setAddingBullet(true)}
-                      className="flex items-center gap-1 text-[10px] font-black text-[#00AEEF] hover:text-orange-500 uppercase tracking-widest transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors"
                     >
                       <Plus size={14} /> {t("canvas.add.manual")}
                     </button>
@@ -814,7 +818,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                               autoFocus
                               value={editVal}
                               onChange={e => setEditVal(e.target.value)}
-                              className="flex-1 text-sm border-b border-[#00AEEF] outline-none text-slate-800 bg-transparent"
+                              className="flex-1 text-sm border-b border-[#1a365d] outline-none text-slate-800 bg-transparent"
                               onKeyDown={e => {
                                 if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
                                 if (e.key === "Escape") setEditingIdx(null);
@@ -834,7 +838,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                         )}
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#00AEEF]"><Edit3 size={14} /></button>
+                        <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#2c7a4b]"><Edit3 size={14} /></button>
                         <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
                       </div>
                     </div>
@@ -842,7 +846,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                 })}
 
                 {addingBullet && (
-                  <div className="flex items-center gap-2 p-3 border border-dashed border-[#00AEEF] rounded-sm">
+                  <div className="flex items-center gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
                     <div className="w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
                     <input
                       autoFocus
@@ -888,7 +892,7 @@ function ConsistencyModal({ bullets, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-[#001f33]/95 backdrop-blur-sm z-50 flex items-center justify-center p-8">
-      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#00AEEF] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#1a365d] max-h-[90vh] overflow-y-auto">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-[#001f33] font-black text-2xl uppercase tracking-tighter">{t("consistency.title")}</h2>
@@ -1116,13 +1120,13 @@ function TipsModal({ onClose, initialSection }) {
 
   return (
     <div className="fixed inset-0 bg-[#001f33]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#00AEEF] flex overflow-hidden" style={{ height: "80vh" }}>
+      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#1a365d] flex overflow-hidden" style={{ height: "80vh" }}>
 
         {/* Left nav */}
         <div className="w-52 bg-[#001f33] flex flex-col shrink-0">
           <div className="px-5 py-5 border-b border-white/10">
             <div className="flex items-center gap-2 mb-0.5">
-              <BookOpen size={14} className="text-[#00AEEF]" />
+              <BookOpen size={14} className="text-[#1a365d]" />
               <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">{t("tips.title")}</span>
             </div>
             <p className="text-[9px] text-white/30 leading-snug mt-1">{t("tips.subtitle")}</p>
@@ -1137,11 +1141,11 @@ function TipsModal({ onClose, initialSection }) {
                   onClick={() => setActiveSection(item.key)}
                   className={`w-full text-left px-5 py-2.5 text-xs transition-all flex items-center gap-2
                     ${isActive
-                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[#00AEEF]"
+                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[#1a365d]"
                       : "text-white/50 hover:text-white/80 hover:bg-white/5"}
                     ${isFirst ? "mb-1" : ""}`}
                 >
-                  {isFirst && <Lightbulb size={12} className={isActive ? "text-[#00AEEF]" : "text-white/30"} />}
+                  {isFirst && <Lightbulb size={12} className={isActive ? "text-[#1a365d]" : "text-white/30"} />}
                   {!isFirst && <div className={`w-1.5 h-1.5 rotate-45 shrink-0 ${isActive ? "bg-orange-400" : "bg-white/20"}`} />}
                   <span className={isFirst ? "text-[10px] uppercase tracking-wider" : ""}>{item.label}</span>
                 </button>
@@ -1171,7 +1175,7 @@ function TipsModal({ onClose, initialSection }) {
           {/* Tips list */}
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
             {section.tips.map((tip, i) => (
-              <div key={i} className="flex gap-4 p-5 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#00AEEF]/30 transition-colors">
+              <div key={i} className="flex gap-4 p-5 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#1a365d]/30 transition-colors">
                 <div className="shrink-0 mt-1">
                   <div className="w-2 h-2 bg-orange-500 rotate-45" />
                 </div>
@@ -1247,18 +1251,18 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
             if (e.key === "Enter")  commitRename();
             if (e.key === "Escape") setEditingName(false);
           }}
-          className="bg-transparent border-b border-white/60 text-white text-base font-semibold outline-none w-64 pb-0.5 placeholder-white/40"
+          className="bg-transparent border-b border-slate-400 text-[#1a365d] text-base font-semibold outline-none w-64 pb-0.5 placeholder-slate-300"
           placeholder="Canvas naam…"
         />
       ) : (
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2.5 group">
           <div className="flex flex-col items-start">
-            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
-            <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#00AEEF] transition-colors">
+            <span className="text-[9px] text-slate-400 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
+            <span className="text-[#1a365d] font-semibold text-[15px] leading-none group-hover:text-[#2c7a4b] transition-colors">
               {displayName}
             </span>
           </div>
-          <svg width="10" height="6" viewBox="0 0 10 6" className={`text-white/40 group-hover:text-[#00AEEF] transition-all mt-2 ${open ? "rotate-180" : ""}`} fill="currentColor">
+          <svg width="10" height="6" viewBox="0 0 10 6" className={`text-slate-400 group-hover:text-[#1a365d] transition-all mt-2 ${open ? "rotate-180" : ""}`} fill="currentColor">
             <path d="M0 0l5 6 5-6H0z"/>
           </svg>
         </button>
@@ -1268,7 +1272,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
       {!editingName && (
         <button
           onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
-          className="ml-2 mt-1 text-white/20 hover:text-white/70 transition-colors"
+          className="ml-2 mt-1 text-slate-300 hover:text-[#1a365d] transition-colors"
           title={t("menu.edit.name")}
         >
           <Edit3 size={12} />
@@ -1285,9 +1289,9 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
               {/* Nieuw canvas */}
               <button
                 onClick={() => { onNew(); setOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#00AEEF] transition-colors"
+                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#1a365d] transition-colors"
               >
-                <Plus size={13} className="text-[#00AEEF] shrink-0" />
+                <Plus size={13} className="text-[#1a365d] shrink-0" />
                 <span className="font-semibold">{t("menu.new.canvas")}</span>
               </button>
               {/* Voorbeeld laden */}
@@ -1313,7 +1317,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
                       key={c.id}
                       onClick={() => { onSelect(c); setOpen(false); }}
                       className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
-                        ${c.id === activeCanvasId ? "bg-blue-50 border border-blue-200" : "hover:bg-slate-50"}`}
+                        ${c.id === activeCanvasId ? "bg-[#1a365d]/5 border border-[#1a365d]/20" : "hover:bg-slate-50"}`}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-slate-700 truncate">{c.name || t("menu.unnamed")}</p>
@@ -1555,19 +1559,19 @@ function AppInner() {
   const allDone = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
 
   return (
-    <div className="min-h-screen bg-[#F4F7F9] text-[#1A365D] font-sans">
+    <div className="min-h-screen bg-white text-[#1a365d] font-sans">
 
       {/* Header */}
-      <header className="h-20 bg-[#001f33] text-white flex items-center justify-between shadow-xl z-20 border-b-2 border-[#00AEEF]/50 shrink-0">
+      <header className="h-20 bg-white flex items-center justify-between shadow-sm z-20 border-b border-slate-200 shrink-0">
 
         {/* Left: logo + app title */}
         <div className="flex items-center h-full shrink-0">
-          <div className="bg-white px-6 flex items-center justify-center h-full shrink-0 border-r border-slate-200/20">
+          <div className="px-6 flex items-center justify-center h-full shrink-0 border-r border-slate-200">
             <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
           </div>
-          <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
-            <h1 className="text-[13px] font-bold tracking-[0.18em] uppercase text-white leading-none">Business Transformation Canvas</h1>
-            <p className="text-[10px] tracking-[0.15em] text-orange-400 mt-1.5 uppercase font-medium">From strategy to execution</p>
+          <div className="px-6 border-r border-slate-200 h-full flex flex-col justify-center">
+            <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-[#1a365d] leading-none">Business Transformation Canvas</h1>
+            <p className="text-[10px] tracking-[0.12em] text-orange-500 mt-1.5 uppercase font-semibold">From strategy to execution</p>
           </div>
         </div>
 
@@ -1588,36 +1592,37 @@ function AppInner() {
         <div className="flex items-center gap-3 px-6 shrink-0">
 
           {/* Autosave indicator */}
+          {/* Autosave indicator — klein en elegant */}
           {saveStatus === "saving" && (
-            <span className="flex items-center gap-1.5 text-[10px] text-white/60 uppercase tracking-widest">
-              <Save size={11} className="animate-pulse" /> Opslaan…
+            <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+              <Save size={10} className="animate-pulse" /> Opslaan…
             </span>
           )}
           {saveStatus === "saved" && (
-            <span className="flex items-center gap-1.5 text-[9px] text-green-400 uppercase tracking-widest">
-              <CheckCircle2 size={11} /> Opgeslagen
+            <span className="flex items-center gap-1 text-[10px] text-[#2c7a4b] font-medium">
+              <CheckCircle2 size={10} /> Opgeslagen
             </span>
           )}
           {saveStatus === "error" && (
-            <span className="flex items-center gap-1.5 text-[9px] text-red-400 uppercase tracking-widest">
-              <AlertOctagon size={11} /> Opslaan mislukt
+            <span className="flex items-center gap-1 text-[10px] text-red-500 font-medium">
+              <AlertOctagon size={10} /> Opslaan mislukt
             </span>
           )}
 
           {/* Language toggle */}
           <button
             onClick={() => setLang(lang === "nl" ? "en" : "nl")}
-            className="flex items-center gap-1.5 text-white/70 hover:text-white border border-white/30 hover:border-white/60 px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-[#1a365d] border border-slate-200 hover:border-slate-400 px-3 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
             title="Switch language"
           >
-            <span className={lang === "nl" ? "text-white" : "text-white/30"}>NL</span>
-            <span className="text-white/20">|</span>
-            <span className={lang === "en" ? "text-white" : "text-white/30"}>EN</span>
+            <span className={lang === "nl" ? "text-[#1a365d] font-black" : "text-slate-300"}>NL</span>
+            <span className="text-slate-200">|</span>
+            <span className={lang === "en" ? "text-[#1a365d] font-black" : "text-slate-300"}>EN</span>
           </button>
 
           <button
             onClick={() => { setTipsSection("algemeen"); setShowTips(true); }}
-            className="flex items-center gap-2 text-white/75 hover:text-white border border-white/30 hover:border-white/60 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
+            className="flex items-center gap-2 text-slate-500 hover:text-[#1a365d] border border-slate-200 hover:border-slate-400 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
             title={t("tips.title")}
           >
             <BookOpen size={14} /> {t("header.tips")}
@@ -1625,30 +1630,30 @@ function AppInner() {
 
           <button
             onClick={() => setShowConsistency(true)}
-            className="flex items-center gap-2 bg-[#00AEEF] hover:bg-orange-500 text-white px-5 py-2.5 rounded-sm font-black text-[10px] shadow-lg transition-all uppercase tracking-widest"
+            className="flex items-center gap-2 bg-[#1a365d] hover:bg-[#2c7a4b] text-white px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
           >
-            <ShieldCheck size={15} /> {t("header.consistency")}
+            <ShieldCheck size={14} /> {t("header.consistency")}
           </button>
 
           {/* Uitloggen */}
           <button
             onClick={signOut}
-            className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors ml-1"
+            className="flex items-center gap-1.5 text-slate-300 hover:text-slate-600 transition-colors ml-1"
             title="Uitloggen"
           >
-            <LogOut size={16} />
+            <LogOut size={15} />
           </button>
         </div>
       </header>
 
       {/* Multi-tab waarschuwing */}
       {multiTabWarning && (
-        <div className="bg-orange-500 text-white px-6 py-2 flex items-center justify-between text-xs">
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-2 flex items-center justify-between text-xs">
           <span className="flex items-center gap-2">
             <AlertTriangle size={14} />
             De app is al geopend in een ander tabblad. Wijzigingen in dit tabblad kunnen overschreven worden.
           </span>
-          <button onClick={() => setMultiTabWarning(false)} className="text-white/70 hover:text-white ml-4">
+          <button onClick={() => setMultiTabWarning(false)} className="text-amber-500 hover:text-amber-800 ml-4">
             <X size={14} />
           </button>
         </div>
@@ -1725,7 +1730,7 @@ function AppInner() {
           {allDone && (
             <button
               onClick={() => setShowConsistency(true)}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-sm text-xs font-black uppercase tracking-widest shadow-md transition-colors"
+              className="flex items-center gap-2 bg-[#2c7a4b] hover:bg-[#1a365d] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
             >
               <ShieldCheck size={14} /> {t("progress.all.done")}
             </button>
@@ -1786,7 +1791,7 @@ function AuthGate() {
   if (session === undefined) {
     return (
       <div className="min-h-screen bg-[#001f33] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#00AEEF] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#1a365d] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

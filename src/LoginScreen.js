@@ -49,13 +49,13 @@ export default function LoginScreen() {
     <div className="min-h-screen bg-[#F4F7F9] flex flex-col">
 
       {/* Header — zelfde stijl als app */}
-      <header className="h-20 bg-[#001f33] text-white flex items-center shadow-xl border-b-2 border-[#00AEEF]/50">
-        <div className="bg-white px-6 flex items-center justify-center h-full border-r border-slate-200/20">
+      <header className="h-20 bg-white flex items-center shadow-sm border-b border-slate-200">
+        <div className="px-6 flex items-center justify-center h-full border-r border-slate-200">
           <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
         </div>
         <div className="px-6">
-          <h1 className="text-[13px] font-bold tracking-[0.18em] uppercase text-white leading-none">Business Transformation Canvas</h1>
-          <p className="text-[10px] tracking-[0.15em] text-orange-400 mt-1.5 uppercase font-medium">From strategy to execution</p>
+          <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-[#1a365d] leading-none">Business Transformation Canvas</h1>
+          <p className="text-[10px] tracking-[0.12em] text-orange-500 mt-1.5 uppercase font-semibold">From strategy to execution</p>
         </div>
       </header>
 
@@ -64,10 +64,10 @@ export default function LoginScreen() {
         <div className="w-full max-w-sm">
 
           {/* Card */}
-          <div className="bg-white rounded-sm shadow-xl border-t-4 border-[#00AEEF] overflow-hidden">
+          <div className="bg-white rounded-sm shadow-lg border-t-4 border-[#1a365d] overflow-hidden">
 
             {/* Card header */}
-            <div className="px-8 py-7 bg-[#001f33]">
+            <div className="px-8 py-7 bg-[#1a365d]">
               <h2 className="text-white font-black text-base uppercase tracking-widest">
                 {mode === "login" ? "Inloggen" : "Account aanmaken"}
               </h2>
@@ -124,7 +124,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[#001f33] hover:bg-[#00AEEF] text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
               >
                 {loading ? "Bezig…" : mode === "login" ? "Inloggen" : "Account aanmaken"}
               </button>
@@ -138,7 +138,7 @@ export default function LoginScreen() {
                   Nog geen account?{" "}
                   <button
                     onClick={() => { setMode("register"); setError(null); setInfo(null); }}
-                    className="text-[#00AEEF] font-bold hover:text-orange-500 transition-colors"
+                    className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors"
                   >
                     Aanmaken
                   </button>
@@ -148,7 +148,7 @@ export default function LoginScreen() {
                   Al een account?{" "}
                   <button
                     onClick={() => { setMode("login"); setError(null); setInfo(null); }}
-                    className="text-[#00AEEF] font-bold hover:text-orange-500 transition-colors"
+                    className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors"
                   >
                     Inloggen
                   </button>
