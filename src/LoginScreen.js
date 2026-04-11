@@ -19,16 +19,27 @@ export default function LoginScreen() {
     try {
       if (mode === "login") {
         const { error } = await signIn({ email, password });
-        if (error) setError(error.message);
+        if (error) {
+          if (error.message.includes("Email not confirmed")) {
+            setError("Je e-mail is nog niet bevestigd. Controleer je inbox en klik op de bevestigingslink.");
+          } else if (error.message.includes("Invalid login credentials")) {
+            setError("E-mailadres of wachtwoord is onjuist.");
+          } else {
+            setError(error.message);
+          }
+        }
       } else {
         const { error } = await signUp({ email, password });
         if (error) {
           setError(error.message);
         } else {
-          setInfo("Registratie gelukt! Controleer je e-mail om je account te bevestigen.");
+          setInfo("Account aangemaakt! Je kunt nu direct inloggen.");
           setMode("login");
         }
       }
+    } catch (err) {
+      setError("Er is iets misgegaan. Controleer je internetverbinding en probeer opnieuw.");
+      console.error("Auth fout:", err);
     } finally {
       setLoading(false);
     }

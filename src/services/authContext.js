@@ -26,13 +26,20 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = ({ email, password }) =>
-    supabase.auth.signInWithPassword({ email, password });
+  const signIn = ({ email, password }) => {
+    if (!supabase) return Promise.resolve({ error: { message: "Supabase is niet geconfigureerd." } });
+    return supabase.auth.signInWithPassword({ email, password });
+  };
 
-  const signUp = ({ email, password }) =>
-    supabase.auth.signUp({ email, password });
+  const signUp = ({ email, password }) => {
+    if (!supabase) return Promise.resolve({ error: { message: "Supabase is niet geconfigureerd." } });
+    return supabase.auth.signUp({ email, password });
+  };
 
-  const signOut = () => supabase.auth.signOut();
+  const signOut = () => {
+    if (!supabase) return Promise.resolve();
+    return supabase.auth.signOut();
+  };
 
   return (
     <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, signOut }}>
