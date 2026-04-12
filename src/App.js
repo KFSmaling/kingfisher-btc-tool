@@ -4,7 +4,7 @@ import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
-  SlidersHorizontal, User, Building2, Layers, Users, Tag, ChevronLeft
+  SlidersHorizontal, User, Building2, Layers, Users, Tag
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
