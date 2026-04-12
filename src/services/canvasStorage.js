@@ -31,9 +31,9 @@ export async function loadUserCanvases(userId) {
   if (!supabase) return { data: [], error: null };
   return supabase
     .from("canvases")
-    .select("id, name, created_at")
+    .select("id, name, created_at, updated_at")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false, nullsFirst: false });
 }
 
 /**
@@ -79,6 +79,7 @@ export async function upsertCanvas(id, { scope, docs, insights, bullets, languag
     transformation_type: meta.transformation_type  || null,
     org_size:            meta.org_size             || null,
     project_status:      meta.project_status       || null,
+    project_description: meta.project_description  || null,
   };
 
   const { data, error } = await supabase

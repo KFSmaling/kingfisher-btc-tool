@@ -757,14 +757,15 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       {addingBullet && (
                         <div className="flex items-center gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
                           <div className={`w-2 h-2 rotate-45 shrink-0 ${st.dot}`} />
-                          <input
+                          <textarea
                             autoFocus
                             value={newBullet}
                             onChange={e => setNewBullet(e.target.value)}
                             placeholder={`${t("canvas.add.manual")} ${t(st.labelKey).toLowerCase()}…`}
-                            className="flex-1 text-sm outline-none text-slate-800"
+                            rows={3}
+                            className="flex-1 text-sm outline-none text-slate-800 resize-none leading-relaxed"
                             onKeyDown={e => {
-                              if (e.key === "Enter" && newBullet.trim()) {
+                              if (e.key === "Enter" && e.metaKey && newBullet.trim()) {
                                 onAddBullet(block.id, newBullet.trim(), activeSubTab);
                                 setNewBullet("");
                                 setAddingBullet(false);
@@ -817,19 +818,22 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       <div className="mt-1.5 w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
                       <div className="flex-1 min-w-0">
                         {editingIdx === i ? (
-                          <div className="flex gap-2">
-                            <input
+                          <div className="flex flex-col gap-2 w-full">
+                            <textarea
                               autoFocus
                               value={editVal}
                               onChange={e => setEditVal(e.target.value)}
-                              className="flex-1 text-sm border-b border-[#1a365d] outline-none text-slate-800 bg-transparent"
+                              rows={3}
+                              className="w-full text-sm border border-[#1a365d] rounded-sm outline-none text-slate-800 bg-slate-50 p-2 resize-none leading-relaxed"
                               onKeyDown={e => {
-                                if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
+                                if (e.key === "Enter" && e.metaKey) { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
                                 if (e.key === "Escape") setEditingIdx(null);
                               }}
                             />
-                            <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] text-green-600 font-bold">✓</button>
-                            <button onClick={() => setEditingIdx(null)} className="text-[10px] text-slate-400 font-bold">✕</button>
+                            <div className="flex gap-2">
+                              <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] px-3 py-1 bg-[#1a365d] text-white rounded-sm font-bold">Opslaan</button>
+                              <button onClick={() => setEditingIdx(null)} className="text-[10px] px-3 py-1 border border-slate-200 text-slate-400 rounded-sm font-bold">Annuleer</button>
+                            </div>
                           </div>
                         ) : (
                           <span className="text-sm text-slate-700 leading-snug block">{bulletText}</span>
@@ -850,16 +854,16 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                 })}
 
                 {addingBullet && (
-                  <div className="flex items-center gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
-                    <div className="w-2 h-2 bg-orange-500 rotate-45 shrink-0" />
-                    <input
+                  <div className="flex flex-col gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
+                    <textarea
                       autoFocus
                       value={newBullet}
                       onChange={e => setNewBullet(e.target.value)}
                       placeholder={t("canvas.placeholder")}
-                      className="flex-1 text-sm outline-none text-slate-800"
+                      rows={3}
+                      className="w-full text-sm outline-none text-slate-800 resize-none leading-relaxed bg-transparent"
                       onKeyDown={e => {
-                        if (e.key === "Enter" && newBullet.trim()) {
+                        if (e.key === "Enter" && e.metaKey && newBullet.trim()) {
                           onAddBullet(block.id, newBullet.trim(), null);
                           setNewBullet("");
                           setAddingBullet(false);
@@ -867,7 +871,16 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                         if (e.key === "Escape") { setAddingBullet(false); setNewBullet(""); }
                       }}
                     />
-                    <button onClick={() => setAddingBullet(false)} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] text-slate-300">⌘ + Enter om op te slaan</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { if (newBullet.trim()) { onAddBullet(block.id, newBullet.trim(), null); setNewBullet(""); setAddingBullet(false); } }}
+                          className="text-[10px] px-3 py-1 bg-[#1a365d] text-white rounded-sm font-bold"
+                        >Toevoegen</button>
+                        <button onClick={() => { setAddingBullet(false); setNewBullet(""); }} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1313,9 +1326,11 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
               <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">{t("menu.saved")}</p>
                 {canvases.map(c => {
-                  const savedAt = c.updated_at
-                    ? new Date(c.updated_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })
+                  const dateSource = c.updated_at || c.created_at;
+                  const savedAt = dateSource
+                    ? new Date(dateSource).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })
                     : "";
+                  const dateLabel = c.updated_at ? "Gewijzigd" : "Aangemaakt";
                   return (
                     <button
                       key={c.id}
@@ -1325,7 +1340,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
                     >
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-slate-700 truncate">{c.name || t("menu.unnamed")}</p>
-                        <p className="text-[9px] text-slate-400">{savedAt}</p>
+                        <p className="text-[9px] text-slate-400">{dateLabel} {savedAt}</p>
                       </div>
                     </button>
                   );
@@ -1467,6 +1482,20 @@ function ProjectInfoSidebar({ meta, onChange }) {
           </div>
         </div>
 
+        {/* Beschrijving */}
+        <div>
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+            <FileText size={11} /> Beschrijving
+          </label>
+          <textarea
+            value={meta.project_description || ""}
+            onChange={e => field("project_description", e.target.value)}
+            placeholder="Aanleiding, scope of bijzonderheden van dit traject…"
+            rows={4}
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors placeholder-slate-300 resize-none leading-relaxed"
+          />
+        </div>
+
       </div>
     </aside>
   );
@@ -1541,6 +1570,7 @@ function AppInner() {
             transformation_type: full.transformation_type  || "",
             org_size:            full.org_size             || "",
             project_status:      full.project_status       || "",
+            project_description: full.project_description  || "",
           });
           setTimeout(() => { suppressSaveRef.current = false; }, 100);
         }
