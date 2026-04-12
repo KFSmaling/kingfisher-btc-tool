@@ -67,21 +67,25 @@ export async function createCanvas({ userId, name, language = "nl" }) {
  * Sla de huidige canvas staat op (autosave).
  * Last-write-wins. updated_at wordt weggelaten voor schema-compatibiliteit.
  */
-export async function upsertCanvas(id, { scope, docs, insights, bullets, language }) {
+export async function upsertCanvas(id, { scope, docs, insights, bullets, language, meta = {} }) {
   if (!supabase) return { error: "Supabase niet geconfigureerd" };
 
   const payload = {
-    name:   scope || null,
-    blocks: { docs, insights, bullets },
+    name:                scope || null,
+    blocks:              { docs, insights, bullets },
+    client_name:         meta.client_name         || null,
+    author_name:         meta.author_name          || null,
+    industry:            meta.industry             || null,
+    transformation_type: meta.transformation_type  || null,
+    org_size:            meta.org_size             || null,
+    project_status:      meta.project_status       || null,
   };
-
-  console.log("[autosave] updating canvas", id, payload);
 
   const { data, error } = await supabase
     .from("canvases")
     .update(payload)
     .eq("id", id)
-    .select("id, name, updated_at")
+    .select("id, name")
     .maybeSingle();
 
   if (error) {
