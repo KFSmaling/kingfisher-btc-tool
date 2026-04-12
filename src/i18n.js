@@ -29,6 +29,7 @@ const TRANSLATIONS = {
     "subtab.current": "As Is",
     "subtab.tobe":    "To-Be",
     "subtab.change":  "Change Actions",
+    "subtab.generic": "Generiek",
 
     // Panel tabs
     "panel.tab.upload":  "1. Upload",
@@ -145,6 +146,7 @@ const TRANSLATIONS = {
     "subtab.current": "As Is",
     "subtab.tobe":    "To-Be",
     "subtab.change":  "Change Actions",
+    "subtab.generic": "Generic",
 
     // Panel tabs
     "panel.tab.upload":  "1. Upload",

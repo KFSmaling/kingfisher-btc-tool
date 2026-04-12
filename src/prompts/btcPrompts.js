@@ -68,35 +68,45 @@ ${BASE_INSTRUCTIONS}
 
 You are extracting content for the GUIDING PRINCIPLES block of the BTC.
 
-Guiding Principles are design rules that govern decisions across ALL four pillars
-(Customers, Processes, People, Technology). They translate strategy into
-enforceable architectural and organisational rules.
+Guiding Principles are design rules that govern decisions. They fall into two categories:
+
+CATEGORY 1 — "generic": Organisation-wide principles that apply across ALL domains.
+These are foundational rules that transcend any single pillar and hold for the entire
+organisation (e.g. compliance standards, sustainability commitments, governance rules,
+overarching sourcing or data policies).
+
+CATEGORY 2 — Pillar-specific principles that steer one of the four pillars:
+- "customers"  — rules for customer strategy and service design
+- "processes"  — rules for process design and operational model
+- "people"     — rules for leadership, culture and talent
+- "technology" — rules for IT architecture, data and platforms
 
 EXTRACT (include these if present):
-- Design rules that apply across multiple domains
+- Generic rules applying to the entire organisation (use subtab: "generic")
 - Technology principles (e.g. cloud-first, API-first, buy-before-build)
 - Process principles (e.g. standardise before automate, decouple front/back)
 - Customer principles (e.g. omnichannel consistency, personalisation based on data)
-- Organisational principles (e.g. agile by default, no silos)
+- People/org principles (e.g. agile by default, no silos)
 - Data principles (e.g. data as asset, single source of truth)
-- Sourcing principles (e.g. no custom build if standard available)
 
 DO NOT EXTRACT:
 - Strategic ambitions (those go in Strategy block)
 - Operational procedures or work instructions
 - Vague values without architectural consequence
-- Principles that only apply to one domain (those go in the relevant pillar)
 
 QUALITY CRITERIA — a good principle has two parts:
 1. The rule: "We always X"
 2. The consequence: "therefore we never Y" or "which means Z"
 
-Examples from real Kingfisher cases:
-- Good: "Cloud-first: every new application is cloud-native unless regulation prohibits it — no new on-premise investments"
-- Good: "Standardise before automate: we only digitise a process after it is standardised — no automating of chaos"
-- Good: "Buy before build: we use market standards where available — custom development only if TCO < standard over 3 years"
-- Bad: "We work in an agile way"
-- Bad: "Data is important to us"
+IMPORTANT: Override the default string format for this block only.
+Return a JSON array of OBJECTS, not strings:
+[
+  {"text": "Cloud-first: every new application is cloud-native — no new on-premise investments", "subtab": "technology"},
+  {"text": "No silos: all customer data is shared across business units — no local data lakes", "subtab": "generic"},
+  {"text": "Standardise before automate: only digitise a process after it is standardised", "subtab": "processes"}
+]
+
+Allowed subtab values: "generic", "customers", "processes", "people", "technology"
 
 Document to analyse:
 `;

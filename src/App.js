@@ -25,10 +25,11 @@ const PILLAR_SUBTABS = [
 ];
 
 const PRINCIPLES_SUBTABS = [
-  { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",      color: "border-blue-400 text-blue-600"      },
-  { id: "processes",  labelKey: "block.processes.title",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",  color: "border-violet-500 text-violet-600"  },
-  { id: "people",     labelKey: "block.people.title",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",    color: "border-green-500 text-green-600"    },
-  { id: "technology", labelKey: "block.technology.title", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",   color: "border-slate-500 text-slate-600"    },
+  { id: "generic",    labelKey: "subtab.generic",         dot: "bg-[#1a365d]",   activeBg: "bg-[#1a365d]/5 border-[#1a365d]/30", color: "border-[#1a365d] text-[#1a365d]"    },
+  { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",         color: "border-blue-400 text-blue-600"      },
+  { id: "processes",  labelKey: "block.processes.title",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",     color: "border-violet-500 text-violet-600"  },
+  { id: "people",     labelKey: "block.people.title",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",       color: "border-green-500 text-green-600"    },
+  { id: "technology", labelKey: "block.technology.title", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",      color: "border-slate-500 text-slate-600"    },
 ];
 
 const BLOCKS = [
@@ -360,14 +361,20 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
       // ── Stap 3: Extract (premium model, alleen bij goedkeuring) ───────────
       setUploadPhase("extracting");
       const items = await extractWithAI(block.id, text, t("ai.language"));
-      const newInsights = items.map((item, i) => ({ id: Date.now() + i, text: item, status: "pending", source: file.name }));
+      const newInsights = items.map((item, i) => ({
+        id: Date.now() + i,
+        text:   typeof item === "string" ? item : item.text,
+        subtab: typeof item === "object" && item.subtab ? item.subtab : undefined,
+        status: "pending",
+        source: file.name,
+      }));
       onDocsChange(block.id, file.name, newInsights);
 
       // ── Stap 4: Opslaan in Supabase (canvas_uploads) ─────────────────────
       saveCanvasUpload({
         fileName: file.name,
         rawText:  text,
-        insights: items,
+        insights: items.map(i => typeof i === "string" ? i : i.text),
         blockKey: block.id,
         language: t("ai.language").includes("Dutch") ? "nl" : "en",
         canvasId: canvasId || null,
