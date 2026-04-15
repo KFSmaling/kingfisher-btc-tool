@@ -170,6 +170,47 @@ export async function saveBlockManualData(canvasId, blockKey, manualData) {
 }
 
 /**
+ * Upload een bronbestand naar Supabase Storage (bucket: 'documents').
+ * Pad: {canvasId}/{timestamp}_{fileName}
+ */
+export async function uploadDocumentToStorage(file, canvasId) {
+  if (!supabase) return { path: null, error: "Supabase niet geconfigureerd" };
+  const path = `${canvasId}/${Date.now()}_${file.name}`;
+  const { data, error } = await supabase.storage
+    .from("documents")
+    .upload(path, file, { upsert: true });
+  if (error) console.error("[storage] upload mislukt:", error.message);
+  return { path: data?.path || null, error };
+}
+
+/**
+ * Maak een import job record aan in import_jobs.
+ */
+export async function createImportJob({ canvasId, userId, fileName, fileType }) {
+  if (!supabase) return { data: null, error: "Supabase niet geconfigureerd" };
+  const { data, error } = await supabase
+    .from("import_jobs")
+    .insert({ canvas_id: canvasId, user_id: userId, file_name: fileName, file_type: fileType, status: "queued" })
+    .select()
+    .single();
+  if (error) console.error("[import_job] aanmaken mislukt:", error.message);
+  return { data, error };
+}
+
+/**
+ * Werk de status van een import job bij.
+ */
+export async function updateImportJob(id, updates) {
+  if (!supabase) return { error: "Supabase niet geconfigureerd" };
+  const { error } = await supabase
+    .from("import_jobs")
+    .update(updates)
+    .eq("id", id);
+  if (error) console.error("[import_job] update mislukt:", error.message);
+  return { error };
+}
+
+/**
  * Verwijder een canvas op basis van ID.
  */
 export async function deleteCanvas(id) {
