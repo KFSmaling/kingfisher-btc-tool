@@ -6,7 +6,6 @@ import {
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
   SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2, Database
 } from "lucide-react";
-import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
