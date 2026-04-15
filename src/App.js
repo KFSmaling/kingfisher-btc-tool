@@ -6,7 +6,7 @@ import {
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
   SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2, Database
 } from "lucide-react";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks, loadDossierFiles, deleteDossierFile } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -339,7 +339,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               <div className="text-center py-16">
                 <Zap size={32} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("extract.empty")}</p>
-                <p className="text-[9px] text-slate-300 mt-2">Upload documenten via Het Magazijn</p>
+                <p className="text-[9px] text-slate-300 mt-2">Upload documenten via Het Dossier</p>
               </div>
             )}
 
@@ -1295,7 +1295,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
   );
 }
 
-// ── Master Importer — "Het Magazijn" ─────────────────────────────────────────
+// ── Dossier — document import + kennisbank ───────────────────────────────────
 const IMPORT_PHASES = {
   queued:    { label: "In wachtrij", pct: 0,   color: "bg-slate-200"  },
   uploading: { label: "Uploaden…",   pct: 25,  color: "bg-[#00AEEF]" },
@@ -1350,9 +1350,28 @@ async function extractFileText(file) {
 }
 
 function MasterImporterPanel({ canvasId, userId, onClose }) {
-  const [jobs, setJobs]         = useState([]);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef            = useRef(null);
+  const [jobs, setJobs]           = useState([]);
+  const [dragOver, setDragOver]   = useState(false);
+  const [files, setFiles]         = useState([]);       // canvas_uploads uit DB
+  const [filesLoading, setFilesLoading] = useState(false);
+  const fileInputRef              = useRef(null);
+
+  // Laad Dossier-bestanden vanuit canvas_uploads
+  const refreshFiles = async () => {
+    if (!canvasId) return;
+    setFilesLoading(true);
+    const { data } = await loadDossierFiles(canvasId);
+    setFiles(data || []);
+    setFilesLoading(false);
+  };
+
+  useEffect(() => { refreshFiles(); }, [canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`"${name}" verwijderen uit het Dossier?`)) return;
+    await deleteDossierFile(id);
+    setFiles(prev => prev.filter(f => f.id !== id));
+  };
 
   const updateJob = (id, patch) =>
     setJobs(prev => prev.map(j => j.id === id ? { ...j, ...patch } : j));
@@ -1401,14 +1420,13 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
 
       if (dbJobId) await updateImportJob(dbJobId, { status: "done", total_chunks: totalChunks, processed_chunks: totalChunks });
       updateJob(localId, { phase: "done", totalChunks });
+      refreshFiles(); // Dossier-lijst verversen
     } catch (err) {
       updateJob(localId, { phase: "error", error: err.message });
     }
   };
 
   const handleFiles = (files) => Array.from(files).forEach(f => processFile(f));
-  const doneCount   = jobs.filter(j => j.phase === "done").length;
-  const errorCount  = jobs.filter(j => j.phase === "error").length;
   const activeCount = jobs.filter(j => !["done","error"].includes(j.phase)).length;
 
   return (
@@ -1419,49 +1437,49 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
           <div className="flex items-center gap-3">
             <Database size={16} className="text-[#8dc63f]" />
             <div>
-              <h2 className="text-white font-black text-sm uppercase tracking-widest">Het Magazijn</h2>
-              <p className="text-white/50 text-[9px] uppercase tracking-wider">Master Importer — Kennisbank</p>
+              <h2 className="text-white font-black text-sm uppercase tracking-widest">Het Dossier</h2>
+              <p className="text-white/50 text-[9px] uppercase tracking-wider">Kennisbank — Magic Staff AI</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {jobs.length > 0 && (
-              <span className="text-[10px] text-white/60">
-                {doneCount} klaar{errorCount > 0 ? ` · ${errorCount} fout` : ""}{activeCount > 0 ? ` · ${activeCount} bezig` : ""}
-              </span>
+            {activeCount > 0 && (
+              <span className="text-[10px] text-white/60">{activeCount} bezig…</span>
             )}
             <button onClick={onClose} className="text-white/40 hover:text-white transition-colors"><X size={16} /></button>
           </div>
         </div>
-        {/* Drop zone */}
+
+        {/* Drop zone — compact */}
         <div
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
           onClick={() => fileInputRef.current?.click()}
-          className={`mx-6 mt-6 border-2 border-dashed rounded-xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all
+          className={`mx-6 mt-5 border-2 border-dashed rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all
             ${dragOver ? "border-[#1a365d] bg-[#1a365d]/5" : "border-slate-200 hover:border-[#1a365d]/40 hover:bg-slate-50"}`}
         >
           <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.txt,.csv" multiple className="hidden"
             onChange={e => handleFiles(e.target.files)} />
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${dragOver ? "bg-[#1a365d]/10" : "bg-slate-100"}`}>
-            <Upload size={20} className={dragOver ? "text-[#1a365d]" : "text-slate-400"} />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${dragOver ? "bg-[#1a365d]/10" : "bg-slate-100"}`}>
+            <Upload size={18} className={dragOver ? "text-[#1a365d]" : "text-slate-400"} />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-slate-700">Sleep bestanden hierheen</p>
-            <p className="text-xs text-slate-400 mt-1">PDF · PPTX · TXT · CSV — meerdere bestanden tegelijk</p>
+          <div>
+            <p className="text-sm font-semibold text-slate-700">Bestanden toevoegen aan Dossier</p>
+            <p className="text-xs text-slate-400">PDF · PPTX · TXT · CSV — sleep of klik</p>
           </div>
         </div>
-        {/* Job list */}
+
+        {/* Actieve upload-jobs */}
         {jobs.length > 0 && (
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0">
+          <div className="px-6 pt-4 space-y-3">
             {jobs.map(job => {
               const phase = IMPORT_PHASES[job.phase] || IMPORT_PHASES.queued;
               const ext   = job.file.name.split(".").pop().toUpperCase();
               const phaseOrder = ["uploading","reading","indexing","done"];
               const currentIdx = phaseOrder.indexOf(job.phase);
               return (
-                <div key={job.id} className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between gap-3 mb-2">
+                <div key={job.id} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[#1a365d]/10 text-[#1a365d] rounded flex-shrink-0">{ext}</span>
                       <span className="text-xs font-semibold text-slate-700 truncate">{job.file.name}</span>
@@ -1470,34 +1488,71 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                       {phase.label}
                     </span>
                   </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all duration-700 ${phase.color}`} style={{ width: `${phase.pct}%` }} />
                   </div>
-                  <div className="flex items-center gap-1 mt-2">
+                  <div className="flex items-center gap-1 mt-1.5">
                     {phaseOrder.map((p, i) => (
-                      <span key={p} className={`text-[8px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded ${
+                      <span key={p} className={`text-[8px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded ${
                         job.phase === p ? "bg-[#1a365d] text-white" :
                         (job.phase === "done" || (currentIdx > i && job.phase !== "error")) ? "bg-[#8dc63f]/20 text-[#2c7a4b]" :
                         "text-slate-300"}`}>
                         {IMPORT_PHASES[p]?.label}
                       </span>
                     ))}
+                    {job.phase === "indexing" && job.indexPct !== undefined && (
+                      <span className="text-[8px] text-slate-400 ml-1">{job.indexPct}%</span>
+                    )}
                   </div>
-                  {job.phase === "indexing" && job.indexPct !== undefined && (
-                    <p className="text-[9px] text-slate-400 mt-2">Vectoriseren: {job.indexPct}%</p>
-                  )}
                   {job.phase === "done" && job.totalChunks > 0 && (
-                    <p className="text-[9px] text-[#2c7a4b] mt-2">{job.totalChunks} fragmenten geïndexeerd</p>
+                    <p className="text-[9px] text-[#2c7a4b] mt-1">{job.totalChunks} fragmenten geïndexeerd</p>
                   )}
-                  {job.phase === "error" && <p className="text-[10px] text-red-500 mt-2">{job.error}</p>}
+                  {job.phase === "error" && <p className="text-[10px] text-red-500 mt-1">{job.error}</p>}
                 </div>
               );
             })}
           </div>
         )}
+
+        {/* Dossier-lijst — bestanden uit canvas_uploads */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+              Dossier {files.length > 0 ? `— ${files.length} bestand${files.length !== 1 ? "en" : ""}` : ""}
+            </p>
+            {filesLoading && <span className="text-[9px] text-slate-300 animate-pulse">laden…</span>}
+          </div>
+          {!filesLoading && files.length === 0 && (
+            <div className="text-center py-8">
+              <Database size={24} className="mx-auto text-slate-200 mb-3" />
+              <p className="text-xs text-slate-300">Nog geen bestanden in het Dossier.</p>
+              <p className="text-[10px] text-slate-200 mt-1">Upload documenten hierboven om de Magic Staff te activeren.</p>
+            </div>
+          )}
+          {files.map(f => (
+            <div key={f.id} className="flex items-center gap-3 py-2.5 border-b border-slate-100 group">
+              <FileText size={13} className="text-slate-300 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-slate-600 truncate block">{f.file_name}</span>
+                <span className="text-[9px] text-slate-300">
+                  {new Date(f.created_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </div>
+              <span className="text-[9px] font-semibold text-[#2c7a4b] uppercase tracking-wider flex-shrink-0">Geïndexeerd</span>
+              <button
+                onClick={() => handleDelete(f.id, f.file_name)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 flex-shrink-0"
+                title="Verwijder uit Dossier"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">
-          <p className="text-[9px] text-slate-300 uppercase tracking-widest">Kennisbank · Indexeer documenten voor Magic Staff AI</p>
+        <div className="px-6 py-3 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">
+          <p className="text-[9px] text-slate-300 uppercase tracking-widest">Magic Staff gebruikt alleen documenten uit dit Dossier</p>
           <button onClick={onClose} className="text-xs font-bold text-slate-400 hover:text-[#1a365d] uppercase tracking-widest transition-colors">Sluiten</button>
         </div>
       </div>
@@ -1561,21 +1616,24 @@ function MagicResult({ result, onAccept, onReject }) {
   );
 
   return (
-    <div className="mt-2 px-3 py-2.5 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg space-y-2">
-      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{typed}</p>
-      {result.citations?.length > 0 && (
-        <p className="text-[9px] text-slate-400 italic leading-relaxed">
-          Bron: {result.citations.join(" · ")}
-        </p>
-      )}
-      <div className="flex items-center gap-4 pt-1.5 border-t border-[#8dc63f]/20">
+    <div className="mt-2 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg overflow-hidden">
+      <div className="px-3 py-2.5 space-y-2">
+        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{typed}</p>
+        {result.citations?.length > 0 && (
+          <p className="text-[9px] text-slate-400 italic leading-relaxed">
+            Bron: {result.citations.join(" · ")}
+          </p>
+        )}
+      </div>
+      {/* Sticky accept/reject balk */}
+      <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[#edf7e0] border-t border-[#8dc63f]/30">
         <button onClick={onAccept}
           className="text-[10px] font-black uppercase tracking-widest text-[#2c7a4b] hover:text-[#1a365d] transition-colors">
-          Overnemen →
+          ✓ Overnemen
         </button>
         <button onClick={onReject}
-          className="text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-red-400 transition-colors">
-          Weggooien
+          className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-400 transition-colors">
+          ✕ Weggooien
         </button>
       </div>
     </div>
@@ -1835,7 +1893,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
       <div
-        className={`flex flex-col flex-1 bg-slate-50 transition-all duration-300 ease-out relative
+        className={`flex flex-col flex-1 min-h-0 bg-slate-50 transition-all duration-300 ease-out relative
           ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}
       >
         {/* Header */}
@@ -2436,9 +2494,9 @@ function AppInner() {
           <button
             onClick={() => setShowImporter(true)}
             className="flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-4 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all"
-            title="Het Magazijn — documenten importeren"
+            title="Het Dossier — documenten importeren"
           >
-            <Database size={14} /> Magazijn
+            <Database size={14} /> Dossier
           </button>
 
           <button
