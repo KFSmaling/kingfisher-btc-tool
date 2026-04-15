@@ -49,7 +49,27 @@ const SWOT_QUADRANTS = [
   { key: "opportunities", labelNl: "Kansen",      labelEn: "Opportunities", accent: "border-l-[#00AEEF]" },
   { key: "threats",       labelNl: "Bedreigingen",labelEn: "Threats",       accent: "border-l-amber-400" },
 ];
-const EMPTY_MANUAL = { missie: "", visie: "", swot: { strengths: [], weaknesses: [], opportunities: [], threats: [] } };
+const EMPTY_MANUAL = {
+  executive_summary: "",
+  missie: "",
+  visie: "",
+  ambitie: "",
+  kernwaarden: [],
+  swot: { strengths: [], weaknesses: [], opportunities: [], threats: [] },
+  doelstellingen: [],
+};
+
+// Sub-field labels — single source of truth (IP-protected).
+// Override keys can be seeded in block_definitions as e.g. key='strategy.missie'.
+const STRATEGY_SUB_LABELS = {
+  executive_summary: { nl: "Executive Summary",            en: "Executive Summary"         },
+  missie:            { nl: "Missie",                       en: "Mission"                   },
+  visie:             { nl: "Visie",                        en: "Vision"                    },
+  ambitie:           { nl: "Ambitie",                      en: "Ambition"                  },
+  kernwaarden:       { nl: "Kernwaarden",                  en: "Core Values"               },
+  doelstellingen:    { nl: "Strategische Doelstellingen",  en: "Strategic Objectives"      },
+  swot:              { nl: "SWOT Analyse",                 en: "SWOT Analysis"             },
+};
 
 // Helper to convert string arrays to bullet objects
 const eb  = (texts, source) => texts.map(text => ({ text, source }));
@@ -1534,33 +1554,64 @@ function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete }) {
   };
 
   return (
-    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg p-4 gap-2 min-h-[180px]`}>
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">{label}</span>
-      <div className="flex flex-col gap-1.5 flex-1">
+    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg h-72`}>
+      {/* Label */}
+      <div className="px-3 pt-3 pb-1 flex-shrink-0">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</span>
+      </div>
+      {/* Scrollable card list */}
+      <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1">
         {cards.map((text, i) => (
           <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
         ))}
       </div>
+      {/* Pinned input */}
+      <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-slate-100">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder={`+ ${label}…`}
+          className="w-full text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Reusable horizontal/vertical card list with pinned add-input
+function CardList({ cards, onAdd, onDelete, placeholder, horizontal = false }) {
+  const [draft, setDraft] = useState("");
+  const commit = () => {
+    const val = draft.trim();
+    if (val) { onAdd(val); setDraft(""); }
+  };
+  return (
+    <div className={`flex ${horizontal ? "flex-row flex-wrap items-start" : "flex-col"} gap-1.5`}>
+      {cards.map((text, i) => (
+        <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
+      ))}
       <input
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-        placeholder={`+ ${label} toevoegen…`}
-        className="mt-1 text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+        placeholder={placeholder}
+        className={`text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 ${horizontal ? "min-w-[200px]" : "w-full"}`}
       />
     </div>
   );
 }
 
-function DeepDiveOverlay({ blockId, canvasId, onClose }) {
+function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
   const { lang } = useLang();
-  const [blockLabel, setBlockLabel] = useState(blockId);
-  const [manual, setManual]         = useState(EMPTY_MANUAL);
-  const [aiInsights, setAiInsights] = useState({});
-  const [saveStatus, setSaveStatus] = useState("idle");
-  const [isLoaded, setIsLoaded]     = useState(false);
-  const [mounted, setMounted]       = useState(false);
-  const debounceRef                 = useRef(null);
+  const [blockLabel, setBlockLabel]   = useState(blockId);
+  const [subLabels, setSubLabels]     = useState(STRATEGY_SUB_LABELS);
+  const [manual, setManual]           = useState(EMPTY_MANUAL);
+  const [aiInsights, setAiInsights]   = useState({});
+  const [saveStatus, setSaveStatus]   = useState("idle");
+  const [isLoaded, setIsLoaded]       = useState(false);
+  const [mounted, setMounted]         = useState(false);
+  const debounceRef                   = useRef(null);
 
   // Entrance animation
   useEffect(() => {
@@ -1568,16 +1619,30 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Load block label from block_definitions (IP protection)
+  // Load block label + sub-labels from block_definitions (IP protection)
   useEffect(() => {
     fetchBlockDefinitions().then(({ data }) => {
       if (!data) return;
+      // Main block label
       const def = data.find(d => d.key === blockId);
       if (def) setBlockLabel(lang === "en" ? (def.label_en || def.label_nl) : def.label_nl);
+      // Sub-field label overrides: look for keys like "strategy.missie"
+      const overrides = {};
+      data.forEach(d => {
+        if (d.key.startsWith(`${blockId}.`)) {
+          const sub = d.key.slice(blockId.length + 1);
+          overrides[sub] = { nl: d.label_nl, en: d.label_en || d.label_nl };
+        }
+      });
+      if (Object.keys(overrides).length > 0) {
+        setSubLabels(prev => ({ ...prev, ...overrides }));
+      }
     });
   }, [blockId, lang]);
 
-  // Load existing manual + ai_insights; migrate string → array for swot fields
+  const L = (key) => lang === "en" ? subLabels[key]?.en : subLabels[key]?.nl;
+
+  // Load existing manual + ai_insights; migrate string → array for card fields
   useEffect(() => {
     if (!canvasId) { setIsLoaded(true); setSaveStatus("local"); return; }
     loadCanvasById(canvasId).then(({ data }) => {
@@ -1588,6 +1653,8 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
         setManual({
           ...EMPTY_MANUAL,
           ...saved,
+          kernwaarden:    toArr(saved.kernwaarden),
+          doelstellingen: toArr(saved.doelstellingen),
           swot: {
             strengths:     toArr(saved.swot?.strengths),
             weaknesses:    toArr(saved.swot?.weaknesses),
@@ -1601,7 +1668,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
     });
   }, [canvasId, blockId]);
 
-  // Debounced autosave (800ms) — guard against save-on-mount
+  // Debounced autosave (800ms)
   useEffect(() => {
     if (!isLoaded) return;
     clearTimeout(debounceRef.current);
@@ -1609,31 +1676,34 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
     setSaveStatus("saving");
     debounceRef.current = setTimeout(async () => {
       const { error } = await saveBlockManualData(canvasId, blockId, manual);
-      setSaveStatus(error ? "error" : "saved");
+      if (!error) { setSaveStatus("saved"); onManualSaved?.(manual); }
+      else setSaveStatus("error");
     }, 800);
     return () => clearTimeout(debounceRef.current);
-  }, [manual, isLoaded, canvasId, blockId]);
+  }, [manual, isLoaded, canvasId, blockId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateText = (field, value) =>
     setManual(prev => ({ ...prev, [field]: value }));
-
-  const addSwotCard = (key, text) =>
+  const addCard = (field, text) =>
+    setManual(prev => ({ ...prev, [field]: [...(prev[field] || []), text] }));
+  const deleteCard = (field, idx) =>
+    setManual(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== idx) }));
+  const addSwot = (key, text) =>
     setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: [...(prev.swot[key] || []), text] } }));
-
-  const deleteSwotCard = (key, idx) =>
+  const deleteSwot = (key, idx) =>
     setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: prev.swot[key].filter((_, i) => i !== idx) } }));
 
   const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout", local: "Lokaal" }[saveStatus];
   const statusColor = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", local: "text-amber-500", idle: "" }[saveStatus];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
       <div
         className={`flex flex-col flex-1 bg-slate-50 transition-all duration-300 ease-out
           ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
           <button
             onClick={onClose}
             className="flex items-center gap-2 text-slate-400 hover:text-[#1a365d] text-xs uppercase tracking-widest transition-colors font-medium"
@@ -1647,56 +1717,202 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
           <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
         </div>
 
-        {/* Body */}
-        <div className="flex flex-1 min-h-0 overflow-auto p-8 gap-8">
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-auto p-8 flex flex-col gap-6">
 
-          {/* Left: Missie + Visie */}
-          <div className="flex flex-col gap-5 w-[38%]">
-            {[
-              { field: "missie", label: "Missie", placeholder: "Waarom bestaat deze organisatie?" },
-              { field: "visie",  label: "Visie",  placeholder: "Wat willen we bereikt hebben in 3–5 jaar?" },
-            ].map(({ field, label, placeholder }) => (
-              <div key={field} className="flex flex-col gap-2">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</label>
+          {/* Zone 1: Left + Right */}
+          <div className="flex gap-6">
+
+            {/* Left: Executive Summary, Missie, Visie, Ambitie, Kernwaarden */}
+            <div className="flex flex-col gap-4 w-[38%]">
+
+              {/* Executive Summary */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("executive_summary")}</label>
                 <textarea
-                  value={manual[field]}
-                  onChange={e => updateText(field, e.target.value)}
-                  rows={6}
-                  placeholder={placeholder}
-                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3.5 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+                  value={manual.executive_summary}
+                  onChange={e => updateText("executive_summary", e.target.value)}
+                  rows={2}
+                  placeholder="Kernboodschap voor de boardroom…"
+                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
                 />
               </div>
-            ))}
 
-            {/* AI Insights (read-only) */}
-            {Object.keys(aiInsights).length > 0 && (
-              <div className="bg-[#8dc63f]/8 border border-[#8dc63f]/25 rounded-lg p-4">
-                <p className="text-[9px] font-semibold uppercase tracking-widest text-[#2c7a4b] mb-2">AI Inzichten</p>
-                {Object.entries(aiInsights).map(([k, v]) => (
-                  <p key={k} className="text-slate-600 text-xs mb-1 leading-relaxed">{String(v)}</p>
+              {/* Missie */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("missie")}</label>
+                <textarea
+                  value={manual.missie}
+                  onChange={e => updateText("missie", e.target.value)}
+                  rows={4}
+                  placeholder="Waarom bestaat deze organisatie?"
+                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+                />
+              </div>
+
+              {/* Visie */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("visie")}</label>
+                <textarea
+                  value={manual.visie}
+                  onChange={e => updateText("visie", e.target.value)}
+                  rows={4}
+                  placeholder="Wat willen we bereikt hebben in 3–5 jaar?"
+                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+                />
+              </div>
+
+              {/* Ambitie */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("ambitie")}</label>
+                <textarea
+                  value={manual.ambitie}
+                  onChange={e => updateText("ambitie", e.target.value)}
+                  rows={3}
+                  placeholder="Wat is onze stoutmoedigste ambitie?"
+                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+                />
+              </div>
+
+              {/* Kernwaarden */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("kernwaarden")}</label>
+                <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-col gap-1.5">
+                  <CardList
+                    cards={manual.kernwaarden || []}
+                    onAdd={text => addCard("kernwaarden", text)}
+                    onDelete={idx => deleteCard("kernwaarden", idx)}
+                    placeholder="+ Kernwaarde toevoegen (Enter)…"
+                  />
+                </div>
+              </div>
+
+              {/* AI Insights (read-only) */}
+              {Object.keys(aiInsights).length > 0 && (
+                <div className="bg-[#8dc63f]/5 border border-[#8dc63f]/25 rounded-lg p-4">
+                  <p className="text-[9px] font-semibold uppercase tracking-widest text-[#2c7a4b] mb-2">AI Inzichten</p>
+                  {Object.entries(aiInsights).map(([k, v]) => (
+                    <p key={k} className="text-slate-600 text-xs mb-1 leading-relaxed">{String(v)}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Right: SWOT 2×2 */}
+            <div className="flex-1 flex flex-col gap-3">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("swot")}</label>
+              <div className="grid grid-cols-2 gap-4">
+                {SWOT_QUADRANTS.map(q => (
+                  <SwotQuadrant
+                    key={q.key}
+                    quadrant={q}
+                    cards={manual.swot?.[q.key] || []}
+                    lang={lang}
+                    onAdd={text => addSwot(q.key, text)}
+                    onDelete={idx => deleteSwot(q.key, idx)}
+                  />
                 ))}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Right: SWOT 2×2 kaartjes */}
-          <div className="flex-1 flex flex-col gap-3">
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">SWOT Analyse</label>
-            <div className="grid grid-cols-2 gap-4 flex-1">
-              {SWOT_QUADRANTS.map(q => (
-                <SwotQuadrant
-                  key={q.key}
-                  quadrant={q}
-                  cards={manual.swot?.[q.key] || []}
-                  lang={lang}
-                  onAdd={text => addSwotCard(q.key, text)}
-                  onDelete={idx => deleteSwotCard(q.key, idx)}
-                />
-              ))}
+          {/* Zone 2: Full-width — Strategische Doelstellingen */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("doelstellingen")}</label>
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+              <CardList
+                cards={manual.doelstellingen || []}
+                onAdd={text => addCard("doelstellingen", text)}
+                onDelete={idx => deleteCard("doelstellingen", idx)}
+                placeholder="+ Strategische doelstelling toevoegen (Enter)…"
+                horizontal
+              />
             </div>
           </div>
 
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Strategy Status Block (canvas dashboard view) ────────────────────────────
+function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, onDeepDive }) {
+  const { t, lang } = useLang();
+  const title = t(block.titleKey);
+  const sub   = t(block.subKey);
+  const badgeDef = STATUS_BADGE_KEYS[status];
+  const badge = badgeDef ? { label: t(badgeDef.labelKey), color: badgeDef.color } : null;
+
+  const filled = (val) => {
+    if (!val) return false;
+    if (Array.isArray(val)) return val.length > 0;
+    return String(val).trim().length > 0;
+  };
+  const swotFilled = Object.values(strategyManual?.swot || {}).some(v => Array.isArray(v) ? v.length > 0 : false);
+
+  const STATUS_FIELDS = [
+    { key: "missie",         nl: "Missie",     en: "Mission"    },
+    { key: "visie",          nl: "Visie",      en: "Vision"     },
+    { key: "ambitie",        nl: "Ambitie",    en: "Ambition"   },
+    { key: "kernwaarden",    nl: "Waarden",    en: "Values"     },
+    { key: "doelstellingen", nl: "Doelen",     en: "Objectives" },
+    { key: "swot",           nl: "SWOT",       en: "SWOT",      swot: true },
+  ];
+
+  return (
+    <div
+      className={`col-span-12 p-5 rounded shadow-md hover:shadow-xl cursor-pointer transition-all relative flex flex-col gap-3 min-h-[140px] ${STATUS_COLORS[status]}`}
+      onClick={onClick}
+    >
+      {/* Top: title + badge */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em]" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
+          <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {badge && (
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${badge.color}`}>{badge.label}</span>
+          )}
+          <button
+            onClick={e => { e.stopPropagation(); onDeepDive(); }}
+            className="flex items-center gap-1 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm shadow transition-colors"
+          >
+            <Maximize2 size={9} /> Verdiep
+          </button>
+        </div>
+      </div>
+
+      {/* Executive summary preview */}
+      {filled(strategyManual?.executive_summary) && (
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic">
+          {String(strategyManual.executive_summary).slice(0, 160)}{strategyManual.executive_summary.length > 160 ? "…" : ""}
+        </p>
+      )}
+      {!filled(strategyManual?.executive_summary) && (bullets || []).length > 0 && (
+        <div className="space-y-1">
+          {(bullets || []).slice(0, 3).map((b, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <div className="mt-1.5 w-1 h-1 rotate-45 shrink-0 bg-[#1a365d]" />
+              <span className="text-[13px] text-slate-700 leading-snug">{b.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Status icons row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {STATUS_FIELDS.map(f => {
+          const isOk = f.swot ? swotFilled : filled(strategyManual?.[f.key]);
+          const label = lang === "en" ? f.en : f.nl;
+          return (
+            <div key={f.key} className="flex items-center gap-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${isOk ? "bg-[#8dc63f]" : "bg-slate-200"}`} />
+              <span className={`text-[9px] uppercase tracking-wider font-medium ${isOk ? "text-[#4a7c1f]" : "text-slate-300"}`}>{label}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1726,6 +1942,9 @@ function AppInner() {
   const [docs, setDocs]         = useState({});
   const [insights, setInsights] = useState({});
   const [bullets, setBullets]   = useState({});
+
+  // Deep Dive manual data (per blok) — geladen vanuit canvases.data
+  const [strategyManual, setStrategyManual] = useState(null);
 
   // Autosave status
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
@@ -1775,6 +1994,9 @@ function AppInner() {
             project_description: full.project_description  || "",
           });
           setTimeout(() => { suppressSaveRef.current = false; }, 100);
+          // Load Deep Dive manual data
+          const sm = full.data?.strategy?.details?.manual;
+          if (sm) setStrategyManual(sm);
         }
       } else {
         // Geen canvassen — maak direct een nieuw canvas aan
@@ -2060,23 +2282,17 @@ function AppInner() {
         {/* Canvas grid — BTC layout (12-col) */}
         <div className="grid grid-cols-12 gap-5">
 
-          {/* Row 1: Strategy — full width (col-span-12) */}
+          {/* Row 1: Strategy — full width status dashboard */}
           {BLOCKS.filter(b => b.id === "strategy").map(block => (
-            <div key={block.id} className="relative group/wrap col-span-12">
-              <BlockCard
-                block={block}
-                status={getBlockStatus(block.id, docs, insights, bullets)}
-                bullets={bullets[block.id]}
-                insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
-                onClick={() => setActiveBlockId(block.id)}
-              />
-              <button
-                onClick={() => setDeepDiveBlockId(block.id)}
-                className="absolute top-2 right-2 opacity-0 group-hover/wrap:opacity-100 transition-opacity flex items-center gap-1.5 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm shadow-lg"
-              >
-                <Maximize2 size={10} /> Verdiep
-              </button>
-            </div>
+            <StrategyStatusBlock
+              key={block.id}
+              block={block}
+              status={getBlockStatus(block.id, docs, insights, bullets)}
+              bullets={bullets[block.id]}
+              strategyManual={strategyManual}
+              onClick={() => setActiveBlockId(block.id)}
+              onDeepDive={() => setDeepDiveBlockId(block.id)}
+            />
           ))}
 
           {/* Row 2: Guiding Principles — full width (col-span-12) */}
@@ -2191,6 +2407,7 @@ function AppInner() {
           blockId={deepDiveBlockId}
           canvasId={activeCanvasId}
           onClose={() => setDeepDiveBlockId(null)}
+          onManualSaved={m => { if (deepDiveBlockId === "strategy") setStrategyManual(m); }}
         />
       )}
     </div>
