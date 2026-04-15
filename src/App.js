@@ -1598,7 +1598,7 @@ function WandButton({ onClick, loading, disabled }) {
 /** Toont AI-voorstel met typewriter, bronvermelding en Overnemen/Weggooien knoppen. */
 function MagicResult({ result, onAccept, onReject }) {
   const typed = useTypewriter(result?.suggestion, 10);
-  if (!result || (!result.loading && !result.suggestion && !result.error)) return null;
+  if (!result || (!result.loading && !result.suggestion && !result.error && !result.noChunks)) return null;
 
   if (result.loading) return (
     <div className="mt-2 px-3 py-2.5 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg">
@@ -1615,10 +1615,32 @@ function MagicResult({ result, onAccept, onReject }) {
     </div>
   );
 
+  // Geen chunks gevonden in Dossier
+  if (result.noChunks) return (
+    <div className="mt-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+      <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+      <div>
+        <p className="text-[10px] font-bold text-amber-700">Geen documenten gevonden in Het Dossier.</p>
+        <p className="text-[9px] text-amber-500 mt-0.5">Upload eerst bestanden via Het Dossier om Magic Staff te activeren.</p>
+      </div>
+    </div>
+  );
+
+  if (!result.suggestion) return null;
+
+  const canAccept = !result.isNoInfo;
+
   return (
     <div className="mt-2 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg overflow-hidden">
       <div className="px-3 py-2.5 space-y-2">
-        <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{typed}</p>
+        {result.isNoInfo ? (
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-700 leading-relaxed">{typed}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{typed}</p>
+        )}
         {result.citations?.length > 0 && (
           <p className="text-[9px] text-slate-400 italic leading-relaxed">
             Bron: {result.citations.join(" · ")}
@@ -1627,8 +1649,14 @@ function MagicResult({ result, onAccept, onReject }) {
       </div>
       {/* Sticky accept/reject balk */}
       <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[#edf7e0] border-t border-[#8dc63f]/30">
-        <button onClick={onAccept}
-          className="text-[10px] font-black uppercase tracking-widest text-[#2c7a4b] hover:text-[#1a365d] transition-colors">
+        <button
+          onClick={canAccept ? onAccept : undefined}
+          disabled={!canAccept}
+          className={`text-[10px] font-black uppercase tracking-widest transition-colors
+            ${canAccept
+              ? "text-[#2c7a4b] hover:text-[#1a365d] cursor-pointer"
+              : "text-slate-300 cursor-not-allowed"}`}
+        >
           ✓ Overnemen
         </button>
         <button onClick={onReject}
@@ -1839,10 +1867,24 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       if (!embRes.ok) throw new Error("Embedding mislukt");
       const { embeddings } = await embRes.json();
 
-      // 2. Vector search
-      const { data: chunks } = await searchDocumentChunks(embeddings[0], canvasId, 5);
-      const context   = (chunks || []).map(c => c.content).join("\n\n---\n\n");
-      const citations = [...new Set((chunks || []).map(c => c.file_name).filter(Boolean))];
+      // 2. Vector search — gefilterd op dit canvas
+      const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, 8);
+      if (searchErr) console.warn("[magic] RPC fout:", searchErr);
+
+      // 2b. Guard: geen chunks → direct melden, geen Claude-aanroep
+      if (!chunks || chunks.length === 0) {
+        setMagicFor(fieldKey, {
+          loading: false,
+          noChunks: true,
+          suggestion: null,
+          citations: [],
+          error: null,
+        });
+        return;
+      }
+
+      const context   = chunks.map(c => c.content).join("\n\n---\n\n");
+      const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
 
       // 3. Claude suggestie
       const magicRes = await fetch("/api/magic", {
@@ -1851,7 +1893,14 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       });
       const magicData = await magicRes.json();
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
-      setMagicFor(fieldKey, { loading: false, suggestion: magicData.suggestion, citations });
+
+      // 3b. Detecteer "geen informatie" antwoord
+      const suggestion = magicData.suggestion || "";
+      const isNoInfo = suggestion.toLowerCase().includes("geen relevante informatie") ||
+                       suggestion.toLowerCase().includes("geen informatie gevonden") ||
+                       suggestion.toLowerCase().includes("niet gevonden in het dossier");
+
+      setMagicFor(fieldKey, { loading: false, suggestion, citations, isNoInfo });
     } catch (err) {
       setMagicFor(fieldKey, { loading: false, error: err.message });
     }
@@ -1958,6 +2007,29 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
         {/* Body — scrollable */}
         <div className="flex-1 overflow-auto p-8 flex flex-col gap-6">
 
+          {blockId !== "strategy" ? (
+            /* Generic blok-verdieping voor niet-strategie blokken */
+            <div className="flex flex-col gap-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wand2 size={14} className="text-[#8dc63f]" />
+                  <p className="text-[10px] font-black text-[#2c7a4b] uppercase tracking-widest">Magic Staff — {blockLabel}</p>
+                </div>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  Klik op een 🪄-icoontje naast een veld in de Strategie-verdieping om AI-suggesties te genereren op basis van Het Dossier.
+                  Diepgaande verdieping per blok (Klanten, Processen, Mensen, Technologie) volgt in de volgende sprint.
+                </p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">Tip</p>
+                <p className="text-sm text-amber-600">
+                  Gebruik de Strategie-verdieping voor Executive Summary, Missie, Visie, Ambitie, Kernwaarden, Doelstellingen en SWOT.
+                  Die heeft volledige Magic Staff AI-ondersteuning.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
           {/* Zone 1: Executive Summary — full width */}
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
@@ -2099,6 +2171,8 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
               </div>
             </div>
           </div>
+            </>
+          )}
 
         </div>
       </div>
@@ -2562,7 +2636,7 @@ function AppInner() {
               status={getBlockStatus(block.id, docs, insights, bullets)}
               bullets={bullets[block.id]}
               strategyManual={strategyManual}
-              onClick={() => setActiveBlockId(block.id)}
+              onClick={() => setDeepDiveBlockId(block.id)}
               onDeepDive={() => setDeepDiveBlockId(block.id)}
             />
           ))}
@@ -2575,7 +2649,7 @@ function AppInner() {
               status={getBlockStatus(block.id, docs, insights, bullets)}
               bullets={bullets[block.id]}
               insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
-              onClick={() => setActiveBlockId(block.id)}
+              onClick={() => setDeepDiveBlockId(block.id)}
             />
           ))}
 
@@ -2587,7 +2661,7 @@ function AppInner() {
               status={getBlockStatus(block.id, docs, insights, bullets)}
               bullets={bullets[block.id]}
               insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
-              onClick={() => setActiveBlockId(block.id)}
+              onClick={() => setDeepDiveBlockId(block.id)}
             />
           ))}
 
@@ -2598,7 +2672,7 @@ function AppInner() {
             status={getBlockStatus("portfolio", docs, insights, bullets)}
             bullets={bullets["portfolio"]}
             insightCount={(insights["portfolio"] || []).filter(i => i.status === "pending").length}
-            onClick={() => setActiveBlockId("portfolio")}
+            onClick={() => setDeepDiveBlockId("portfolio")}
           />
         </div>
 
