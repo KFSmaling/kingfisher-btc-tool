@@ -245,7 +245,7 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
       upload_id:  uploadId,
       canvas_id:  canvasId,
       chunk_type: "parent",
-      text:       p.text,
+      content:    p.text,
       metadata:   { startChar: p.startChar },
     })))
     .select("id");
@@ -266,7 +266,7 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
         canvas_id:  canvasId,
         chunk_type: "child",
         parent_id:  parentId,
-        text:       parentText.slice(ci, ci + CHILD_SIZE),
+        content:    parentText.slice(ci, ci + CHILD_SIZE),
       });
       if (ci + CHILD_SIZE >= parentText.length) break;
     }
@@ -275,7 +275,7 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
   // ── Stap 4: embed + opslaan in batches ───────────────────────────────────
   for (let b = 0; b < children.length; b += EMBED_BATCH) {
     const batch = children.slice(b, b + EMBED_BATCH);
-    const texts = batch.map(c => c.text);
+    const texts = batch.map(c => c.content);
 
     let embeddings;
     try {
