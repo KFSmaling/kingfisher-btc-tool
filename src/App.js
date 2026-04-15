@@ -1511,7 +1511,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
 // ── Deep Dive Overlay — "De Werkkamer" ───────────────────────────────────────
 function DeepDiveOverlay({ blockId, canvasId, onClose }) {
-  const { t, lang } = useLang();
+  const { lang } = useLang();
   const [blockLabel, setBlockLabel] = useState(blockId);
   const [manual, setManual]         = useState(EMPTY_MANUAL);
   const [aiInsights, setAiInsights] = useState({});
