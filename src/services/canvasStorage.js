@@ -112,6 +112,64 @@ export async function loadCanvasById(id) {
 }
 
 /**
+ * Laad alle actieve blokdefinities gesorteerd op volgorde.
+ * Vervangt hardcoded labels in de UI — IP protection.
+ */
+export async function fetchBlockDefinitions() {
+  if (!supabase) return { data: [], error: null };
+  return supabase
+    .from("block_definitions")
+    .select("key, label_nl, label_en, ai_prompt, sort_order")
+    .eq("is_active", true)
+    .order("sort_order");
+}
+
+/**
+ * Sla handmatige consultant-invoer op in canvases.data[blockKey].details.manual.
+ *
+ * MERGE-REGEL: schrijft NOOIT naar details.ai_insights.
+ * De scheiding wordt gehandhaafd op API-laag, niet als frontend-conventie.
+ */
+export async function saveBlockManualData(canvasId, blockKey, manualData) {
+  if (!supabase) return { error: "Supabase niet geconfigureerd" };
+
+  const { data: row, error: loadErr } = await supabase
+    .from("canvases")
+    .select("data")
+    .eq("id", canvasId)
+    .single();
+
+  if (loadErr) {
+    console.error("[deepdive] laden mislukt:", loadErr.message);
+    return { error: loadErr };
+  }
+
+  const currentData    = row?.data    || {};
+  const currentBlock   = currentData[blockKey]     || {};
+  const currentDetails = currentBlock.details      || {};
+
+  const merged = {
+    ...currentData,
+    [blockKey]: {
+      ...currentBlock,
+      details: {
+        ...currentDetails,
+        manual:      manualData,
+        ai_insights: currentDetails.ai_insights || {},
+      },
+    },
+  };
+
+  const { error } = await supabase
+    .from("canvases")
+    .update({ data: merged })
+    .eq("id", canvasId);
+
+  if (error) console.error("[deepdive] opslaan mislukt:", error.message);
+  return { error };
+}
+
+/**
  * Verwijder een canvas op basis van ID.
  */
 export async function deleteCanvas(id) {

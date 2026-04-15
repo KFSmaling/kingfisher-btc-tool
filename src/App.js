@@ -4,11 +4,11 @@ import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
-  SlidersHorizontal, User, Building2, Layers, Users, Tag
+  SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -42,6 +42,14 @@ const BLOCKS = [
   { id: "technology", titleKey: "block.technology.title", subKey: "block.technology.sub", layout: "quarter", hasSubs: true,  subTabs: PILLAR_SUBTABS },
   { id: "portfolio",  titleKey: "block.portfolio.title",  subKey: "block.portfolio.sub",  layout: "wide",    hasSubs: false, subTabs: null           },
 ];
+
+const SWOT_QUADRANTS = [
+  { key: "strengths",     labelNl: "Sterktes",    labelEn: "Strengths"    },
+  { key: "weaknesses",    labelNl: "Zwaktes",     labelEn: "Weaknesses"   },
+  { key: "opportunities", labelNl: "Kansen",      labelEn: "Opportunities"},
+  { key: "threats",       labelNl: "Bedreigingen",labelEn: "Threats"      },
+];
+const EMPTY_MANUAL = { missie: "", visie: "", swot: { strengths: "", weaknesses: "", opportunities: "", threats: "" } };
 
 // Helper to convert string arrays to bullet objects
 const eb  = (texts, source) => texts.map(text => ({ text, source }));
@@ -1501,12 +1509,137 @@ function ProjectInfoSidebar({ meta, onChange }) {
   );
 }
 
+// ── Deep Dive Overlay — "De Werkkamer" ───────────────────────────────────────
+function DeepDiveOverlay({ blockId, canvasId, onClose }) {
+  const { t, lang } = useLang();
+  const [blockLabel, setBlockLabel] = useState(blockId);
+  const [manual, setManual]         = useState(EMPTY_MANUAL);
+  const [aiInsights, setAiInsights] = useState({});
+  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error | local
+  const [isLoaded, setIsLoaded]     = useState(false);
+  const debounceRef                 = useRef(null);
+
+  // Load block label from block_definitions (IP protection)
+  useEffect(() => {
+    fetchBlockDefinitions().then(({ data }) => {
+      if (!data) return;
+      const def = data.find(d => d.key === blockId);
+      if (def) setBlockLabel(lang === "en" ? (def.label_en || def.label_nl) : def.label_nl);
+    });
+  }, [blockId, lang]);
+
+  // Load existing manual + ai_insights from canvases.data
+  useEffect(() => {
+    if (!canvasId) { setIsLoaded(true); setSaveStatus("local"); return; }
+    loadCanvasById(canvasId).then(({ data }) => {
+      const blockData = data?.data?.[blockId];
+      if (blockData?.details?.manual)      setManual(prev => ({ ...EMPTY_MANUAL, ...blockData.details.manual }));
+      if (blockData?.details?.ai_insights) setAiInsights(blockData.details.ai_insights);
+      setIsLoaded(true);
+    });
+  }, [canvasId, blockId]);
+
+  // Debounced autosave (800ms) — only after initial load
+  useEffect(() => {
+    if (!isLoaded) return;
+    clearTimeout(debounceRef.current);
+    if (!canvasId) { setSaveStatus("local"); return; }
+    setSaveStatus("saving");
+    debounceRef.current = setTimeout(async () => {
+      const { error } = await saveBlockManualData(canvasId, blockId, manual);
+      setSaveStatus(error ? "error" : "saved");
+    }, 800);
+    return () => clearTimeout(debounceRef.current);
+  }, [manual, isLoaded, canvasId, blockId]);
+
+  const updateManual = (field, value) =>
+    setManual(prev => ({ ...prev, [field]: value }));
+  const updateSwot = (key, value) =>
+    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: value } }));
+
+  const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen", error: "Fout", local: "Lokaal" }[saveStatus];
+  const statusColor = saveStatus === "error" ? "text-red-400" : saveStatus === "local" ? "text-amber-400" : "text-green-400";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0f1923] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-8 py-4 border-b border-white/10">
+        <button onClick={onClose} className="flex items-center gap-2 text-slate-400 hover:text-white text-xs uppercase tracking-widest transition-colors">
+          <ArrowLeft size={14} /> Terug naar Canvas
+        </button>
+        <div className="text-center">
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Deep Dive</p>
+          <h2 className="text-white font-bold tracking-wide">{blockLabel}</h2>
+        </div>
+        <span className={`text-xs ${statusColor}`}>{statusLabel}</span>
+      </div>
+
+      {/* Body — 2-column layout */}
+      <div className="flex flex-1 min-h-0 overflow-auto p-8 gap-8">
+        {/* Left: Missie + Visie */}
+        <div className="flex flex-col gap-6 w-1/2">
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase tracking-widest text-slate-400">Missie</label>
+            <textarea
+              value={manual.missie}
+              onChange={e => updateManual("missie", e.target.value)}
+              rows={6}
+              placeholder="Waarom bestaat deze organisatie?"
+              className="bg-white/5 border border-white/10 rounded text-white text-sm p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] uppercase tracking-widest text-slate-400">Visie</label>
+            <textarea
+              value={manual.visie}
+              onChange={e => updateManual("visie", e.target.value)}
+              rows={6}
+              placeholder="Wat willen we bereikt hebben in 3–5 jaar?"
+              className="bg-white/5 border border-white/10 rounded text-white text-sm p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
+            />
+          </div>
+          {/* AI Insights (read-only, if present) */}
+          {Object.keys(aiInsights).length > 0 && (
+            <div className="bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded p-4">
+              <p className="text-[10px] uppercase tracking-widest text-[#8dc63f] mb-2">AI Insights</p>
+              {Object.entries(aiInsights).map(([k, v]) => (
+                <p key={k} className="text-slate-300 text-xs mb-1">{String(v)}</p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: SWOT 2×2 */}
+        <div className="w-1/2 flex flex-col gap-2">
+          <label className="text-[10px] uppercase tracking-widest text-slate-400">SWOT Analyse</label>
+          <div className="grid grid-cols-2 gap-3 flex-1">
+            {SWOT_QUADRANTS.map(q => (
+              <div key={q.key} className="flex flex-col gap-1">
+                <span className="text-[9px] uppercase tracking-widest text-slate-500">
+                  {lang === "en" ? q.labelEn : q.labelNl}
+                </span>
+                <textarea
+                  value={manual.swot?.[q.key] || ""}
+                  onChange={e => updateSwot(q.key, e.target.value)}
+                  placeholder={lang === "en" ? q.labelEn : q.labelNl}
+                  className="flex-1 min-h-[140px] bg-white/5 border border-white/10 rounded text-white text-xs p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────────────────────
 function AppInner() {
   const { t, lang, setLang } = useLang();
   const { user, signOut }    = useAuth();
 
   const [activeBlockId, setActiveBlockId] = useState(null);
+  const [deepDiveBlockId, setDeepDiveBlockId] = useState(null);
   const [showConsistency, setShowConsistency] = useState(null);
   const [showTips, setShowTips]   = useState(false);
   const [tipsSection, setTipsSection] = useState("algemeen");
@@ -1860,14 +1993,21 @@ function AppInner() {
 
           {/* Row 1: Strategy — full width (col-span-12) */}
           {BLOCKS.filter(b => b.id === "strategy").map(block => (
-            <BlockCard
-              key={block.id}
-              block={block}
-              status={getBlockStatus(block.id, docs, insights, bullets)}
-              bullets={bullets[block.id]}
-              insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
-              onClick={() => setActiveBlockId(block.id)}
-            />
+            <div key={block.id} className="relative group/wrap col-span-12">
+              <BlockCard
+                block={block}
+                status={getBlockStatus(block.id, docs, insights, bullets)}
+                bullets={bullets[block.id]}
+                insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
+                onClick={() => setActiveBlockId(block.id)}
+              />
+              <button
+                onClick={() => setDeepDiveBlockId(block.id)}
+                className="absolute top-2 right-2 opacity-0 group-hover/wrap:opacity-100 transition-opacity flex items-center gap-1.5 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm shadow-lg"
+              >
+                <Maximize2 size={10} /> Verdiep
+              </button>
+            </div>
           ))}
 
           {/* Row 2: Guiding Principles — full width (col-span-12) */}
@@ -1973,6 +2113,15 @@ function AppInner() {
         <TipsModal
           initialSection={tipsSection}
           onClose={() => setShowTips(false)}
+        />
+      )}
+
+      {/* Deep Dive Overlay */}
+      {deepDiveBlockId && (
+        <DeepDiveOverlay
+          blockId={deepDiveBlockId}
+          canvasId={activeCanvasId}
+          onClose={() => setDeepDiveBlockId(null)}
         />
       )}
     </div>
