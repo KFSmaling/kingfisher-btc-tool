@@ -4,7 +4,7 @@ import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
   Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
-  SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft
+  SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
@@ -1720,23 +1720,47 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
         {/* Body — scrollable */}
         <div className="flex-1 overflow-auto p-8 flex flex-col gap-6">
 
-          {/* Zone 1: Left + Right */}
+          {/* Zone 1: Executive Summary — full width */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("executive_summary")}</label>
+              <div className="relative group/wand">
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-[10px] text-slate-300 hover:text-[#8dc63f] transition-colors cursor-default"
+                >
+                  <Wand2 size={13} /> <span className="hidden group-hover/wand:inline text-[9px] font-medium uppercase tracking-wider">AI — Coming Soon</span>
+                </button>
+              </div>
+            </div>
+            <textarea
+              value={manual.executive_summary}
+              onChange={e => updateText("executive_summary", e.target.value)}
+              rows={3}
+              placeholder="Kernboodschap voor de boardroom — de rode draad van de hele strategie…"
+              className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3.5 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+            />
+          </div>
+
+          {/* Zone 2: Strategische Doelstellingen — full width */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+              <CardList
+                cards={manual.doelstellingen || []}
+                onAdd={text => addCard("doelstellingen", text)}
+                onDelete={idx => deleteCard("doelstellingen", idx)}
+                placeholder="+ Strategische doelstelling toevoegen (Enter)…"
+                horizontal
+              />
+            </div>
+          </div>
+
+          {/* Zone 3: Split — Links (Missie/Visie/Ambitie/Kernwaarden) + Rechts (SWOT) */}
           <div className="flex gap-6">
 
-            {/* Left: Executive Summary, Missie, Visie, Ambitie, Kernwaarden */}
+            {/* Links */}
             <div className="flex flex-col gap-4 w-[38%]">
-
-              {/* Executive Summary */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("executive_summary")}</label>
-                <textarea
-                  value={manual.executive_summary}
-                  onChange={e => updateText("executive_summary", e.target.value)}
-                  rows={2}
-                  placeholder="Kernboodschap voor de boardroom…"
-                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
-                />
-              </div>
 
               {/* Missie */}
               <div className="flex flex-col gap-1.5">
@@ -1798,7 +1822,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
               )}
             </div>
 
-            {/* Right: SWOT 2×2 */}
+            {/* Rechts: SWOT 2×2 */}
             <div className="flex-1 flex flex-col gap-3">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("swot")}</label>
               <div className="grid grid-cols-2 gap-4">
@@ -1816,20 +1840,6 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
             </div>
           </div>
 
-          {/* Zone 2: Full-width — Strategische Doelstellingen */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
-              <CardList
-                cards={manual.doelstellingen || []}
-                onAdd={text => addCard("doelstellingen", text)}
-                onDelete={idx => deleteCard("doelstellingen", idx)}
-                placeholder="+ Strategische doelstelling toevoegen (Enter)…"
-                horizontal
-              />
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -1840,7 +1850,6 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, onDeepDive }) {
   const { t, lang } = useLang();
   const title = t(block.titleKey);
-  const sub   = t(block.subKey);
   const badgeDef = STATUS_BADGE_KEYS[status];
   const badge = badgeDef ? { label: t(badgeDef.labelKey), color: badgeDef.color } : null;
 
@@ -1852,12 +1861,12 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
   const swotFilled = Object.values(strategyManual?.swot || {}).some(v => Array.isArray(v) ? v.length > 0 : false);
 
   const STATUS_FIELDS = [
-    { key: "missie",         nl: "Missie",     en: "Mission"    },
-    { key: "visie",          nl: "Visie",      en: "Vision"     },
-    { key: "ambitie",        nl: "Ambitie",    en: "Ambition"   },
-    { key: "kernwaarden",    nl: "Waarden",    en: "Values"     },
-    { key: "doelstellingen", nl: "Doelen",     en: "Objectives" },
-    { key: "swot",           nl: "SWOT",       en: "SWOT",      swot: true },
+    { key: "missie",         nl: "Missie",           en: "Mission"    },
+    { key: "visie",          nl: "Visie",            en: "Vision"     },
+    { key: "ambitie",        nl: "Ambitie",          en: "Ambition"   },
+    { key: "kernwaarden",    nl: "Kernwaarden",      en: "Core Values"     },
+    { key: "doelstellingen", nl: "Doelstellingen",   en: "Objectives" },
+    { key: "swot",           nl: "SWOT",             en: "SWOT",      swot: true },
   ];
 
   return (
@@ -1869,7 +1878,6 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em]" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
-          <p className="text-[11px] text-slate-500 mt-0.5">{sub}</p>
         </div>
         <div className="flex items-center gap-2">
           {badge && (

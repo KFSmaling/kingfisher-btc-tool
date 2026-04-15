@@ -51,7 +51,12 @@ export default function LoginScreen() {
       {/* Header — blauw, consistent met canvas */}
       <header className="h-20 bg-[#1a365d] flex items-center shadow-md">
         <div className="px-6 flex items-center justify-center h-full border-r border-white/10">
-          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center brightness-0 invert" />
+          <img
+            src="/kf-logo-white.png"
+            alt="Kingfisher & Partners"
+            className="h-10 w-auto object-contain object-center"
+            onError={e => { e.target.src = "/kf-logo.png"; e.target.className = "h-10 w-auto object-contain object-center brightness-0 invert"; }}
+          />
         </div>
         <div className="px-6">
           <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-white leading-none">Business Transformation Canvas</h1>
