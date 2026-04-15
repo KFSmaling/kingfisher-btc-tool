@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -1613,13 +1613,28 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
       if (!rawText || rawText.trim().length < 20) throw new Error("Geen leesbare tekst gevonden.");
       updateJob(localId, { phase: "indexing" });
       if (dbJobId) await updateImportJob(dbJobId, { status: "indexing" });
-      await saveCanvasUpload({
+
+      // Sla rawText op en haal het upload_id op voor de chunk FK
+      const { uploadId, error: saveErr } = await saveCanvasUpload({
         fileName: file.name, rawText: rawText.slice(0, 10000),
         insights: [], blockKey: "importer", language: "nl",
         canvasId: canvasId || null, userId: userId || null,
       });
-      if (dbJobId) await updateImportJob(dbJobId, { status: "done", total_chunks: 1, processed_chunks: 1 });
-      updateJob(localId, { phase: "done" });
+      if (saveErr) throw new Error(`Opslag mislukt: ${saveErr.message || saveErr}`);
+
+      // Parent-Child chunking + OpenAI embeddings → document_chunks
+      let totalChunks = 0;
+      if (uploadId && canvasId) {
+        const { totalChildren, error: idxErr } = await indexDocumentChunks(
+          uploadId, canvasId, rawText,
+          (pct) => updateJob(localId, { indexPct: pct }),
+        );
+        if (idxErr) throw new Error(`Indexeren mislukt: ${idxErr}`);
+        totalChunks = totalChildren || 0;
+      }
+
+      if (dbJobId) await updateImportJob(dbJobId, { status: "done", total_chunks: totalChunks, processed_chunks: totalChunks });
+      updateJob(localId, { phase: "done", totalChunks });
     } catch (err) {
       updateJob(localId, { phase: "error", error: err.message });
     }
@@ -1702,6 +1717,12 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                       </span>
                     ))}
                   </div>
+                  {job.phase === "indexing" && job.indexPct !== undefined && (
+                    <p className="text-[9px] text-slate-400 mt-2">Vectoriseren: {job.indexPct}%</p>
+                  )}
+                  {job.phase === "done" && job.totalChunks > 0 && (
+                    <p className="text-[9px] text-[#2c7a4b] mt-2">{job.totalChunks} fragmenten geïndexeerd</p>
+                  )}
                   {job.phase === "error" && <p className="text-[10px] text-red-500 mt-2">{job.error}</p>}
                 </div>
               );

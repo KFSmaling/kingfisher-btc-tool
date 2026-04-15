@@ -17,10 +17,12 @@ export async function saveCanvasUpload({ fileName, rawText, insights, blockKey, 
       block_key:  blockKey,
       canvas_id:  canvasId  || null,
       user_id:    userId    || null,
-    }, { onConflict: "user_id,file_name" });
+    }, { onConflict: "user_id,file_name" })
+    .select("id")
+    .maybeSingle();
 
   if (error) console.error("[upload] Supabase opslag mislukt:", error.code, error.message);
-  return { data, error };
+  return { data, error, uploadId: data?.id || null };
 }
 
 /**
@@ -208,6 +210,107 @@ export async function updateImportJob(id, updates) {
     .eq("id", id);
   if (error) console.error("[import_job] update mislukt:", error.message);
   return { error };
+}
+
+/**
+ * Sprint 3B — Parent-Child chunking + OpenAI embedding pipeline.
+ *
+ * Parent chunks (~1000 chars) bieden retrieval-context.
+ * Child chunks (~200 chars) krijgen embeddings en zijn de zoekeenheden.
+ * Kinderen zijn via parent_id gelinkt aan hun ouder.
+ *
+ * onProgress(pct: 0-100) wordt aangeroepen na elke embedbatch.
+ */
+export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgress) {
+  if (!supabase) return { error: "Supabase niet geconfigureerd" };
+
+  const PARENT_SIZE = 1000;
+  const PARENT_STEP = 800;  // 200-char overlap tussen parents
+  const CHILD_SIZE  = 200;
+  const CHILD_STEP  = 150;  // 50-char overlap tussen children
+  const EMBED_BATCH = 50;   // max chunks per /api/embed call
+
+  // ── Stap 1: parent chunks bouwen ──────────────────────────────────────────
+  const parents = [];
+  for (let i = 0; i < rawText.length; i += PARENT_STEP) {
+    parents.push({ text: rawText.slice(i, i + PARENT_SIZE), startChar: i });
+    if (i + PARENT_SIZE >= rawText.length) break;
+  }
+  if (parents.length === 0) return { error: "Geen tekst om te indexeren" };
+
+  // ── Stap 2: parents opslaan (zonder embedding) ────────────────────────────
+  const { data: parentRows, error: parentErr } = await supabase
+    .from("document_chunks")
+    .insert(parents.map(p => ({
+      upload_id:  uploadId,
+      canvas_id:  canvasId,
+      chunk_type: "parent",
+      text:       p.text,
+      metadata:   { startChar: p.startChar },
+    })))
+    .select("id");
+
+  if (parentErr) {
+    console.error("[index] parent insert mislukt:", parentErr.message);
+    return { error: parentErr.message };
+  }
+
+  // ── Stap 3: child chunks per parent bouwen ────────────────────────────────
+  const children = [];
+  for (let pi = 0; pi < parents.length; pi++) {
+    const parentId   = parentRows[pi].id;
+    const parentText = parents[pi].text;
+    for (let ci = 0; ci < parentText.length; ci += CHILD_STEP) {
+      children.push({
+        upload_id:  uploadId,
+        canvas_id:  canvasId,
+        chunk_type: "child",
+        parent_id:  parentId,
+        text:       parentText.slice(ci, ci + CHILD_SIZE),
+      });
+      if (ci + CHILD_SIZE >= parentText.length) break;
+    }
+  }
+
+  // ── Stap 4: embed + opslaan in batches ───────────────────────────────────
+  for (let b = 0; b < children.length; b += EMBED_BATCH) {
+    const batch = children.slice(b, b + EMBED_BATCH);
+    const texts = batch.map(c => c.text);
+
+    let embeddings;
+    try {
+      const embRes = await fetch("/api/embed", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ texts }),
+      });
+      if (!embRes.ok) {
+        const err = await embRes.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${embRes.status}`);
+      }
+      ({ embeddings } = await embRes.json());
+    } catch (e) {
+      console.error("[index] embedding mislukt:", e.message);
+      return { error: `Embedding mislukt: ${e.message}` };
+    }
+
+    const rows = batch.map((c, i) => ({ ...c, embedding: embeddings[i] }));
+    const { error: insertErr } = await supabase
+      .from("document_chunks")
+      .insert(rows);
+
+    if (insertErr) {
+      console.error("[index] child insert mislukt:", insertErr.message);
+      return { error: insertErr.message };
+    }
+
+    if (onProgress) {
+      onProgress(Math.round(((b + batch.length) / children.length) * 100));
+    }
+  }
+
+  console.log(`[index] klaar: ${parents.length} parents, ${children.length} children`);
+  return { totalParents: parents.length, totalChildren: children.length, error: null };
 }
 
 /**
