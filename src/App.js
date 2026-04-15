@@ -2,12 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { LangProvider, useLang } from "./i18n";
 import {
   Upload, Zap, CheckSquare, List, ChevronRight, X,
-  Edit3, Trash2, Plus, ShieldCheck, AlertCircle, CheckCircle2,
+  Edit3, Trash2, Plus, ShieldCheck, CheckCircle2,
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
   SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2, Database
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
-import { validateDocument } from "./services/btcValidator";
 import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
@@ -105,35 +104,6 @@ const EXAMPLE_BULLETS = {
   ],
   portfolio:  eb(["Hygiene: Brand and presence, pricing benchmark, LifePro upgrade","Scenario I: WOL launch HK/Bermuda, broker portal uplift","Scenario I: Global sales build-out, customer journey redesign","Scenario II: DIFC hub, FA proposition Singapore, CRM platform"], "example-portfolio.pdf"),
 };
-
-// ── AI extraction via serverless function ────────────────────────────────────
-async function extractWithAI(blockKey, documentText, langInstruction = "Respond in Dutch.") {
-  const prompt = BLOCK_PROMPTS[blockKey];
-  if (!prompt) throw new Error(`No prompt found for block: ${blockKey}`);
-
-  const response = await fetch("/api/extract", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      blockKey,
-      documentText: langInstruction + "\n\n" + prompt + "\n\n" + documentText.slice(0, 8000),
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Server error ${response.status}`);
-  }
-
-  const data = await response.json();
-  const raw = data.text || "";
-  const start = raw.indexOf("[");
-  const end = raw.lastIndexOf("]");
-  if (start === -1 || end === -1) throw new Error("AI did not return a valid list");
-  const arr = JSON.parse(raw.slice(start, end + 1));
-  if (!Array.isArray(arr) || arr.length === 0) throw new Error("AI returned empty list");
-  return arr.slice(0, 7);
-}
 
 // ── Local scoring engine ─────────────────────────────────────────────────────
 function scoreBlock(bullets) {
@@ -311,7 +281,6 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
   const [editedInsightTexts, setEditedInsightTexts] = useState({});
   const [activeSubTab, setActiveSubTab] = useState(() => block.subTabs?.[0]?.id || "current");
 
-  const blockDocs = docs[block.id] || [];
   const blockInsights = insights[block.id] || [];
   const blockBullets = bullets[block.id] || [];
   const pendingInsights = blockInsights.filter(i => i.status === "pending");
