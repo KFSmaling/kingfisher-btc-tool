@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { BLOCK_PROMPTS } from "./prompts/btcPrompts";
 import { validateDocument } from "./services/btcValidator";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -303,17 +303,13 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
 // ── Sliding Panel ────────────────────────────────────────────────────────────
 function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose, onDocsChange, onInsightAccept, onInsightReject, onMoveToBullets, onDeleteBullet, onAddBullet, onShowTips }) {
   const { t } = useLang();
-  const [activeTab, setActiveTab] = useState("upload");
-  const [uploadPhase, setUploadPhase] = useState(null); // null | 'validating' | 'extracting'
-  const [validation, setValidation] = useState(null);
-  const [uploadError, setUploadError] = useState(null);
+  const [activeTab, setActiveTab] = useState("canvas");
   const [editingIdx, setEditingIdx] = useState(null);
   const [editVal, setEditVal] = useState("");
   const [newBullet, setNewBullet] = useState("");
   const [addingBullet, setAddingBullet] = useState(false);
   const [editedInsightTexts, setEditedInsightTexts] = useState({});
   const [activeSubTab, setActiveSubTab] = useState(() => block.subTabs?.[0]?.id || "current");
-  const fileRef = useRef();
 
   const blockDocs = docs[block.id] || [];
   const blockInsights = insights[block.id] || [];
@@ -321,105 +317,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
   const pendingInsights = blockInsights.filter(i => i.status === "pending");
   const acceptedInsights = blockInsights.filter(i => i.status === "accepted");
 
-  const handleUpload = async (file) => {
-    setUploadError(null);
-    setValidation(null);
-
-    // Duplicate check — voorkom dubbele uploads per blok
-    if ((docs[block.id] || []).includes(file.name)) {
-      setUploadError(`"${file.name}" is al geüpload voor dit blok.`);
-      return;
-    }
-
-    try {
-      // ── Stap 1: Parse (0 tokens) ───────────────────────────────────────────
-      setUploadPhase("validating");
-      const ext = file.name.split(".").pop().toLowerCase();
-      const arrayBuf = await file.arrayBuffer();
-      let text = "";
-
-      if (ext === "txt" || ext === "csv") {
-        // Client-side — direct leesbaar
-        text = new TextDecoder("utf-8").decode(arrayBuf);
-
-      } else if (ext === "pptx" || ext === "docx") {
-        // Client-side via JSZip — geen server nodig, geen size-limiet
-        const zip = await JSZip.loadAsync(arrayBuf);
-        const xmlFiles = [];
-        zip.forEach((path, zipFile) => {
-          if (
-            (ext === "pptx" && /^ppt\/slides\/slide\d+\.xml$/.test(path)) ||
-            (ext === "docx" && path === "word/document.xml")
-          ) xmlFiles.push(zipFile);
-        });
-        const xmlContents = await Promise.all(xmlFiles.map(f => f.async("string")));
-        text = xmlContents
-          .map(xml => xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
-          .join("\n\n");
-
-      } else if (ext === "pdf") {
-        // Client-side via pdfjs-dist — geen server, geen size-limiet
-        // Worker uit npm-pakket zelf, geen CDN-afhankelijkheid
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
-          import.meta.url
-        ).toString();
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuf) }).promise;
-        const pages = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          pages.push(content.items.map(i => i.str).join(" "));
-        }
-        text = pages.join("\n\n");
-
-      } else {
-        throw new Error(`Bestandstype .${ext} wordt niet ondersteund.`);
-      }
-
-      text = text.trim();
-      if (text.length < 30) throw new Error("Bestand bevat geen leesbare tekst.");
-
-      // ── Stap 2: Validate (goedkoop model, weinig tokens) ──────────────────
-      const validResult = await validateDocument(text);
-      if (!validResult.isValid) {
-        throw new Error(validResult.overallReason || "Document niet geschikt voor BTC-analyse.");
-      }
-      setValidation(validResult);
-
-      // ── Stap 3: Extract (premium model, alleen bij goedkeuring) ───────────
-      setUploadPhase("extracting");
-      const items = await extractWithAI(block.id, text, t("ai.language"));
-      const newInsights = items.map((item, i) => ({
-        id: Date.now() + i,
-        text:   typeof item === "string" ? item : item.text,
-        subtab: typeof item === "object" && item.subtab ? item.subtab : undefined,
-        status: "pending",
-        source: file.name,
-      }));
-      onDocsChange(block.id, file.name, newInsights);
-
-      // ── Stap 4: Opslaan in Supabase (canvas_uploads) ─────────────────────
-      saveCanvasUpload({
-        fileName: file.name,
-        rawText:  text,
-        insights: items.map(i => typeof i === "string" ? i : i.text),
-        blockKey: block.id,
-        language: t("ai.language").includes("Dutch") ? "nl" : "en",
-        canvasId: canvasId || null,
-        userId:   userId   || null,
-      });
-
-      setActiveTab("extract");
-    } catch (err) {
-      setUploadError(err.message);
-    } finally {
-      setUploadPhase(null);
-    }
-  };
-
   const TABS = [
-    { id: "upload",   labelKey: "panel.tab.upload",  icon: Upload },
     { id: "extract",  labelKey: "panel.tab.extract", icon: Zap },
     { id: "review",   labelKey: "panel.tab.review",  icon: CheckSquare },
     { id: "canvas",   labelKey: "panel.tab.canvas",  icon: List },
@@ -466,114 +364,14 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-8">
 
-        {/* 1. UPLOAD */}
-        {activeTab === "upload" && (
-          <div className="space-y-6">
-            <div
-              onClick={() => !uploadPhase && fileRef.current?.click()}
-              className={`border-2 border-dashed rounded-sm p-12 text-center transition-all cursor-pointer group
-                ${uploadPhase === "validating" ? "border-violet-300 bg-violet-50" :
-                  uploadPhase === "extracting" ? "border-orange-300 bg-orange-50" :
-                  "border-slate-200 bg-slate-50 hover:border-[#1a365d] hover:bg-blue-50"}`}
-            >
-              {uploadPhase === "validating" && (
-                <>
-                  <ShieldCheck size={40} className="mx-auto mb-4 text-violet-400 animate-pulse" />
-                  <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest">{t("upload.scanning")}</p>
-                  <p className="text-[9px] text-violet-300 mt-1">{t("upload.scanning.sub")}</p>
-                </>
-              )}
-              {uploadPhase === "extracting" && (
-                <>
-                  <Zap size={40} className="mx-auto mb-4 text-orange-400 animate-pulse" />
-                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">{t("upload.extracting")}</p>
-                  <p className="text-[9px] text-orange-300 mt-1">{t("upload.extracting.sub")}</p>
-                </>
-              )}
-              {!uploadPhase && (
-                <>
-                  <Upload size={40} className="mx-auto mb-4 text-slate-300 group-hover:text-[#2c7a4b]" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("upload.cta")}</p>
-                  <p className="text-[9px] text-slate-300 mt-1">{t("upload.formats")}</p>
-                </>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".pdf,.txt,.pptx,.docx,.csv"
-                className="hidden"
-                onChange={e => e.target.files[0] && handleUpload(e.target.files[0])}
-              />
-            </div>
-
-            {uploadError && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-sm text-red-700 text-xs">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <span>{uploadError}</span>
-              </div>
-            )}
-
-            {/* Validatieresultaat */}
-            {validation && !uploadPhase && (
-              <div className="border border-slate-200 rounded-sm overflow-hidden">
-                <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-                  <ShieldCheck size={13} className="text-[#2d6e4e]" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{t("upload.scan.result")}</span>
-                  <span className="ml-auto text-[9px] text-slate-400 italic">{validation.overallReason}</span>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {Object.entries(validation.confidenceScores || {}).map(([blockId, data]) => {
-                    const score = data?.score ?? 0;
-                    const color = score >= 70 ? "bg-[#2d6e4e]" : score >= 30 ? "bg-orange-400" : "bg-slate-200";
-                    const textColor = score >= 70 ? "text-[#2d6e4e]" : score >= 30 ? "text-orange-500" : "text-slate-400";
-                    const blockDef = BLOCKS.find(b => b.id === blockId);
-                    const label = blockDef ? t(blockDef.titleKey) : blockId;
-                    const isCurrentBlock = blockId === block.id;
-                    return (
-                      <div key={blockId} className={`flex items-center gap-3 px-4 py-2 ${isCurrentBlock ? "bg-blue-50" : ""}`}>
-                        <span className={`text-[9px] font-black uppercase w-36 shrink-0 ${isCurrentBlock ? "text-[#001f33]" : "text-slate-500"}`}>{label}</span>
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${score}%` }} />
-                        </div>
-                        <span className={`text-[9px] font-black w-8 text-right ${textColor}`}>{score}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {blockDocs.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">{t("upload.docs.label")}</p>
-                {blockDocs.map((doc, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-sm text-xs text-slate-700">
-                    <FileText size={14} className="text-[#1a365d] shrink-0" />
-                    {doc}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {blockInsights.length > 0 && (
-              <button
-                onClick={() => setActiveTab("extract")}
-                className="w-full py-3 bg-[#001f33] text-white text-xs font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors"
-              >
-                {t("upload.view.insights", { n: blockInsights.length })}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* 2. EXTRACT */}
+        {/* 1. EXTRACT */}
         {activeTab === "extract" && (
           <div className="space-y-4">
             {pendingInsights.length === 0 && acceptedInsights.length === 0 && (
               <div className="text-center py-16">
                 <Zap size={32} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("extract.empty")}</p>
-                <button onClick={() => setActiveTab("upload")} className="mt-4 text-xs text-[#1a365d] font-bold hover:underline">{t("extract.back")}</button>
+                <p className="text-[9px] text-slate-300 mt-2">Upload documenten via Het Magazijn</p>
               </div>
             )}
 
@@ -1731,9 +1529,86 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
         )}
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">
-          <p className="text-[9px] text-slate-300 uppercase tracking-widest">Sprint 3B: Embeddings · Sprint 3C: Magic Staff AI</p>
+          <p className="text-[9px] text-slate-300 uppercase tracking-widest">Kennisbank · Indexeer documenten voor Magic Staff AI</p>
           <button onClick={onClose} className="text-xs font-bold text-slate-400 hover:text-[#1a365d] uppercase tracking-widest transition-colors">Sluiten</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sprint 3C — Magic Staff helpers ─────────────────────────────────────────
+
+/** Typewriter-effect: typt `text` karakter voor karakter met `speed` ms interval. */
+function useTypewriter(text, speed = 10) {
+  const [displayed, setDisplayed] = useState("");
+  useEffect(() => {
+    if (!text) { setDisplayed(""); return; }
+    setDisplayed("");
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return displayed;
+}
+
+/** Kleine wand-knop naast een veldlabel. */
+function WandButton({ onClick, loading, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading || disabled}
+      className={`flex items-center gap-1 text-[10px] transition-colors rounded px-1 py-0.5
+        ${loading ? "text-[#8dc63f] cursor-default" : "text-slate-300 hover:text-[#8dc63f] hover:bg-[#8dc63f]/8"}`}
+      title="Magic Staff — AI voorstel op basis van geïndexeerde documenten"
+    >
+      <Wand2 size={12} className={loading ? "animate-pulse" : ""} />
+    </button>
+  );
+}
+
+/** Toont AI-voorstel met typewriter, bronvermelding en Overnemen/Weggooien knoppen. */
+function MagicResult({ result, onAccept, onReject }) {
+  const typed = useTypewriter(result?.suggestion, 10);
+  if (!result || (!result.loading && !result.suggestion && !result.error)) return null;
+
+  if (result.loading) return (
+    <div className="mt-2 px-3 py-2.5 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg">
+      <div className="flex items-center gap-2">
+        <Wand2 size={11} className="text-[#8dc63f] animate-pulse flex-shrink-0" />
+        <span className="text-[9px] font-semibold text-[#2c7a4b] uppercase tracking-wider animate-pulse">AI genereert voorstel…</span>
+      </div>
+    </div>
+  );
+
+  if (result.error) return (
+    <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+      <p className="text-[10px] text-red-500">{result.error}</p>
+    </div>
+  );
+
+  return (
+    <div className="mt-2 px-3 py-2.5 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg space-y-2">
+      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{typed}</p>
+      {result.citations?.length > 0 && (
+        <p className="text-[9px] text-slate-400 italic leading-relaxed">
+          Bron: {result.citations.join(" · ")}
+        </p>
+      )}
+      <div className="flex items-center gap-4 pt-1.5 border-t border-[#8dc63f]/20">
+        <button onClick={onAccept}
+          className="text-[10px] font-black uppercase tracking-widest text-[#2c7a4b] hover:text-[#1a365d] transition-colors">
+          Overnemen →
+        </button>
+        <button onClick={onReject}
+          className="text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-red-400 transition-colors">
+          Weggooien
+        </button>
       </div>
     </div>
   );
@@ -1754,7 +1629,7 @@ function SwotCard({ text, onDelete }) {
   );
 }
 
-function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete }) {
+function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete, magicResult, onMagic, onAcceptMagic, onRejectMagic }) {
   const [draft, setDraft] = useState("");
   const label = lang === "en" ? quadrant.labelEn : quadrant.labelNl;
 
@@ -1765,10 +1640,17 @@ function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete }) {
 
   return (
     <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg h-72`}>
-      {/* Label */}
-      <div className="px-3 pt-3 pb-1 flex-shrink-0">
+      {/* Label + wand */}
+      <div className="px-3 pt-3 pb-1 flex-shrink-0 flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-widest text-slate-600">{label}</span>
+        {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
       </div>
+      {/* Inline magic result */}
+      {magicResult && (magicResult.loading || magicResult.suggestion || magicResult.error) && (
+        <div className="px-3 pb-1 flex-shrink-0">
+          <MagicResult result={magicResult} onAccept={onAcceptMagic} onReject={onRejectMagic} />
+        </div>
+      )}
       {/* Scrollable card list */}
       <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1">
         {cards.map((text, i) => (
@@ -1821,6 +1703,9 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
   const [saveStatus, setSaveStatus]   = useState("idle");
   const [isLoaded, setIsLoaded]       = useState(false);
   const [mounted, setMounted]         = useState(false);
+  const [magic, setMagic]             = useState({});         // { [fieldKey]: { loading, suggestion, citations, error } }
+  const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
+  const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const debounceRef                   = useRef(null);
 
   // Entrance animation
@@ -1906,10 +1791,83 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
   const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout", local: "Lokaal" }[saveStatus];
   const statusColor = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", local: "text-amber-500", idle: "" }[saveStatus];
 
+  // ── Magic Staff helpers ────────────────────────────────────────────────────
+  const setMagicFor = (key, patch) =>
+    setMagic(prev => ({ ...prev, [key]: patch === null ? undefined : { ...(prev[key] || {}), ...patch } }));
+
+  const callMagic = async (fieldKey, fieldLabel, existingText = "", isArray = false) => {
+    if (!canvasId) {
+      setMagicFor(fieldKey, { error: "Sla het canvas eerst op om Magic Staff te gebruiken." });
+      return;
+    }
+    setMagicFor(fieldKey, { loading: true, suggestion: null, citations: [], error: null });
+    try {
+      // 1. Embed de zoekvraag
+      const query = isArray
+        ? `Lijst van ${fieldLabel} voor deze organisatie`
+        : `${fieldLabel}${existingText ? ": " + existingText.slice(0, 200) : ""}`;
+      const embRes = await fetch("/api/embed", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: [query] }),
+      });
+      if (!embRes.ok) throw new Error("Embedding mislukt");
+      const { embeddings } = await embRes.json();
+
+      // 2. Vector search
+      const { data: chunks } = await searchDocumentChunks(embeddings[0], canvasId, 5);
+      const context   = (chunks || []).map(c => c.content).join("\n\n---\n\n");
+      const citations = [...new Set((chunks || []).map(c => c.file_name).filter(Boolean))];
+
+      // 3. Claude suggestie
+      const magicRes = await fetch("/api/magic", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: fieldLabel, context, existingText, isArray }),
+      });
+      const magicData = await magicRes.json();
+      if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
+      setMagicFor(fieldKey, { loading: false, suggestion: magicData.suggestion, citations });
+    } catch (err) {
+      setMagicFor(fieldKey, { loading: false, error: err.message });
+    }
+  };
+
+  const acceptMagicText = (fieldKey) => {
+    const s = magic[fieldKey]?.suggestion;
+    if (s) updateText(fieldKey, s);
+    setMagicFor(fieldKey, null);
+  };
+  const acceptMagicArray = (fieldKey) => {
+    const items = (magic[fieldKey]?.suggestion || "").split("\n").map(s => s.trim()).filter(Boolean);
+    items.forEach(item => addCard(fieldKey, item));
+    setMagicFor(fieldKey, null);
+  };
+  const acceptMagicSwot = (swotKey) => {
+    const fk = `swot_${swotKey}`;
+    const items = (magic[fk]?.suggestion || "").split("\n").map(s => s.trim()).filter(Boolean);
+    items.forEach(item => addSwot(swotKey, item));
+    setMagicFor(fk, null);
+  };
+  const rejectMagic = (fieldKey) => setMagicFor(fieldKey, null);
+
+  const handleAutopilot = async () => {
+    setAutoDraftOpen(false);
+    setAutoDraftRunning(true);
+    const fields = [
+      { key: "executive_summary", label: L("executive_summary"), text: manual.executive_summary, isArray: false },
+      { key: "missie",            label: L("missie"),            text: manual.missie,            isArray: false },
+      { key: "visie",             label: L("visie"),             text: manual.visie,             isArray: false },
+      { key: "ambitie",           label: L("ambitie"),           text: manual.ambitie,           isArray: false },
+      { key: "kernwaarden",       label: L("kernwaarden"),       text: "",                       isArray: true  },
+      { key: "doelstellingen",    label: L("doelstellingen"),    text: "",                       isArray: true  },
+    ];
+    for (const f of fields) await callMagic(f.key, f.label, f.text, f.isArray);
+    setAutoDraftRunning(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
       <div
-        className={`flex flex-col flex-1 bg-slate-50 transition-all duration-300 ease-out
+        className={`flex flex-col flex-1 bg-slate-50 transition-all duration-300 ease-out relative
           ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}
       >
         {/* Header */}
@@ -1924,8 +1882,52 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
             <p className="text-xl font-black text-[#1a365d] tracking-tight leading-none">{blockLabel}</p>
             <p className="text-[10px] text-slate-400 uppercase tracking-[0.18em] font-medium mt-1">Verdieping</p>
           </div>
-          <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setAutoDraftOpen(true)}
+              disabled={autoDraftRunning || !canvasId}
+              title={!canvasId ? "Sla het canvas eerst op" : "Genereer alle velden op basis van geïndexeerde documenten"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
+                ${autoDraftRunning ? "bg-[#8dc63f]/20 text-[#2c7a4b] cursor-default" :
+                  !canvasId ? "bg-slate-100 text-slate-300 cursor-not-allowed" :
+                  "bg-[#8dc63f]/10 hover:bg-[#8dc63f]/20 text-[#2c7a4b]"}`}
+            >
+              <Wand2 size={11} className={autoDraftRunning ? "animate-pulse" : ""} />
+              {autoDraftRunning ? "Bezig…" : "Full Draft"}
+            </button>
+            <span className={`text-xs font-medium min-w-[80px] text-right ${statusColor}`}>{statusLabel}</span>
+          </div>
         </div>
+
+        {/* Autopilot bevestigingsdialoog */}
+        {autoDraftOpen && (
+          <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex items-center justify-center p-8">
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+              <div className="w-12 h-12 rounded-full bg-[#8dc63f]/10 flex items-center justify-center mx-auto mb-4">
+                <Wand2 size={22} className="text-[#8dc63f]" />
+              </div>
+              <h3 className="text-lg font-black text-[#1a365d] uppercase tracking-tight mb-2">Full Page Draft</h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                AI genereert voorstellen voor alle velden op basis van geïndexeerde documenten.
+                Je kunt elk voorstel afzonderlijk overnemen of weggooien.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleAutopilot}
+                  className="px-5 py-2.5 bg-[#1a365d] text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-[#2c7a4b] transition-colors"
+                >
+                  Start Autopilot
+                </button>
+                <button
+                  onClick={() => setAutoDraftOpen(false)}
+                  className="px-5 py-2.5 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Body — scrollable */}
         <div className="flex-1 overflow-auto p-8 flex flex-col gap-6">
@@ -1934,14 +1936,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-2">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("executive_summary")}</label>
-              <div className="relative group/wand">
-                <button
-                  type="button"
-                  className="flex items-center gap-1 text-[10px] text-slate-300 hover:text-[#8dc63f] transition-colors cursor-default"
-                >
-                  <Wand2 size={13} /> <span className="hidden group-hover/wand:inline text-[9px] font-medium uppercase tracking-wider">AI — Coming Soon</span>
-                </button>
-              </div>
+              <WandButton onClick={() => callMagic("executive_summary", L("executive_summary"), manual.executive_summary)} loading={magic.executive_summary?.loading} />
             </div>
             <textarea
               value={manual.executive_summary}
@@ -1950,11 +1945,15 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
               placeholder="Kernboodschap voor de boardroom — de rode draad van de hele strategie…"
               className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3.5 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
             />
+            <MagicResult result={magic.executive_summary} onAccept={() => acceptMagicText("executive_summary")} onReject={() => rejectMagic("executive_summary")} />
           </div>
 
           {/* Zone 2: Strategische Doelstellingen — full width */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
+              <WandButton onClick={() => callMagic("doelstellingen", L("doelstellingen"), "", true)} loading={magic.doelstellingen?.loading} />
+            </div>
             <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
               <CardList
                 cards={manual.doelstellingen || []}
@@ -1964,6 +1963,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
                 horizontal
               />
             </div>
+            <MagicResult result={magic.doelstellingen} onAccept={() => acceptMagicArray("doelstellingen")} onReject={() => rejectMagic("doelstellingen")} />
           </div>
 
           {/* Zone 3: Split — Links (Missie/Visie/Ambitie/Kernwaarden) + Rechts (SWOT) */}
@@ -1974,7 +1974,10 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Missie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("missie")}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("missie")}</label>
+                  <WandButton onClick={() => callMagic("missie", L("missie"), manual.missie)} loading={magic.missie?.loading} />
+                </div>
                 <textarea
                   value={manual.missie}
                   onChange={e => updateText("missie", e.target.value)}
@@ -1982,11 +1985,15 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
                   placeholder="Waarom bestaat deze organisatie?"
                   className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
                 />
+                <MagicResult result={magic.missie} onAccept={() => acceptMagicText("missie")} onReject={() => rejectMagic("missie")} />
               </div>
 
               {/* Visie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("visie")}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("visie")}</label>
+                  <WandButton onClick={() => callMagic("visie", L("visie"), manual.visie)} loading={magic.visie?.loading} />
+                </div>
                 <textarea
                   value={manual.visie}
                   onChange={e => updateText("visie", e.target.value)}
@@ -1994,11 +2001,15 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
                   placeholder="Wat willen we bereikt hebben in 3–5 jaar?"
                   className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
                 />
+                <MagicResult result={magic.visie} onAccept={() => acceptMagicText("visie")} onReject={() => rejectMagic("visie")} />
               </div>
 
               {/* Ambitie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("ambitie")}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("ambitie")}</label>
+                  <WandButton onClick={() => callMagic("ambitie", L("ambitie"), manual.ambitie)} loading={magic.ambitie?.loading} />
+                </div>
                 <textarea
                   value={manual.ambitie}
                   onChange={e => updateText("ambitie", e.target.value)}
@@ -2006,11 +2017,15 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
                   placeholder="Wat is onze stoutmoedigste ambitie?"
                   className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
                 />
+                <MagicResult result={magic.ambitie} onAccept={() => acceptMagicText("ambitie")} onReject={() => rejectMagic("ambitie")} />
               </div>
 
               {/* Kernwaarden */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("kernwaarden")}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("kernwaarden")}</label>
+                  <WandButton onClick={() => callMagic("kernwaarden", L("kernwaarden"), "", true)} loading={magic.kernwaarden?.loading} />
+                </div>
                 <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-col gap-1.5">
                   <CardList
                     cards={manual.kernwaarden || []}
@@ -2019,6 +2034,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
                     placeholder="+ Kernwaarde toevoegen (Enter)…"
                   />
                 </div>
+                <MagicResult result={magic.kernwaarden} onAccept={() => acceptMagicArray("kernwaarden")} onReject={() => rejectMagic("kernwaarden")} />
               </div>
 
               {/* AI Insights (read-only) */}
@@ -2036,16 +2052,24 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
             <div className="flex-1 flex flex-col gap-3">
               <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("swot")}</label>
               <div className="grid grid-cols-2 gap-4">
-                {SWOT_QUADRANTS.map(q => (
-                  <SwotQuadrant
-                    key={q.key}
-                    quadrant={q}
-                    cards={manual.swot?.[q.key] || []}
-                    lang={lang}
-                    onAdd={text => addSwot(q.key, text)}
-                    onDelete={idx => deleteSwot(q.key, idx)}
-                  />
-                ))}
+                {SWOT_QUADRANTS.map(q => {
+                  const fk = `swot_${q.key}`;
+                  const qLabel = lang === "en" ? q.labelEn : q.labelNl;
+                  return (
+                    <SwotQuadrant
+                      key={q.key}
+                      quadrant={q}
+                      cards={manual.swot?.[q.key] || []}
+                      lang={lang}
+                      onAdd={text => addSwot(q.key, text)}
+                      onDelete={idx => deleteSwot(q.key, idx)}
+                      magicResult={magic[fk]}
+                      onMagic={() => callMagic(fk, qLabel, "", true)}
+                      onAcceptMagic={() => acceptMagicSwot(q.key)}
+                      onRejectMagic={() => rejectMagic(fk)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -314,6 +314,37 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
 }
 
 /**
+ * Sprint 3C — Vector similarity search via Supabase RPC.
+ * Vereist de `match_document_chunks` functie in Supabase (zie SQL hieronder).
+ *
+ * SQL om in Supabase SQL Editor uit te voeren:
+ *   CREATE OR REPLACE FUNCTION match_document_chunks(
+ *     query_embedding vector(1536),
+ *     match_canvas_id uuid,
+ *     match_count int DEFAULT 5
+ *   ) RETURNS TABLE (id uuid, content text, file_name text, page_number int, distance float)
+ *   LANGUAGE sql STABLE AS $$
+ *     SELECT dc.id, dc.content, cu.file_name, dc.page_number,
+ *            (dc.embedding <=> query_embedding)::float AS distance
+ *     FROM document_chunks dc
+ *     LEFT JOIN canvas_uploads cu ON dc.upload_id = cu.id
+ *     WHERE dc.chunk_type = 'child'
+ *       AND dc.canvas_id = match_canvas_id
+ *       AND dc.embedding IS NOT NULL
+ *     ORDER BY dc.embedding <=> query_embedding
+ *     LIMIT match_count;
+ *   $$;
+ */
+export async function searchDocumentChunks(embedding, canvasId, count = 5) {
+  if (!supabase) return { data: [], error: null };
+  return supabase.rpc("match_document_chunks", {
+    query_embedding: embedding,
+    match_canvas_id: canvasId,
+    match_count: count,
+  });
+}
+
+/**
  * Verwijder een canvas op basis van ID.
  */
 export async function deleteCanvas(id) {
