@@ -48,14 +48,14 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen bg-[#F4F7F9] flex flex-col">
 
-      {/* Header — zelfde stijl als app */}
-      <header className="h-20 bg-white flex items-center shadow-sm border-b border-slate-200">
-        <div className="px-6 flex items-center justify-center h-full border-r border-slate-200">
-          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center" />
+      {/* Header — blauw, consistent met canvas */}
+      <header className="h-20 bg-[#1a365d] flex items-center shadow-md">
+        <div className="px-6 flex items-center justify-center h-full border-r border-white/10">
+          <img src="/kf-logo.png" alt="Kingfisher & Partners" className="h-10 w-auto object-contain object-center brightness-0 invert" />
         </div>
         <div className="px-6">
-          <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-[#1a365d] leading-none">Business Transformation Canvas</h1>
-          <p className="text-[10px] tracking-[0.12em] text-orange-500 mt-1.5 uppercase font-semibold">From strategy to execution</p>
+          <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-white leading-none">Business Transformation Canvas</h1>
+          <p className="text-[10px] tracking-[0.12em] text-[#8dc63f] mt-1.5 uppercase font-semibold">From strategy to execution</p>
         </div>
       </header>
 
@@ -107,9 +107,20 @@ export default function LoginScreen() {
               </div>
 
               <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                  Wachtwoord
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    Wachtwoord
+                  </label>
+                  {mode === "login" && (
+                    <button
+                      type="button"
+                      onClick={() => setInfo("Neem contact op met de beheerder om je wachtwoord te resetten.")}
+                      className="text-[10px] text-[#1a365d] hover:text-[#2c7a4b] font-semibold transition-colors"
+                    >
+                      Wachtwoord vergeten?
+                    </button>
+                  )}
+                </div>
                 <input
                   type="password"
                   value={password}
@@ -134,7 +145,7 @@ export default function LoginScreen() {
             {/* Mode toggle */}
             <div className="px-8 pb-7 border-t border-slate-100 pt-5">
               {mode === "login" ? (
-                <p className="text-[10px] text-slate-400 text-center">
+                <p className="text-sm text-slate-500 text-center">
                   Nog geen account?{" "}
                   <button
                     onClick={() => { setMode("register"); setError(null); setInfo(null); }}
@@ -144,7 +155,7 @@ export default function LoginScreen() {
                   </button>
                 </p>
               ) : (
-                <p className="text-[10px] text-slate-400 text-center">
+                <p className="text-sm text-slate-500 text-center">
                   Al een account?{" "}
                   <button
                     onClick={() => { setMode("login"); setError(null); setInfo(null); }}

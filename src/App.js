@@ -1302,7 +1302,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
       ) : (
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2.5 group">
           <div className="flex flex-col items-start">
-            <span className="text-[9px] text-white/40 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
+            <span className="text-[9px] text-white/55 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
             <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#8dc63f] transition-colors">
               {displayName}
             </span>
@@ -1317,7 +1317,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
       {!editingName && (
         <button
           onClick={() => { setDraftName(currentName || ""); setEditingName(true); setOpen(false); }}
-          className="ml-2 mt-1 text-white/30 hover:text-white transition-colors"
+          className="ml-2 mt-1 text-white/50 hover:text-white transition-colors"
           title={t("menu.edit.name")}
         >
           <Edit3 size={12} />
@@ -1557,7 +1557,7 @@ function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete }) {
     <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg h-72`}>
       {/* Label */}
       <div className="px-3 pt-3 pb-1 flex-shrink-0">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-slate-600">{label}</span>
       </div>
       {/* Scrollable card list */}
       <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1">
@@ -1711,8 +1711,8 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
             <ArrowLeft size={13} /> Terug naar Canvas
           </button>
           <div className="text-center">
-            <p className="text-[9px] text-slate-400 uppercase tracking-[0.15em] font-medium">Deep Dive</p>
-            <h2 className="text-[#1a365d] font-bold tracking-wide text-base">{blockLabel}</h2>
+            <p className="text-xl font-black text-[#1a365d] tracking-tight leading-none">{blockLabel}</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-[0.18em] font-medium mt-1">Verdieping</p>
           </div>
           <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
         </div>
@@ -1728,7 +1728,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Executive Summary */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("executive_summary")}</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("executive_summary")}</label>
                 <textarea
                   value={manual.executive_summary}
                   onChange={e => updateText("executive_summary", e.target.value)}
@@ -1740,7 +1740,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Missie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("missie")}</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("missie")}</label>
                 <textarea
                   value={manual.missie}
                   onChange={e => updateText("missie", e.target.value)}
@@ -1752,7 +1752,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Visie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("visie")}</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("visie")}</label>
                 <textarea
                   value={manual.visie}
                   onChange={e => updateText("visie", e.target.value)}
@@ -1764,7 +1764,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Ambitie */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("ambitie")}</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("ambitie")}</label>
                 <textarea
                   value={manual.ambitie}
                   onChange={e => updateText("ambitie", e.target.value)}
@@ -1776,7 +1776,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
               {/* Kernwaarden */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("kernwaarden")}</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("kernwaarden")}</label>
                 <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-col gap-1.5">
                   <CardList
                     cards={manual.kernwaarden || []}
@@ -1800,7 +1800,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
             {/* Right: SWOT 2×2 */}
             <div className="flex-1 flex flex-col gap-3">
-              <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("swot")}</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("swot")}</label>
               <div className="grid grid-cols-2 gap-4">
                 {SWOT_QUADRANTS.map(q => (
                   <SwotQuadrant
@@ -1818,7 +1818,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
 
           {/* Zone 2: Full-width — Strategische Doelstellingen */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{L("doelstellingen")}</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
             <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
               <CardList
                 cards={manual.doelstellingen || []}
@@ -1884,32 +1884,27 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
         </div>
       </div>
 
-      {/* Executive summary preview */}
-      {filled(strategyManual?.executive_summary) && (
+      {/* Strategische samenvatting (executive summary uit DB) */}
+      {filled(strategyManual?.executive_summary) ? (
         <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic">
-          {String(strategyManual.executive_summary).slice(0, 160)}{strategyManual.executive_summary.length > 160 ? "…" : ""}
+          {String(strategyManual.executive_summary).slice(0, 200)}{strategyManual.executive_summary.length > 200 ? "…" : ""}
         </p>
-      )}
-      {!filled(strategyManual?.executive_summary) && (bullets || []).length > 0 && (
-        <div className="space-y-1">
-          {(bullets || []).slice(0, 3).map((b, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <div className="mt-1.5 w-1 h-1 rotate-45 shrink-0 bg-[#1a365d]" />
-              <span className="text-[13px] text-slate-700 leading-snug">{b.text}</span>
-            </div>
-          ))}
-        </div>
+      ) : (
+        <p className="text-[11px] text-slate-300 italic">Voeg een Executive Summary toe via Verdieping →</p>
       )}
 
-      {/* Status icons row */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Status monitor — checkmarks voor kleurenblindheid */}
+      <div className="flex items-center gap-4 flex-wrap pt-1 border-t border-slate-100">
         {STATUS_FIELDS.map(f => {
           const isOk = f.swot ? swotFilled : filled(strategyManual?.[f.key]);
           const label = lang === "en" ? f.en : f.nl;
           return (
-            <div key={f.key} className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${isOk ? "bg-[#8dc63f]" : "bg-slate-200"}`} />
-              <span className={`text-[9px] uppercase tracking-wider font-medium ${isOk ? "text-[#4a7c1f]" : "text-slate-300"}`}>{label}</span>
+            <div key={f.key} className="flex items-center gap-1.5">
+              {isOk
+                ? <CheckCircle2 size={13} className="text-[#2c7a4b] flex-shrink-0" />
+                : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 flex-shrink-0" />
+              }
+              <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOk ? "text-slate-600" : "text-slate-300"}`}>{label}</span>
             </div>
           );
         })}
