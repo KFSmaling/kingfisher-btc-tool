@@ -6,7 +6,7 @@ import {
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
   SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2, Database
 } from "lucide-react";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks, loadDossierFiles, deleteDossierFile } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks, loadDossierFiles, deleteDossierFile, countIndexedChunks, deleteCanvas } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -1036,11 +1036,12 @@ function TipsModal({ onClose, initialSection }) {
  * CanvasMenu — toont huidige canvas naam + dropdown met alle canvassen.
  * Props worden van AppInner doorgegeven; geen eigen state voor de lijst.
  */
-function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, onRename, onLoadExample }) {
+function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, onRename, onLoadExample, onDelete }) {
   const { t } = useLang();
-  const [open, setOpen]               = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [draftName, setDraftName]     = useState("");
+  const [open, setOpen]                     = useState(false);
+  const [editingName, setEditingName]       = useState(false);
+  const [draftName, setDraftName]           = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const displayName = currentName || t("menu.unnamed");
 
@@ -1120,23 +1121,60 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
               <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest px-1 pb-1">{t("menu.saved")}</p>
                 {canvases.map(c => {
-                  const dateSource = c.updated_at || c.created_at;
-                  const savedAt = dateSource
-                    ? new Date(dateSource).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })
+                  const createdAt = c.created_at
+                    ? new Date(c.created_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })
                     : "";
-                  const dateLabel = c.updated_at ? "Gewijzigd" : "Aangemaakt";
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => { onSelect(c); setOpen(false); }}
-                      className={`w-full text-left px-3 py-2.5 rounded-sm flex items-center justify-between group transition-colors
-                        ${c.id === activeCanvasId ? "bg-[#1a365d]/5 border border-[#1a365d]/20" : "hover:bg-slate-50"}`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-slate-700 truncate">{c.name || t("menu.unnamed")}</p>
-                        <p className="text-[9px] text-slate-400">{dateLabel} {savedAt}</p>
+                  const docCount   = c.canvas_uploads?.length ?? 0;
+                  const isActive   = c.id === activeCanvasId;
+                  const isConfirm  = confirmDeleteId === c.id;
+
+                  // Bevestigingsbalk
+                  if (isConfirm) return (
+                    <div key={c.id} className="px-3 py-2 rounded-sm bg-red-50 border border-red-200">
+                      <p className="text-[10px] font-semibold text-red-700 mb-1.5 truncate">
+                        Verwijder "{c.name || "Naamloos"}"?
+                      </p>
+                      <p className="text-[9px] text-red-500 mb-2">Dit verwijdert ook alle geüploade documenten en chunks.</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { onDelete(c.id); setConfirmDeleteId(null); setOpen(false); }}
+                          className="flex-1 text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 rounded px-2 py-1 transition-colors"
+                        >
+                          Ja, verwijder
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="flex-1 text-[10px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1 transition-colors"
+                        >
+                          Annuleer
+                        </button>
                       </div>
-                    </button>
+                    </div>
+                  );
+
+                  return (
+                    <div key={c.id} className={`group/item rounded-sm flex items-center gap-1 transition-colors
+                      ${isActive ? "bg-[#1a365d]/5 border border-[#1a365d]/20" : "hover:bg-slate-50"}`}>
+                      <button
+                        onClick={() => { onSelect(c); setOpen(false); }}
+                        className="flex-1 text-left px-3 py-2.5 min-w-0"
+                      >
+                        <p className="text-xs font-semibold text-slate-700 truncate">{c.name || t("menu.unnamed")}</p>
+                        <p className="text-[9px] text-slate-400">Aangemaakt {createdAt} · {docCount} {docCount === 1 ? "document" : "documenten"}</p>
+                      </button>
+                      {isActive
+                        ? <span className="text-[8px] font-bold text-[#1a365d]/60 uppercase tracking-widest pr-3 flex-shrink-0">Actief</span>
+                        : (
+                          <button
+                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(c.id); }}
+                            className="opacity-0 group-hover/item:opacity-100 transition-opacity pr-2.5 text-slate-300 hover:text-red-400 flex-shrink-0"
+                            title="Canvas verwijderen"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )
+                      }
+                    </div>
                   );
                 })}
               </div>
@@ -1621,7 +1659,10 @@ function MagicResult({ result, onAccept, onReject }) {
       <AlertTriangle size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
       <div>
         <p className="text-[10px] font-bold text-amber-700">Geen documenten gevonden in Het Dossier.</p>
-        <p className="text-[9px] text-amber-500 mt-0.5">Upload eerst bestanden via Het Dossier om Magic Staff te activeren.</p>
+        {result.noChunksDiagnose
+          ? <p className="text-[9px] text-amber-600 mt-0.5 font-mono">{result.noChunksDiagnose}</p>
+          : <p className="text-[9px] text-amber-500 mt-0.5">Upload eerst bestanden via Het Dossier om Magic Staff te activeren.</p>
+        }
       </div>
     </div>
   );
@@ -1692,21 +1733,23 @@ function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete, magicResult, onM
     if (val) { onAdd(val); setDraft(""); }
   };
 
+  const hasMagic = magicResult && (magicResult.loading || magicResult.suggestion || magicResult.error || magicResult.noChunks);
+
   return (
-    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg h-72`}>
+    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg min-h-72`}>
       {/* Label + wand */}
       <div className="px-3 pt-3 pb-1 flex-shrink-0 flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-widest text-slate-600">{label}</span>
         {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
       </div>
-      {/* Inline magic result */}
-      {magicResult && (magicResult.loading || magicResult.suggestion || magicResult.error) && (
-        <div className="px-3 pb-1 flex-shrink-0">
+      {/* Inline magic result — scrollbaar met max-hoogte zodat het binnen de box blijft */}
+      {hasMagic && (
+        <div className="px-3 pb-1 flex-shrink-0 max-h-56 overflow-y-auto">
           <MagicResult result={magicResult} onAccept={onAcceptMagic} onReject={onRejectMagic} />
         </div>
       )}
       {/* Scrollable card list */}
-      <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1">
+      <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1 min-h-0">
         {cards.map((text, i) => (
           <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
         ))}
@@ -1854,12 +1897,35 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       setMagicFor(fieldKey, { error: "Sla het canvas eerst op om Magic Staff te gebruiken." });
       return;
     }
+
+    // SWOT-velden krijgen synthesis-modus: meer chunks + Sonnet
+    const isHeavy  = fieldKey.startsWith("swot_");
+    const matchCount = isHeavy ? 30 : 8;
+
     setMagicFor(fieldKey, { loading: true, suggestion: null, citations: [], error: null });
     try {
-      // 1. Embed de zoekvraag
-      const query = isArray
-        ? `Lijst van ${fieldLabel} voor deze organisatie`
-        : `${fieldLabel}${existingText ? ": " + existingText.slice(0, 200) : ""}`;
+      // 1. Embed de zoekvraag — rijke semantische queries per veld
+      const FIELD_SEARCH_QUERIES = {
+        swot_strengths:     "SWOT strengths sterktes sterke punten competitive advantage core capabilities differentiators unique selling points internal strengths",
+        swot_weaknesses:    "SWOT weaknesses zwaktes zwakke punten challenges limitations gaps internal problems issues risks",
+        swot_opportunities: "SWOT opportunities kansen growth potential market trends digital innovation future prospects new markets",
+        swot_threats:       "SWOT threats bedreigingen risks competition competitive pressure regulatory disruptors external challenges",
+        executive_summary:  "executive summary overview transformation strategy business plan introduction context background",
+        missie:             "mission statement missie purpose why we exist organizational purpose reason for being",
+        visie:              "vision statement visie future ambition long-term goal where we want to be in the future",
+        ambitie:            "ambition strategic ambition aspirations growth targets what we strive for",
+        kernwaarden:        "core values kernwaarden principles culture beliefs guiding principles what we stand for",
+        doelstellingen:     "objectives goals doelstellingen strategic targets priorities KPIs deliverables milestones",
+      };
+      const query = FIELD_SEARCH_QUERIES[fieldKey]
+        || (isArray
+          ? `${fieldLabel} voor deze organisatie`
+          : `${fieldLabel}${existingText ? ": " + existingText.slice(0, 200) : ""}`);
+
+      // Diagnostisch: hoeveel child-chunks met embedding bestaan er voor dit canvas?
+      const { count: chunkCount, error: countErr } = await countIndexedChunks(canvasId);
+      console.log("[magic] canvasId:", canvasId, "| geïndexeerde child-chunks:", chunkCount, countErr ? "(telfout: " + countErr.message + ")" : "");
+
       const embRes = await fetch("/api/embed", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ texts: [query] }),
@@ -1868,14 +1934,20 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       const { embeddings } = await embRes.json();
 
       // 2. Vector search — gefilterd op dit canvas
-      const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, 8);
+      console.log("[magic] RPC aanroep — canvas_id:", canvasId, "match_count:", matchCount, isHeavy ? "(heavy/SWOT)" : "");
+      const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, matchCount);
       if (searchErr) console.warn("[magic] RPC fout:", searchErr);
+      console.log("[magic] RPC resultaat:", chunks?.length ?? 0, "chunks", searchErr ? "(fout: " + searchErr.message + ")" : "");
 
       // 2b. Guard: geen chunks → direct melden, geen Claude-aanroep
       if (!chunks || chunks.length === 0) {
+        const diagnose = chunkCount === 0
+          ? "Geen geïndexeerde chunks voor dit canvas. Upload documenten via Het Dossier."
+          : `${chunkCount} chunks aanwezig maar RPC gaf 0 resultaten.${searchErr ? " RPC-fout: " + searchErr.message : ""}`;
         setMagicFor(fieldKey, {
           loading: false,
           noChunks: true,
+          noChunksDiagnose: diagnose,
           suggestion: null,
           citations: [],
           error: null,
@@ -1883,13 +1955,13 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
         return;
       }
 
-      const context   = chunks.map(c => c.content).join("\n\n---\n\n");
+      // Stuur chunks als gestructureerd array (met file_name + page_number) naar de API
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
 
-      // 3. Claude suggestie
+      // 3. Claude suggestie — via gestructureerde chunks
       const magicRes = await fetch("/api/magic", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: fieldLabel, context, existingText, isArray }),
+        body: JSON.stringify({ field: fieldLabel, chunks, existingText, isArray, heavy: isHeavy }),
       });
       const magicData = await magicRes.json();
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
@@ -1897,6 +1969,7 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       // 3b. Detecteer "geen informatie" antwoord
       const suggestion = magicData.suggestion || "";
       const isNoInfo = suggestion.toLowerCase().includes("geen relevante informatie") ||
+                       suggestion.toLowerCase().includes("onvoldoende relevante informatie") ||
                        suggestion.toLowerCase().includes("geen informatie gevonden") ||
                        suggestion.toLowerCase().includes("niet gevonden in het dossier");
 
@@ -1935,7 +2008,12 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
       { key: "kernwaarden",       label: L("kernwaarden"),       text: "",                       isArray: true  },
       { key: "doelstellingen",    label: L("doelstellingen"),    text: "",                       isArray: true  },
     ];
-    for (const f of fields) await callMagic(f.key, f.label, f.text, f.isArray);
+    for (let i = 0; i < fields.length; i++) {
+      const f = fields[i];
+      await callMagic(f.key, f.label, f.text, f.isArray);
+      // Kleine pauze tussen calls — voorkomt rate-limit fouten bij OpenAI/Anthropic
+      if (i < fields.length - 1) await new Promise(r => setTimeout(r, 400));
+    }
     setAutoDraftRunning(false);
   };
 
@@ -2433,6 +2511,33 @@ function AppInner() {
     // Autosave pikt de gewijzigde scope op via het debounce-effect
   };
 
+  const handleDeleteCanvas = async (canvasId) => {
+    const { error } = await deleteCanvas(canvasId);
+    if (error) { console.error("[delete] canvas verwijderen mislukt:", error.message); return; }
+    const remaining = canvases.filter(c => c.id !== canvasId);
+    setCanvases(remaining);
+    // Als het actieve canvas verwijderd wordt: schakel over naar het eerste resterende
+    if (activeCanvasId === canvasId) {
+      if (remaining.length > 0) {
+        const { data: full } = await loadCanvasById(remaining[0].id);
+        if (full) {
+          suppressSaveRef.current = true;
+          setActiveCanvasId(full.id);
+          setScope(full.name || "");
+          setDocs(full.blocks?.docs || {});
+          setInsights(full.blocks?.insights || {});
+          setBullets(full.blocks?.bullets || {});
+          setTimeout(() => { suppressSaveRef.current = false; }, 100);
+        }
+      } else {
+        // Geen canvassen meer over — maak nieuw leeg canvas
+        setActiveCanvasId(null);
+        setScope("");
+        setDocs({}); setInsights({}); setBullets({});
+      }
+    }
+  };
+
   const handleLoadExample = () => {
     suppressSaveRef.current = true;
     setBullets(EXAMPLE_BULLETS);
@@ -2530,6 +2635,7 @@ function AppInner() {
             onSelect={handleSelectCanvas}
             onRename={handleRenameCanvas}
             onLoadExample={handleLoadExample}
+            onDelete={handleDeleteCanvas}
           />
         </div>
 

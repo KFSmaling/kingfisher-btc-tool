@@ -33,7 +33,7 @@ export async function loadUserCanvases(userId) {
   if (!supabase) return { data: [], error: null };
   return supabase
     .from("canvases")
-    .select("id, name, created_at, updated_at")
+    .select("id, name, created_at, updated_at, canvas_uploads(id)")
     .eq("user_id", userId)
     .order("updated_at", { ascending: false, nullsFirst: false });
 }
@@ -230,10 +230,18 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
   const CHILD_STEP  = 150;  // 50-char overlap tussen children
   const EMBED_BATCH = 50;   // max chunks per /api/embed call
 
+  // ── Hulpfunctie: extraheer slide- of paginanummer uit tekst ─────────────────
+  // Herkent: [Slide 7], [Pagina 3], [Notes 12], [Page 5]
+  const extractPageNumber = (text) => {
+    const match = text.match(/\[(Slide|Pagina|Page|Notes)\s+(\d+)\]/i);
+    return match ? parseInt(match[2], 10) : null;
+  };
+
   // ── Stap 1: parent chunks bouwen ──────────────────────────────────────────
   const parents = [];
   for (let i = 0; i < rawText.length; i += PARENT_STEP) {
-    parents.push({ text: rawText.slice(i, i + PARENT_SIZE), startChar: i });
+    const text = rawText.slice(i, i + PARENT_SIZE);
+    parents.push({ text, startChar: i, pageNumber: extractPageNumber(text) });
     if (i + PARENT_SIZE >= rawText.length) break;
   }
   if (parents.length === 0) return { error: "Geen tekst om te indexeren" };
@@ -242,11 +250,12 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
   const { data: parentRows, error: parentErr } = await supabase
     .from("document_chunks")
     .insert(parents.map(p => ({
-      upload_id:  uploadId,
-      canvas_id:  canvasId,
-      chunk_type: "parent",
-      content:    p.text,
-      metadata:   { startChar: p.startChar },
+      upload_id:   uploadId,
+      canvas_id:   canvasId,
+      chunk_type:  "parent",
+      content:     p.text,
+      page_number: p.pageNumber,
+      metadata:    { startChar: p.startChar },
     })))
     .select("id");
 
@@ -258,15 +267,20 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
   // ── Stap 3: child chunks per parent bouwen ────────────────────────────────
   const children = [];
   for (let pi = 0; pi < parents.length; pi++) {
-    const parentId   = parentRows[pi].id;
-    const parentText = parents[pi].text;
+    const parentId     = parentRows[pi].id;
+    const parentText   = parents[pi].text;
+    const parentPage   = parents[pi].pageNumber;
     for (let ci = 0; ci < parentText.length; ci += CHILD_STEP) {
+      const childText = parentText.slice(ci, ci + CHILD_SIZE);
+      // Gebruik slide/paginanummer van de child zelf als aanwezig, anders van de parent
+      const childPage = extractPageNumber(childText) ?? parentPage;
       children.push({
-        upload_id:  uploadId,
-        canvas_id:  canvasId,
-        chunk_type: "child",
-        parent_id:  parentId,
-        content:    parentText.slice(ci, ci + CHILD_SIZE),
+        upload_id:   uploadId,
+        canvas_id:   canvasId,
+        chunk_type:  "child",
+        parent_id:   parentId,
+        content:     childText,
+        page_number: childPage,
       });
       if (ci + CHILD_SIZE >= parentText.length) break;
     }
@@ -370,6 +384,21 @@ export async function deleteDossierFile(id) {
   const { error } = await supabase.from("canvas_uploads").delete().eq("id", id);
   if (error) console.error("[dossier] verwijderen mislukt:", error.message);
   return { error };
+}
+
+/**
+ * Diagnostisch: tel hoeveel geïndexeerde child-chunks met embedding een canvas heeft.
+ * Gebruikt in callMagic om canvas_id mismatch te detecteren.
+ */
+export async function countIndexedChunks(canvasId) {
+  if (!supabase || !canvasId) return { count: 0, error: null };
+  const { count, error } = await supabase
+    .from("document_chunks")
+    .select("id", { count: "exact", head: true })
+    .eq("canvas_id", canvasId)
+    .eq("chunk_type", "child")
+    .not("embedding", "is", null);
+  return { count: count ?? 0, error };
 }
 
 export async function deleteCanvas(id) {
