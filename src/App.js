@@ -44,12 +44,12 @@ const BLOCKS = [
 ];
 
 const SWOT_QUADRANTS = [
-  { key: "strengths",     labelNl: "Sterktes",    labelEn: "Strengths"    },
-  { key: "weaknesses",    labelNl: "Zwaktes",     labelEn: "Weaknesses"   },
-  { key: "opportunities", labelNl: "Kansen",      labelEn: "Opportunities"},
-  { key: "threats",       labelNl: "Bedreigingen",labelEn: "Threats"      },
+  { key: "strengths",     labelNl: "Sterktes",    labelEn: "Strengths",     accent: "border-l-[#2c7a4b]" },
+  { key: "weaknesses",    labelNl: "Zwaktes",     labelEn: "Weaknesses",    accent: "border-l-red-400"   },
+  { key: "opportunities", labelNl: "Kansen",      labelEn: "Opportunities", accent: "border-l-[#00AEEF]" },
+  { key: "threats",       labelNl: "Bedreigingen",labelEn: "Threats",       accent: "border-l-amber-400" },
 ];
-const EMPTY_MANUAL = { missie: "", visie: "", swot: { strengths: "", weaknesses: "", opportunities: "", threats: "" } };
+const EMPTY_MANUAL = { missie: "", visie: "", swot: { strengths: [], weaknesses: [], opportunities: [], threats: [] } };
 
 // Helper to convert string arrays to bullet objects
 const eb  = (texts, source) => texts.map(text => ({ text, source }));
@@ -1510,14 +1510,63 @@ function ProjectInfoSidebar({ meta, onChange }) {
 }
 
 // ── Deep Dive Overlay — "De Werkkamer" ───────────────────────────────────────
+function SwotCard({ text, onDelete }) {
+  return (
+    <div className="flex items-start justify-between gap-2 bg-white border border-slate-200 rounded-md px-3 py-2 shadow-sm group/card">
+      <span className="text-slate-700 text-xs leading-relaxed flex-1">{text}</span>
+      <button
+        onClick={onDelete}
+        className="opacity-0 group-hover/card:opacity-100 transition-opacity text-slate-300 hover:text-red-400 mt-0.5 flex-shrink-0"
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
+function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete }) {
+  const [draft, setDraft] = useState("");
+  const label = lang === "en" ? quadrant.labelEn : quadrant.labelNl;
+
+  const commit = () => {
+    const val = draft.trim();
+    if (val) { onAdd(val); setDraft(""); }
+  };
+
+  return (
+    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg p-4 gap-2 min-h-[180px]`}>
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">{label}</span>
+      <div className="flex flex-col gap-1.5 flex-1">
+        {cards.map((text, i) => (
+          <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
+        ))}
+      </div>
+      <input
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+        placeholder={`+ ${label} toevoegen…`}
+        className="mt-1 text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+      />
+    </div>
+  );
+}
+
 function DeepDiveOverlay({ blockId, canvasId, onClose }) {
   const { lang } = useLang();
   const [blockLabel, setBlockLabel] = useState(blockId);
   const [manual, setManual]         = useState(EMPTY_MANUAL);
   const [aiInsights, setAiInsights] = useState({});
-  const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error | local
+  const [saveStatus, setSaveStatus] = useState("idle");
   const [isLoaded, setIsLoaded]     = useState(false);
+  const [mounted, setMounted]       = useState(false);
   const debounceRef                 = useRef(null);
+
+  // Entrance animation
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Load block label from block_definitions (IP protection)
   useEffect(() => {
@@ -1528,18 +1577,31 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
     });
   }, [blockId, lang]);
 
-  // Load existing manual + ai_insights from canvases.data
+  // Load existing manual + ai_insights; migrate string → array for swot fields
   useEffect(() => {
     if (!canvasId) { setIsLoaded(true); setSaveStatus("local"); return; }
     loadCanvasById(canvasId).then(({ data }) => {
       const blockData = data?.data?.[blockId];
-      if (blockData?.details?.manual)      setManual(prev => ({ ...EMPTY_MANUAL, ...blockData.details.manual }));
+      if (blockData?.details?.manual) {
+        const saved = blockData.details.manual;
+        const toArr = v => Array.isArray(v) ? v : (v ? [v] : []);
+        setManual({
+          ...EMPTY_MANUAL,
+          ...saved,
+          swot: {
+            strengths:     toArr(saved.swot?.strengths),
+            weaknesses:    toArr(saved.swot?.weaknesses),
+            opportunities: toArr(saved.swot?.opportunities),
+            threats:       toArr(saved.swot?.threats),
+          },
+        });
+      }
       if (blockData?.details?.ai_insights) setAiInsights(blockData.details.ai_insights);
       setIsLoaded(true);
     });
   }, [canvasId, blockId]);
 
-  // Debounced autosave (800ms) — only after initial load
+  // Debounced autosave (800ms) — guard against save-on-mount
   useEffect(() => {
     if (!isLoaded) return;
     clearTimeout(debounceRef.current);
@@ -1552,81 +1614,88 @@ function DeepDiveOverlay({ blockId, canvasId, onClose }) {
     return () => clearTimeout(debounceRef.current);
   }, [manual, isLoaded, canvasId, blockId]);
 
-  const updateManual = (field, value) =>
+  const updateText = (field, value) =>
     setManual(prev => ({ ...prev, [field]: value }));
-  const updateSwot = (key, value) =>
-    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: value } }));
 
-  const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen", error: "Fout", local: "Lokaal" }[saveStatus];
-  const statusColor = saveStatus === "error" ? "text-red-400" : saveStatus === "local" ? "text-amber-400" : "text-green-400";
+  const addSwotCard = (key, text) =>
+    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: [...(prev.swot[key] || []), text] } }));
+
+  const deleteSwotCard = (key, idx) =>
+    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: prev.swot[key].filter((_, i) => i !== idx) } }));
+
+  const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout", local: "Lokaal" }[saveStatus];
+  const statusColor = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", local: "text-amber-500", idle: "" }[saveStatus];
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0f1923] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 py-4 border-b border-white/10">
-        <button onClick={onClose} className="flex items-center gap-2 text-slate-400 hover:text-white text-xs uppercase tracking-widest transition-colors">
-          <ArrowLeft size={14} /> Terug naar Canvas
-        </button>
-        <div className="text-center">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Deep Dive</p>
-          <h2 className="text-white font-bold tracking-wide">{blockLabel}</h2>
-        </div>
-        <span className={`text-xs ${statusColor}`}>{statusLabel}</span>
-      </div>
-
-      {/* Body — 2-column layout */}
-      <div className="flex flex-1 min-h-0 overflow-auto p-8 gap-8">
-        {/* Left: Missie + Visie */}
-        <div className="flex flex-col gap-6 w-1/2">
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400">Missie</label>
-            <textarea
-              value={manual.missie}
-              onChange={e => updateManual("missie", e.target.value)}
-              rows={6}
-              placeholder="Waarom bestaat deze organisatie?"
-              className="bg-white/5 border border-white/10 rounded text-white text-sm p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
-            />
+    <div className="fixed inset-0 z-50 bg-black/30 flex flex-col">
+      <div
+        className={`flex flex-col flex-1 bg-slate-50 transition-all duration-300 ease-out
+          ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 text-slate-400 hover:text-[#1a365d] text-xs uppercase tracking-widest transition-colors font-medium"
+          >
+            <ArrowLeft size={13} /> Terug naar Canvas
+          </button>
+          <div className="text-center">
+            <p className="text-[9px] text-slate-400 uppercase tracking-[0.15em] font-medium">Deep Dive</p>
+            <h2 className="text-[#1a365d] font-bold tracking-wide text-base">{blockLabel}</h2>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] uppercase tracking-widest text-slate-400">Visie</label>
-            <textarea
-              value={manual.visie}
-              onChange={e => updateManual("visie", e.target.value)}
-              rows={6}
-              placeholder="Wat willen we bereikt hebben in 3–5 jaar?"
-              className="bg-white/5 border border-white/10 rounded text-white text-sm p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
-            />
-          </div>
-          {/* AI Insights (read-only, if present) */}
-          {Object.keys(aiInsights).length > 0 && (
-            <div className="bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded p-4">
-              <p className="text-[10px] uppercase tracking-widest text-[#8dc63f] mb-2">AI Insights</p>
-              {Object.entries(aiInsights).map(([k, v]) => (
-                <p key={k} className="text-slate-300 text-xs mb-1">{String(v)}</p>
-              ))}
-            </div>
-          )}
+          <span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
         </div>
 
-        {/* Right: SWOT 2×2 */}
-        <div className="w-1/2 flex flex-col gap-2">
-          <label className="text-[10px] uppercase tracking-widest text-slate-400">SWOT Analyse</label>
-          <div className="grid grid-cols-2 gap-3 flex-1">
-            {SWOT_QUADRANTS.map(q => (
-              <div key={q.key} className="flex flex-col gap-1">
-                <span className="text-[9px] uppercase tracking-widest text-slate-500">
-                  {lang === "en" ? q.labelEn : q.labelNl}
-                </span>
+        {/* Body */}
+        <div className="flex flex-1 min-h-0 overflow-auto p-8 gap-8">
+
+          {/* Left: Missie + Visie */}
+          <div className="flex flex-col gap-5 w-[38%]">
+            {[
+              { field: "missie", label: "Missie", placeholder: "Waarom bestaat deze organisatie?" },
+              { field: "visie",  label: "Visie",  placeholder: "Wat willen we bereikt hebben in 3–5 jaar?" },
+            ].map(({ field, label, placeholder }) => (
+              <div key={field} className="flex flex-col gap-2">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</label>
                 <textarea
-                  value={manual.swot?.[q.key] || ""}
-                  onChange={e => updateSwot(q.key, e.target.value)}
-                  placeholder={lang === "en" ? q.labelEn : q.labelNl}
-                  className="flex-1 min-h-[140px] bg-white/5 border border-white/10 rounded text-white text-xs p-3 resize-none focus:outline-none focus:border-[#8dc63f]/50 placeholder:text-slate-600"
+                  value={manual[field]}
+                  onChange={e => updateText(field, e.target.value)}
+                  rows={6}
+                  placeholder={placeholder}
+                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3.5 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
                 />
               </div>
             ))}
+
+            {/* AI Insights (read-only) */}
+            {Object.keys(aiInsights).length > 0 && (
+              <div className="bg-[#8dc63f]/8 border border-[#8dc63f]/25 rounded-lg p-4">
+                <p className="text-[9px] font-semibold uppercase tracking-widest text-[#2c7a4b] mb-2">AI Inzichten</p>
+                {Object.entries(aiInsights).map(([k, v]) => (
+                  <p key={k} className="text-slate-600 text-xs mb-1 leading-relaxed">{String(v)}</p>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Right: SWOT 2×2 kaartjes */}
+          <div className="flex-1 flex flex-col gap-3">
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">SWOT Analyse</label>
+            <div className="grid grid-cols-2 gap-4 flex-1">
+              {SWOT_QUADRANTS.map(q => (
+                <SwotQuadrant
+                  key={q.key}
+                  quadrant={q}
+                  cards={manual.swot?.[q.key] || []}
+                  lang={lang}
+                  onAdd={text => addSwotCard(q.key, text)}
+                  onDelete={idx => deleteSwotCard(q.key, idx)}
+                />
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
