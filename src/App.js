@@ -1816,11 +1816,40 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 }
 
 /** Analyse-lijst (extern of intern) met tagging */
-function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMagic, magicResult }) {
+function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMagic, magicResult, onRejectMagic }) {
   const [draft, setDraft] = useState("");
+  const [proposedLines, setProposedLines] = useState([]);
+
+  // Zodra er een nieuwe magic suggestion binnenkomt: split op regels
+  useEffect(() => {
+    if (magicResult?.suggestion && !magicResult.loading) {
+      const lines = magicResult.suggestion
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 4);
+      setProposedLines(lines);
+    } else if (!magicResult || magicResult.loading) {
+      setProposedLines([]);
+    }
+  }, [magicResult?.suggestion, magicResult?.loading, magicResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const commit = () => {
     const val = draft.trim();
     if (val) { onAdd(val); setDraft(""); }
+  };
+
+  const acceptLine = (i) => {
+    onAdd(proposedLines[i]);
+    setProposedLines(prev => prev.filter((_, j) => j !== i));
+  };
+  const acceptAll = () => {
+    proposedLines.forEach(l => onAdd(l));
+    setProposedLines([]);
+    onRejectMagic?.();
+  };
+  const dismissAll = () => {
+    setProposedLines([]);
+    onRejectMagic?.();
   };
 
   const tagColors = {
@@ -1838,14 +1867,59 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
         {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
       </div>
 
-      {/* Magic result */}
-      {magicResult && (
-        <div className="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800">
-          {magicResult.loading ? "Analyseren…" : magicResult.suggestion}
+      {/* Laden */}
+      {magicResult?.loading && (
+        <div className="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 animate-pulse">
+          Analyseren…
         </div>
       )}
 
-      {/* Items */}
+      {/* Geen chunks */}
+      {magicResult?.noChunks && (
+        <div className="text-[10px] text-slate-400 italic px-1">Geen documenten gevonden voor dit veld.</div>
+      )}
+
+      {/* Voorgestelde items (regel-voor-regel) */}
+      {proposedLines.length > 0 && (
+        <div className="border border-amber-300 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
+            <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+              🪄 Voorstel — {proposedLines.length} item{proposedLines.length !== 1 ? "s" : ""}
+            </span>
+            <div className="flex gap-1.5">
+              <button onClick={acceptAll}
+                className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
+                Alle toevoegen
+              </button>
+              <button onClick={dismissAll}
+                className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                Weggooien
+              </button>
+            </div>
+          </div>
+          <div className="divide-y divide-amber-100">
+            {proposedLines.map((line, i) => (
+              <div key={i} className="group flex items-start gap-2 bg-white hover:bg-amber-50/40 px-3 py-2 transition-colors">
+                <p className="flex-1 text-xs text-slate-700 leading-relaxed">{line}</p>
+                <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => acceptLine(i)}
+                    title="Toevoegen"
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded px-1.5 py-0.5 transition-colors">
+                    ✓
+                  </button>
+                  <button onClick={() => setProposedLines(prev => prev.filter((_, j) => j !== i))}
+                    title="Overslaan"
+                    className="text-xs text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-1.5 py-0.5 transition-colors">
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bestaande items */}
       <div className="space-y-1.5">
         {items.map(item => (
           <div key={item.id}
@@ -2352,6 +2426,7 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
               onTagChange={changeAnalysisTag}
               onMagic={() => callWerkbladMagic("extern", true)}
               magicResult={magic.extern}
+              onRejectMagic={() => setMagicFor("extern", null)}
             />
             <AnalyseSection
               title="Interne Ontwikkelingen"
@@ -2362,6 +2437,7 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
               onTagChange={changeAnalysisTag}
               onMagic={() => callWerkbladMagic("intern", true)}
               magicResult={magic.intern}
+              onRejectMagic={() => setMagicFor("intern", null)}
             />
           </div>
         </section>
