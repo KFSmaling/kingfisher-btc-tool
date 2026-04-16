@@ -6,7 +6,7 @@ import {
   AlertTriangle, FileText, BookOpen, Lightbulb, LogOut, Save, AlertOctagon,
   SlidersHorizontal, User, Building2, Layers, Users, Tag, Maximize2, ArrowLeft, Wand2, Database
 } from "lucide-react";
-import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, fetchBlockDefinitions, saveBlockManualData, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks, loadDossierFiles, deleteDossierFile, countIndexedChunks, deleteCanvas } from "./services/canvasStorage";
+import { saveCanvasUpload, loadUserCanvases, createCanvas, upsertCanvas, loadCanvasById, uploadDocumentToStorage, createImportJob, updateImportJob, indexDocumentChunks, searchDocumentChunks, loadDossierFiles, deleteDossierFile, deleteCanvas, loadStrategyCore, upsertStrategyCore, loadAnalysisItems, upsertAnalysisItem, deleteAnalysisItem, loadStrategicThemes, upsertStrategicTheme, deleteStrategicTheme, upsertKsfKpi, deleteKsfKpi } from "./services/canvasStorage";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import JSZip from "jszip";
@@ -41,33 +41,6 @@ const BLOCKS = [
   { id: "portfolio",  titleKey: "block.portfolio.title",  subKey: "block.portfolio.sub",  layout: "wide",    hasSubs: false, subTabs: null           },
 ];
 
-const SWOT_QUADRANTS = [
-  { key: "strengths",     labelNl: "Sterktes",    labelEn: "Strengths",     accent: "border-l-[#2c7a4b]" },
-  { key: "weaknesses",    labelNl: "Zwaktes",     labelEn: "Weaknesses",    accent: "border-l-red-400"   },
-  { key: "opportunities", labelNl: "Kansen",      labelEn: "Opportunities", accent: "border-l-[#00AEEF]" },
-  { key: "threats",       labelNl: "Bedreigingen",labelEn: "Threats",       accent: "border-l-amber-400" },
-];
-const EMPTY_MANUAL = {
-  executive_summary: "",
-  missie: "",
-  visie: "",
-  ambitie: "",
-  kernwaarden: [],
-  swot: { strengths: [], weaknesses: [], opportunities: [], threats: [] },
-  doelstellingen: [],
-};
-
-// Sub-field labels — single source of truth (IP-protected).
-// Override keys can be seeded in block_definitions as e.g. key='strategy.missie'.
-const STRATEGY_SUB_LABELS = {
-  executive_summary: { nl: "Executive Summary",            en: "Executive Summary"         },
-  missie:            { nl: "Missie",                       en: "Mission"                   },
-  visie:             { nl: "Visie",                        en: "Vision"                    },
-  ambitie:           { nl: "Ambitie",                      en: "Ambition"                  },
-  kernwaarden:       { nl: "Kernwaarden",                  en: "Core Values"               },
-  doelstellingen:    { nl: "Strategische Doelstellingen",  en: "Strategic Objectives"      },
-  swot:              { nl: "SWOT Analyse",                 en: "SWOT Analysis"             },
-};
 
 // Helper to convert string arrays to bullet objects
 const eb  = (texts, source) => texts.map(text => ({ text, source }));
@@ -1709,101 +1682,337 @@ function MagicResult({ result, onAccept, onReject }) {
   );
 }
 
-// ── Deep Dive Overlay — "De Werkkamer" ───────────────────────────────────────
-function SwotCard({ text, onDelete }) {
+// ── Werkblad sub-components ────────────────────────────────────────────────────
+
+/** Tag-pill voor analyse-items */
+function TagPill({ tag, onChange }) {
+  const tags = [
+    { key: "kans",          label: "Kans",          color: "bg-emerald-100 text-emerald-700 border-emerald-200"  },
+    { key: "sterkte",       label: "Sterkte",        color: "bg-blue-100 text-blue-700 border-blue-200"          },
+    { key: "bedreiging",    label: "Bedreiging",     color: "bg-red-100 text-red-700 border-red-200"             },
+    { key: "zwakte",        label: "Zwakte",         color: "bg-orange-100 text-orange-700 border-orange-200"    },
+    { key: "niet_relevant", label: "Niet relevant",  color: "bg-slate-100 text-slate-400 border-slate-200"       },
+  ];
+  const current = tags.find(t => t.key === tag) || tags[4];
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-start justify-between gap-2 bg-white border border-slate-200 rounded-md px-3 py-2 shadow-sm group/card">
-      <span className="text-slate-700 text-xs leading-relaxed flex-1">{text}</span>
+    <div className="relative">
       <button
-        onClick={onDelete}
-        className="opacity-0 group-hover/card:opacity-100 transition-opacity text-slate-300 hover:text-red-400 mt-0.5 flex-shrink-0"
+        onClick={() => setOpen(o => !o)}
+        className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${current.color} uppercase tracking-wide whitespace-nowrap`}
       >
+        {current.label}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[140px]">
+            {tags.map(t => (
+              <button key={t.key} onClick={() => { onChange(t.key); setOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-slate-50 ${t.key === tag ? "text-[#1a365d]" : "text-slate-600"}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Tekstveld met Draft-modus, Magic Staff en Improve-menu */
+function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, onImprove, onAcceptDraft, onEditDraft, onRejectDraft, placeholder, multiline = true, magicResult }) {
+  const hasDraft = draft !== null && draft !== undefined;
+  const [improveOpen, setImproveOpen] = useState(false);
+  const IMPROVE_PRESETS = [
+    { key: "inspirerender", icon: "✨", label: "Inspirerender"    },
+    { key: "mckinsey",      icon: "📊", label: "McKinsey-stijl"  },
+    { key: "beknopter",     icon: "✂️", label: "Beknopter"       },
+    { key: "financieel",    icon: "💶", label: "Focus Financieel" },
+  ];
+
+  return (
+    <div className="space-y-1.5">
+      {/* Label + knoppen */}
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</label>
+        <div className="flex items-center gap-1.5">
+          {/* Improve dropdown — alleen als er tekst is */}
+          {value && onImprove && (
+            <div className="relative">
+              <button onClick={() => setImproveOpen(o => !o)}
+                className="text-[9px] font-bold text-slate-400 hover:text-[#1a365d] px-2 py-0.5 rounded border border-slate-200 hover:border-[#1a365d]/40 transition-colors flex items-center gap-1"
+                title="Tekst verbeteren">
+                <span>✨</span> Improve
+              </button>
+              {improveOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setImproveOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[160px]">
+                    {IMPROVE_PRESETS.map(p => (
+                      <button key={p.key} onClick={() => { onImprove(p.key); setImproveOpen(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[10px] hover:bg-slate-50 text-slate-600 flex items-center gap-2">
+                        <span>{p.icon}</span>{p.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          {/* Magic Staff */}
+          {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
+        </div>
+      </div>
+
+      {/* Tekstveld */}
+      {multiline ? (
+        <textarea
+          value={value || ""}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder || `${label}…`}
+          rows={3}
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+        />
+      ) : (
+        <input
+          value={value || ""}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder || `${label}…`}
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
+        />
+      )}
+
+      {/* Magic Staff result */}
+      {magicResult && <MagicResult result={magicResult} onAccept={() => { onChange(magicResult.suggestion); onRejectDraft && onRejectDraft(); }} onReject={() => onRejectDraft && onRejectDraft()} />}
+
+      {/* Draft overlay */}
+      {hasDraft && (
+        <div className="border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+          <div className="px-3 py-1.5 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-amber-700 flex items-center gap-1.5">
+              <span>✨</span> AI Voorstel — Concept
+            </span>
+            <div className="flex items-center gap-2">
+              <button onClick={onAcceptDraft}
+                className="text-[9px] font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1">
+                <span>✓</span> Accepteren
+              </button>
+              <button onClick={onEditDraft}
+                className="text-[9px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
+                <span>✏️</span> Bewerken
+              </button>
+              <button onClick={onRejectDraft}
+                className="text-[9px] font-bold text-slate-500 hover:text-red-500 flex items-center gap-1">
+                <span>✕</span> Negeren
+              </button>
+            </div>
+          </div>
+          <p className="px-3 py-2.5 text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">{draft}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Analyse-lijst (extern of intern) met tagging */
+function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMagic, magicResult }) {
+  const [draft, setDraft] = useState("");
+  const commit = () => {
+    const val = draft.trim();
+    if (val) { onAdd(val); setDraft(""); }
+  };
+
+  const tagColors = {
+    kans:          "bg-emerald-50 border-l-emerald-400",
+    sterkte:       "bg-blue-50 border-l-blue-400",
+    bedreiging:    "bg-red-50 border-l-red-400",
+    zwakte:        "bg-orange-50 border-l-orange-400",
+    niet_relevant: "bg-slate-50 border-l-slate-200",
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{title}</h4>
+        {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
+      </div>
+
+      {/* Magic result */}
+      {magicResult && (
+        <div className="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-800">
+          {magicResult.loading ? "Analyseren…" : magicResult.suggestion}
+        </div>
+      )}
+
+      {/* Items */}
+      <div className="space-y-1.5">
+        {items.map(item => (
+          <div key={item.id}
+            className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-3 py-2 ${tagColors[item.tag] || tagColors.niet_relevant}`}>
+            <p className="flex-1 text-xs text-slate-700 leading-relaxed">{item.content}</p>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} />
+              <button onClick={() => onDelete(item.id)}
+                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          placeholder={`+ Nieuwe ${title.toLowerCase()}…`}
+          className="flex-1 text-xs bg-white border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+        />
+        <button onClick={commit}
+          className="text-xs font-bold text-white bg-[#1a365d] hover:bg-[#1a365d]/80 rounded-lg px-3 py-2 transition-colors">
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** KSF/KPI tabel-rij */
+function KsfKpiRow({ item, onChange, onDelete }) {
+  return (
+    <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 items-center group">
+      <input value={item.description} onChange={e => onChange({ ...item, description: e.target.value })}
+        placeholder="Omschrijving…"
+        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
+      <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
+        placeholder="Huidig"
+        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
+      <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
+        placeholder="Target"
+        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
+      <button onClick={onDelete}
+        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
         <X size={12} />
       </button>
     </div>
   );
 }
 
-function SwotQuadrant({ quadrant, cards, lang, onAdd, onDelete, magicResult, onMagic, onAcceptMagic, onRejectMagic }) {
-  const [draft, setDraft] = useState("");
-  const label = lang === "en" ? quadrant.labelEn : quadrant.labelNl;
-
-  const commit = () => {
-    const val = draft.trim();
-    if (val) { onAdd(val); setDraft(""); }
-  };
-
-  const hasMagic = magicResult && (magicResult.loading || magicResult.suggestion || magicResult.error || magicResult.noChunks);
+/** Strategisch Thema accordeon met KSF/KPI tabel */
+function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi }) {
+  const [open, setOpen] = useState(index === 0);
+  const ksfs = (thema.ksf_kpi || []).filter(k => k.type === "ksf").sort((a,b) => a.sort_order - b.sort_order);
+  const kpis = (thema.ksf_kpi || []).filter(k => k.type === "kpi").sort((a,b) => a.sort_order - b.sort_order);
 
   return (
-    <div className={`flex flex-col bg-slate-50 border border-slate-200 border-l-4 ${quadrant.accent} rounded-lg min-h-72`}>
-      {/* Label + wand */}
-      <div className="px-3 pt-3 pb-1 flex-shrink-0 flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-600">{label}</span>
-        {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+        <span className="text-[10px] font-black text-[#1a365d]/60 uppercase tracking-widest w-5 flex-shrink-0">{index + 1}</span>
+        <input
+          value={thema.title}
+          onChange={e => onTitleChange(e.target.value)}
+          placeholder={`Strategisch Thema ${index + 1}…`}
+          className="flex-1 text-sm font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
+        />
+        <button onClick={() => setOpen(o => !o)}
+          className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"
+            className={`transition-transform ${open ? "rotate-180" : ""}`}>
+            <path d="M2 4l5 6 5-6H2z" />
+          </svg>
+        </button>
+        <button onClick={onDelete}
+          className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
+          <Trash2 size={13} />
+        </button>
       </div>
-      {/* Inline magic result — scrollbaar met max-hoogte zodat het binnen de box blijft */}
-      {hasMagic && (
-        <div className="px-3 pb-1 flex-shrink-0 max-h-56 overflow-y-auto">
-          <MagicResult result={magicResult} onAccept={onAcceptMagic} onReject={onRejectMagic} />
+
+      {/* Body */}
+      {open && (
+        <div className="px-4 py-4 space-y-5">
+          {/* KSF sectie */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h5 className="text-[9px] font-black uppercase tracking-widest text-[#1a365d]">
+                KSF — Kritieke Succesfactoren <span className="font-normal text-slate-400">({ksfs.length}/3)</span>
+              </h5>
+              {ksfs.length < 3 && (
+                <button onClick={() => onAddKsfKpi("ksf")}
+                  className="text-[9px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
+                  <Plus size={10} /> Toevoegen
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 pb-1 border-b border-slate-100">
+              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Omschrijving</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 text-center">Huidig</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-[#2c7a4b] text-center">Target</span>
+              <span />
+            </div>
+            {ksfs.map(k => (
+              <KsfKpiRow key={k.id} item={k}
+                onChange={updated => onUpdateKsfKpi(updated)}
+                onDelete={() => onDeleteKsfKpi(k.id)} />
+            ))}
+            {ksfs.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KSF's — klik Toevoegen</p>}
+          </div>
+
+          {/* KPI sectie */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h5 className="text-[9px] font-black uppercase tracking-widest text-[#2c7a4b]">
+                KPI — Prestatie-indicatoren <span className="font-normal text-slate-400">({kpis.length}/3)</span>
+              </h5>
+              {kpis.length < 3 && (
+                <button onClick={() => onAddKsfKpi("kpi")}
+                  className="text-[9px] font-bold text-[#2c7a4b] hover:text-[#2c7a4b]/70 flex items-center gap-1">
+                  <Plus size={10} /> Toevoegen
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 pb-1 border-b border-slate-100">
+              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Omschrijving</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 text-center">Huidig</span>
+              <span className="text-[8px] font-bold uppercase tracking-widest text-[#2c7a4b] text-center">Target</span>
+              <span />
+            </div>
+            {kpis.map(k => (
+              <KsfKpiRow key={k.id} item={k}
+                onChange={updated => onUpdateKsfKpi(updated)}
+                onDelete={() => onDeleteKsfKpi(k.id)} />
+            ))}
+            {kpis.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KPI's — klik Toevoegen</p>}
+          </div>
         </div>
       )}
-      {/* Scrollable card list */}
-      <div className="flex-1 overflow-y-auto px-3 flex flex-col gap-1.5 py-1 min-h-0">
-        {cards.map((text, i) => (
-          <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
-        ))}
-      </div>
-      {/* Pinned input */}
-      <div className="flex-shrink-0 px-3 pb-3 pt-2 border-t border-slate-100">
-        <input
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-          placeholder={`+ ${label}…`}
-          className="w-full text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
-        />
-      </div>
     </div>
   );
 }
 
-// Reusable horizontal/vertical card list with pinned add-input
-function CardList({ cards, onAdd, onDelete, placeholder, horizontal = false }) {
-  const [draft, setDraft] = useState("");
-  const commit = () => {
-    const val = draft.trim();
-    if (val) { onAdd(val); setDraft(""); }
-  };
-  return (
-    <div className={`flex ${horizontal ? "flex-row flex-wrap items-start" : "flex-col"} gap-1.5`}>
-      {cards.map((text, i) => (
-        <SwotCard key={i} text={text} onDelete={() => onDelete(i)} />
-      ))}
-      <input
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
-        placeholder={placeholder}
-        className={`text-xs bg-white border border-dashed border-slate-300 rounded px-2.5 py-1.5 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 ${horizontal ? "min-w-[200px]" : "w-full"}`}
-      />
-    </div>
-  );
-}
+function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
+  const { lang } = useLang(); // eslint-disable-line no-unused-vars
+  const [mounted, setMounted]   = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle");
 
-function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
-  const { lang } = useLang();
-  const [blockLabel, setBlockLabel]   = useState(blockId);
-  const [subLabels, setSubLabels]     = useState(STRATEGY_SUB_LABELS);
-  const [manual, setManual]           = useState(EMPTY_MANUAL);
-  const [aiInsights, setAiInsights]   = useState({});
-  const [saveStatus, setSaveStatus]   = useState("idle");
-  const [isLoaded, setIsLoaded]       = useState(false);
-  const [mounted, setMounted]         = useState(false);
-  const [magic, setMagic]             = useState({});         // { [fieldKey]: { loading, suggestion, citations, error } }
-  const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
+  // Data state
+  const [core, setCore]         = useState({ missie: "", visie: "", ambitie: "", kernwaarden: [] });
+  const [items, setItems]       = useState([]);   // analysis_items
+  const [themas, setThemas]     = useState([]);   // strategic_themes incl. ksf_kpi
+
+  // Draft state (fieldKey → string)
+  const [drafts, setDrafts]     = useState({});
+
+  // Magic Staff state
+  const [magic, setMagic]       = useState({});
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
-  const debounceRef                   = useRef(null);
+  const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
+
+  const debounceRef = useRef(null);
 
   // Entrance animation
   useEffect(() => {
@@ -1811,447 +2020,421 @@ function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Load block label + sub-labels from block_definitions (IP protection)
+  // Load data from DB
   useEffect(() => {
-    fetchBlockDefinitions().then(({ data }) => {
-      if (!data) return;
-      // Main block label
-      const def = data.find(d => d.key === blockId);
-      if (def) setBlockLabel(lang === "en" ? (def.label_en || def.label_nl) : def.label_nl);
-      // Sub-field label overrides: look for keys like "strategy.missie"
-      const overrides = {};
-      data.forEach(d => {
-        if (d.key.startsWith(`${blockId}.`)) {
-          const sub = d.key.slice(blockId.length + 1);
-          overrides[sub] = { nl: d.label_nl, en: d.label_en || d.label_nl };
-        }
-      });
-      if (Object.keys(overrides).length > 0) {
-        setSubLabels(prev => ({ ...prev, ...overrides }));
-      }
-    });
-  }, [blockId, lang]);
-
-  const L = (key) => lang === "en" ? subLabels[key]?.en : subLabels[key]?.nl;
-
-  // Load existing manual + ai_insights; migrate string → array for card fields
-  useEffect(() => {
-    if (!canvasId) { setIsLoaded(true); setSaveStatus("local"); return; }
-    loadCanvasById(canvasId).then(({ data }) => {
-      const blockData = data?.data?.[blockId];
-      if (blockData?.details?.manual) {
-        const saved = blockData.details.manual;
-        const toArr = v => Array.isArray(v) ? v : (v ? [v] : []);
-        setManual({
-          ...EMPTY_MANUAL,
-          ...saved,
-          kernwaarden:    toArr(saved.kernwaarden),
-          doelstellingen: toArr(saved.doelstellingen),
-          swot: {
-            strengths:     toArr(saved.swot?.strengths),
-            weaknesses:    toArr(saved.swot?.weaknesses),
-            opportunities: toArr(saved.swot?.opportunities),
-            threats:       toArr(saved.swot?.threats),
-          },
-        });
-      }
-      if (blockData?.details?.ai_insights) setAiInsights(blockData.details.ai_insights);
+    if (!canvasId) { setIsLoaded(true); return; }
+    Promise.all([
+      loadStrategyCore(canvasId),
+      loadAnalysisItems(canvasId),
+      loadStrategicThemes(canvasId),
+    ]).then(([{ data: coreData }, { data: itemsData }, { data: themasData }]) => {
+      if (coreData) setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [] });
+      if (itemsData) setItems(itemsData);
+      if (themasData) setThemas(themasData);
       setIsLoaded(true);
     });
-  }, [canvasId, blockId]);
+  }, [canvasId]);
 
-  // Debounced autosave (800ms)
+  // Debounced autosave van strategy_core
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !canvasId) return;
     clearTimeout(debounceRef.current);
-    if (!canvasId) { setSaveStatus("local"); return; }
     setSaveStatus("saving");
     debounceRef.current = setTimeout(async () => {
-      const { error } = await saveBlockManualData(canvasId, blockId, manual);
-      if (!error) { setSaveStatus("saved"); onManualSaved?.(manual); }
-      else setSaveStatus("error");
+      const { error } = await upsertStrategyCore(canvasId, core);
+      setSaveStatus(error ? "error" : "saved");
+      if (!error) setTimeout(() => setSaveStatus("idle"), 2500);
     }, 800);
     return () => clearTimeout(debounceRef.current);
-  }, [manual, isLoaded, canvasId, blockId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [core, isLoaded, canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const updateText = (field, value) =>
-    setManual(prev => ({ ...prev, [field]: value }));
-  const addCard = (field, text) =>
-    setManual(prev => ({ ...prev, [field]: [...(prev[field] || []), text] }));
-  const deleteCard = (field, idx) =>
-    setManual(prev => ({ ...prev, [field]: prev[field].filter((_, i) => i !== idx) }));
-  const addSwot = (key, text) =>
-    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: [...(prev.swot[key] || []), text] } }));
-  const deleteSwot = (key, idx) =>
-    setManual(prev => ({ ...prev, swot: { ...prev.swot, [key]: prev.swot[key].filter((_, i) => i !== idx) } }));
+  // ── Core field handlers ──────────────────────────────────────────────────────
+  const updateCore = (field, value) => setCore(prev => ({ ...prev, [field]: value }));
 
-  const statusLabel = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout", local: "Lokaal" }[saveStatus];
-  const statusColor = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", local: "text-amber-500", idle: "" }[saveStatus];
+  // ── Draft handlers ───────────────────────────────────────────────────────────
+  const setDraftFor  = (key, text) => setDrafts(prev => ({ ...prev, [key]: text }));
+  const clearDraft   = (key) => setDrafts(prev => { const n = { ...prev }; delete n[key]; return n; });
+  const acceptDraft  = (key) => { updateCore(key, drafts[key]); clearDraft(key); };
+  const editDraft    = (key) => { updateCore(key, drafts[key]); clearDraft(key); };
 
-  // ── Magic Staff helpers ────────────────────────────────────────────────────
+  // ── Magic Staff ──────────────────────────────────────────────────────────────
   const setMagicFor = (key, patch) =>
     setMagic(prev => ({ ...prev, [key]: patch === null ? undefined : { ...(prev[key] || {}), ...patch } }));
 
-  const callMagic = async (fieldKey, fieldLabel, existingText = "", isArray = false) => {
-    if (!canvasId) {
-      setMagicFor(fieldKey, { error: "Sla het canvas eerst op om Magic Staff te gebruiken." });
-      return;
-    }
+  const FIELD_QUERIES = {
+    missie:    "mission statement missie purpose why we exist organizational purpose reason for being",
+    visie:     "vision statement visie future ambition long-term goal where we want to be",
+    ambitie:   "ambition strategic ambition BHAG aspirations growth targets what we strive for",
+    kernwaarden: "core values kernwaarden principles culture beliefs guiding principles what we stand for",
+    extern:    "external developments trends marktomgeving macro-economisch sector trends opportunities threats",
+    intern:    "internal strengths weaknesses capabilities resources internal developments organizational",
+    themas:    "strategic themes priorities strategic pillars focus areas key initiatives transformation themes",
+  };
 
-    // SWOT-velden krijgen synthesis-modus: meer chunks + Sonnet
-    const isHeavy  = fieldKey.startsWith("swot_");
-    const matchCount = isHeavy ? 30 : 8;
-
-    setMagicFor(fieldKey, { loading: true, suggestion: null, citations: [], error: null });
+  const callWerkbladMagic = async (fieldKey, isArray = false) => {
+    if (!canvasId) { setMagicFor(fieldKey, { error: "Sla het canvas eerst op." }); return; }
+    const isHeavy = ["extern","intern","themas"].includes(fieldKey);
+    const matchCount = isHeavy ? 30 : 12;
+    setMagicFor(fieldKey, { loading: true, suggestion: null, error: null });
     try {
-      // 1. Embed de zoekvraag — rijke semantische queries per veld
-      const FIELD_SEARCH_QUERIES = {
-        swot_strengths:     "SWOT strengths sterktes sterke punten competitive advantage core capabilities differentiators unique selling points internal strengths",
-        swot_weaknesses:    "SWOT weaknesses zwaktes zwakke punten challenges limitations gaps internal problems issues risks",
-        swot_opportunities: "SWOT opportunities kansen growth potential market trends digital innovation future prospects new markets",
-        swot_threats:       "SWOT threats bedreigingen risks competition competitive pressure regulatory disruptors external challenges",
-        executive_summary:  "executive summary overview transformation strategy business plan introduction context background",
-        missie:             "mission statement missie purpose why we exist organizational purpose reason for being",
-        visie:              "vision statement visie future ambition long-term goal where we want to be in the future",
-        ambitie:            "ambition strategic ambition aspirations growth targets what we strive for",
-        kernwaarden:        "core values kernwaarden principles culture beliefs guiding principles what we stand for",
-        doelstellingen:     "objectives goals doelstellingen strategic targets priorities KPIs deliverables milestones",
-      };
-      const query = FIELD_SEARCH_QUERIES[fieldKey]
-        || (isArray
-          ? `${fieldLabel} voor deze organisatie`
-          : `${fieldLabel}${existingText ? ": " + existingText.slice(0, 200) : ""}`);
-
-      // Diagnostisch: hoeveel child-chunks met embedding bestaan er voor dit canvas?
-      const { count: chunkCount, error: countErr } = await countIndexedChunks(canvasId);
-      console.log("[magic] canvasId:", canvasId, "| geïndexeerde child-chunks:", chunkCount, countErr ? "(telfout: " + countErr.message + ")" : "");
-
-      const embRes = await fetch("/api/embed", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts: [query] }),
-      });
+      const query = FIELD_QUERIES[fieldKey] || fieldKey;
+      const embRes = await fetch("/api/embed", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ texts: [query] }) });
       if (!embRes.ok) throw new Error("Embedding mislukt");
       const { embeddings } = await embRes.json();
-
-      // 2. Vector search — gefilterd op dit canvas
-      console.log("[magic] RPC aanroep — canvas_id:", canvasId, "match_count:", matchCount, isHeavy ? "(heavy/SWOT)" : "");
       const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, matchCount);
-      if (searchErr) console.warn("[magic] RPC fout:", searchErr);
-      console.log("[magic] RPC resultaat:", chunks?.length ?? 0, "chunks", searchErr ? "(fout: " + searchErr.message + ")" : "");
-
-      // 2b. Guard: geen chunks → direct melden, geen Claude-aanroep
+      if (searchErr) console.warn("[werkblad magic] RPC fout:", searchErr);
       if (!chunks || chunks.length === 0) {
-        const diagnose = chunkCount === 0
-          ? "Geen geïndexeerde chunks voor dit canvas. Upload documenten via Het Dossier."
-          : `${chunkCount} chunks aanwezig maar RPC gaf 0 resultaten.${searchErr ? " RPC-fout: " + searchErr.message : ""}`;
-        setMagicFor(fieldKey, {
-          loading: false,
-          noChunks: true,
-          noChunksDiagnose: diagnose,
-          suggestion: null,
-          citations: [],
-          error: null,
-        });
+        setMagicFor(fieldKey, { loading: false, noChunks: true, suggestion: null });
         return;
       }
-
-      // Stuur chunks als gestructureerd array (met file_name + page_number) naar de API
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
-
-      // 3. Claude suggestie — via gestructureerde chunks
       const magicRes = await fetch("/api/magic", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ field: fieldLabel, chunks, existingText, isArray, heavy: isHeavy }),
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ field: fieldKey, chunks, isArray, heavy: isHeavy }),
       });
       const magicData = await magicRes.json();
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
-
-      // 3b. Detecteer "geen informatie" antwoord
       const suggestion = magicData.suggestion || "";
-      const isNoInfo = suggestion.toLowerCase().includes("geen relevante informatie") ||
-                       suggestion.toLowerCase().includes("onvoldoende relevante informatie") ||
-                       suggestion.toLowerCase().includes("geen informatie gevonden") ||
-                       suggestion.toLowerCase().includes("niet gevonden in het dossier");
-
+      const isNoInfo = suggestion.toLowerCase().includes("geen relevante informatie") || suggestion.toLowerCase().includes("onvoldoende");
       setMagicFor(fieldKey, { loading: false, suggestion, citations, isNoInfo });
+      if (!isNoInfo) setDraftFor(fieldKey, suggestion);
     } catch (err) {
       setMagicFor(fieldKey, { loading: false, error: err.message });
     }
   };
 
-  const acceptMagicText = (fieldKey) => {
-    const s = magic[fieldKey]?.suggestion;
-    if (s) updateText(fieldKey, s);
-    setMagicFor(fieldKey, null);
+  // ── Improve ──────────────────────────────────────────────────────────────────
+  const callImprove = async (fieldKey, text, preset) => {
+    if (!text) return;
+    setMagicFor(fieldKey, { loading: true });
+    try {
+      const res = await fetch("/api/improve", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ text, preset, field: fieldKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Improve mislukt");
+      setDraftFor(fieldKey, data.suggestion);
+      setMagicFor(fieldKey, { loading: false, suggestion: null });
+    } catch (err) {
+      setMagicFor(fieldKey, { loading: false, error: err.message });
+    }
   };
-  const acceptMagicArray = (fieldKey) => {
-    const items = (magic[fieldKey]?.suggestion || "").split("\n").map(s => s.trim()).filter(Boolean);
-    items.forEach(item => addCard(fieldKey, item));
-    setMagicFor(fieldKey, null);
-  };
-  const acceptMagicSwot = (swotKey) => {
-    const fk = `swot_${swotKey}`;
-    const items = (magic[fk]?.suggestion || "").split("\n").map(s => s.trim()).filter(Boolean);
-    items.forEach(item => addSwot(swotKey, item));
-    setMagicFor(fk, null);
-  };
-  const rejectMagic = (fieldKey) => setMagicFor(fieldKey, null);
 
-  const handleAutopilot = async () => {
+  // ── Full Draft ───────────────────────────────────────────────────────────────
+  const handleFullDraft = async () => {
     setAutoDraftOpen(false);
     setAutoDraftRunning(true);
-    const fields = [
-      { key: "executive_summary", label: L("executive_summary"), text: manual.executive_summary, isArray: false },
-      { key: "missie",            label: L("missie"),            text: manual.missie,            isArray: false },
-      { key: "visie",             label: L("visie"),             text: manual.visie,             isArray: false },
-      { key: "ambitie",           label: L("ambitie"),           text: manual.ambitie,           isArray: false },
-      { key: "kernwaarden",       label: L("kernwaarden"),       text: "",                       isArray: true  },
-      { key: "doelstellingen",    label: L("doelstellingen"),    text: "",                       isArray: true  },
-    ];
+    const fields = ["missie","visie","ambitie","kernwaarden","extern","intern"];
     for (let i = 0; i < fields.length; i++) {
-      const f = fields[i];
-      await callMagic(f.key, f.label, f.text, f.isArray);
-      // Kleine pauze tussen calls — voorkomt rate-limit fouten bij OpenAI/Anthropic
+      await callWerkbladMagic(fields[i], ["kernwaarden"].includes(fields[i]));
       if (i < fields.length - 1) await new Promise(r => setTimeout(r, 400));
     }
     setAutoDraftRunning(false);
   };
 
+  // ── Analysis item handlers ────────────────────────────────────────────────────
+  const addAnalysisItem = async (type, content) => {
+    const newItem = { canvas_id: canvasId, type, content, tag: "niet_relevant", sort_order: items.filter(i => i.type === type).length };
+    const { data } = await upsertAnalysisItem(newItem);
+    if (data) setItems(prev => [...prev, data]);
+  };
+  const removeAnalysisItem = async (id) => {
+    await deleteAnalysisItem(id);
+    setItems(prev => prev.filter(i => i.id !== id));
+  };
+  const changeAnalysisTag = async (id, tag) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, tag } : i));
+    await upsertAnalysisItem({ id, tag });
+  };
+
+  // ── Thema handlers ────────────────────────────────────────────────────────────
+  const addThema = async () => {
+    if (themas.length >= 7) return;
+    const { data } = await upsertStrategicTheme({ canvas_id: canvasId, title: "", sort_order: themas.length });
+    if (data) setThemas(prev => [...prev, { ...data, ksf_kpi: [] }]);
+  };
+  const removeThema = async (id) => {
+    await deleteStrategicTheme(id);
+    setThemas(prev => prev.filter(t => t.id !== id));
+  };
+  const updateThemaTitle = async (id, title) => {
+    setThemas(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => upsertStrategicTheme({ id, title }), 500);
+  };
+  const addKsfKpi = async (themaId, type) => {
+    const thema = themas.find(t => t.id === themaId);
+    const existing = (thema?.ksf_kpi || []).filter(k => k.type === type);
+    if (existing.length >= 3) return;
+    const { data } = await upsertKsfKpi({ theme_id: themaId, type, description: "", current_value: "", target_value: "", sort_order: existing.length });
+    if (data) setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: [...(t.ksf_kpi||[]), data] } : t));
+  };
+  const updateKsfKpiItem = async (themaId, item) => {
+    setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: t.ksf_kpi.map(k => k.id === item.id ? item : k) } : t));
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => upsertKsfKpi(item), 500);
+  };
+  const removeKsfKpi = async (themaId, id) => {
+    await deleteKsfKpi(id);
+    setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: t.ksf_kpi.filter(k => k.id !== id) } : t));
+  };
+
+  const externItems = items.filter(i => i.type === "extern");
+  const internItems = items.filter(i => i.type === "intern");
+  const saveLabel   = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout" }[saveStatus];
+  const saveColor   = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", idle: "" }[saveStatus];
+
+  if (!isLoaded) return (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="text-center space-y-3">
+        <Wand2 size={28} className="text-[#8dc63f] animate-pulse mx-auto" />
+        <p className="text-sm text-slate-500">Strategie laden…</p>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
-      <div
-        className={`flex flex-col flex-1 min-h-0 bg-slate-50 transition-all duration-300 ease-out relative
-          ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 shadow-sm flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 text-slate-400 hover:text-[#1a365d] text-xs uppercase tracking-widest transition-colors font-medium"
-          >
-            <ArrowLeft size={13} /> Terug naar Canvas
+    <div className={`flex flex-col flex-1 min-h-0 bg-slate-50 transition-all duration-300 ease-out
+      ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-8 py-4 bg-[#1a365d] flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+            <ArrowLeft size={18} />
           </button>
-          <div className="text-center">
-            <p className="text-xl font-black text-[#1a365d] tracking-tight leading-none">{blockLabel}</p>
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.18em] font-medium mt-1">Verdieping</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setAutoDraftOpen(true)}
-              disabled={autoDraftRunning || !canvasId}
-              title={!canvasId ? "Sla het canvas eerst op" : "Genereer alle velden op basis van geïndexeerde documenten"}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
-                ${autoDraftRunning ? "bg-[#8dc63f]/20 text-[#2c7a4b] cursor-default" :
-                  !canvasId ? "bg-slate-100 text-slate-300 cursor-not-allowed" :
-                  "bg-[#8dc63f]/10 hover:bg-[#8dc63f]/20 text-[#2c7a4b]"}`}
-            >
-              <Wand2 size={11} className={autoDraftRunning ? "animate-pulse" : ""} />
-              {autoDraftRunning ? "Bezig…" : "Full Draft"}
-            </button>
-            <span className={`text-xs font-medium min-w-[80px] text-right ${statusColor}`}>{statusLabel}</span>
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">De Werkkamer</p>
+            <h2 className="text-lg font-bold text-white leading-tight">Strategie Werkblad</h2>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          {saveLabel && <span className={`text-[10px] font-semibold ${saveColor}`}>{saveLabel}</span>}
+          {/* Full Draft */}
+          <button
+            onClick={() => setAutoDraftOpen(true)}
+            disabled={autoDraftRunning}
+            className="flex items-center gap-2 px-4 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
+            <Zap size={13} />
+            {autoDraftRunning ? "Bezig…" : "Full Draft"}
+          </button>
+        </div>
+      </div>
 
-        {/* Autopilot bevestigingsdialoog */}
-        {autoDraftOpen && (
-          <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex items-center justify-center p-8">
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-              <div className="w-12 h-12 rounded-full bg-[#8dc63f]/10 flex items-center justify-center mx-auto mb-4">
-                <Wand2 size={22} className="text-[#8dc63f]" />
-              </div>
-              <h3 className="text-lg font-black text-[#1a365d] uppercase tracking-tight mb-2">Full Page Draft</h3>
-              <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                AI genereert voorstellen voor alle velden op basis van geïndexeerde documenten.
-                Je kunt elk voorstel afzonderlijk overnemen of weggooien.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={handleAutopilot}
-                  className="px-5 py-2.5 bg-[#1a365d] text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-[#2c7a4b] transition-colors"
-                >
-                  Start Autopilot
-                </button>
-                <button
-                  onClick={() => setAutoDraftOpen(false)}
-                  className="px-5 py-2.5 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  Annuleren
-                </button>
-              </div>
-            </div>
+      {/* Full Draft bevestiging */}
+      {autoDraftOpen && (
+        <div className="flex-shrink-0 mx-8 mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-amber-800">🚀 Full Draft starten?</p>
+            <p className="text-xs text-amber-600 mt-0.5">Vult alle velden met AI-concepten op basis van Het Dossier. Bestaande tekst wordt niet overschreven.</p>
           </div>
-        )}
+          <div className="flex gap-2 flex-shrink-0">
+            <button onClick={handleFullDraft} className="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg px-4 py-2">Start</button>
+            <button onClick={() => setAutoDraftOpen(false)} className="text-xs font-semibold text-slate-500 bg-white border border-slate-200 rounded-lg px-3 py-2">Annuleer</button>
+          </div>
+        </div>
+      )}
 
-        {/* Body — scrollable */}
-        <div className="flex-1 overflow-auto p-8 flex flex-col gap-6">
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-10">
 
-          {blockId !== "strategy" ? (
-            /* Generic blok-verdieping voor niet-strategie blokken */
-            <div className="flex flex-col gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <Wand2 size={14} className="text-[#8dc63f]" />
-                  <p className="text-[10px] font-black text-[#2c7a4b] uppercase tracking-widest">Magic Staff — {blockLabel}</p>
-                </div>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Klik op een 🪄-icoontje naast een veld in de Strategie-verdieping om AI-suggesties te genereren op basis van Het Dossier.
-                  Diepgaande verdieping per blok (Klanten, Processen, Mensen, Technologie) volgt in de volgende sprint.
-                </p>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">Tip</p>
-                <p className="text-sm text-amber-600">
-                  Gebruik de Strategie-verdieping voor Executive Summary, Missie, Visie, Ambitie, Kernwaarden, Doelstellingen en SWOT.
-                  Die heeft volledige Magic Staff AI-ondersteuning.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <>
-          {/* Zone 1: Executive Summary — full width */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("executive_summary")}</label>
-              <WandButton onClick={() => callMagic("executive_summary", L("executive_summary"), manual.executive_summary)} loading={magic.executive_summary?.loading} />
-            </div>
-            <textarea
-              value={manual.executive_summary}
-              onChange={e => updateText("executive_summary", e.target.value)}
-              rows={3}
-              placeholder="Kernboodschap voor de boardroom — de rode draad van de hele strategie…"
-              className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3.5 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+        {/* SECTIE 1: IDENTITEIT */}
+        <section className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">1</div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#1a365d]">Identiteit</h3>
+            <div className="flex-1 h-px bg-[#1a365d]/15" />
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <WerkbladTextField
+              label="Missie"
+              fieldKey="missie"
+              value={core.missie}
+              draft={drafts.missie}
+              onChange={v => updateCore("missie", v)}
+              onMagic={() => callWerkbladMagic("missie")}
+              onImprove={(preset) => callImprove("missie", core.missie, preset)}
+              onAcceptDraft={() => acceptDraft("missie")}
+              onEditDraft={() => editDraft("missie")}
+              onRejectDraft={() => clearDraft("missie")}
+              magicResult={magic.missie?.error || magic.missie?.noChunks ? magic.missie : undefined}
+              placeholder="Waarom bestaan wij?"
             />
-            <MagicResult result={magic.executive_summary} onAccept={() => acceptMagicText("executive_summary")} onReject={() => rejectMagic("executive_summary")} />
-          </div>
-
-          {/* Zone 2: Strategische Doelstellingen — full width */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("doelstellingen")}</label>
-              <WandButton onClick={() => callMagic("doelstellingen", L("doelstellingen"), "", true)} loading={magic.doelstellingen?.loading} />
-            </div>
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
-              <CardList
-                cards={manual.doelstellingen || []}
-                onAdd={text => addCard("doelstellingen", text)}
-                onDelete={idx => deleteCard("doelstellingen", idx)}
-                placeholder="+ Strategische doelstelling toevoegen (Enter)…"
-                horizontal
-              />
-            </div>
-            <MagicResult result={magic.doelstellingen} onAccept={() => acceptMagicArray("doelstellingen")} onReject={() => rejectMagic("doelstellingen")} />
-          </div>
-
-          {/* Zone 3: Split — Links (Missie/Visie/Ambitie/Kernwaarden) + Rechts (SWOT) */}
-          <div className="flex gap-6">
-
-            {/* Links */}
-            <div className="flex flex-col gap-4 w-[38%]">
-
-              {/* Missie */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("missie")}</label>
-                  <WandButton onClick={() => callMagic("missie", L("missie"), manual.missie)} loading={magic.missie?.loading} />
-                </div>
-                <textarea
-                  value={manual.missie}
-                  onChange={e => updateText("missie", e.target.value)}
-                  rows={4}
-                  placeholder="Waarom bestaat deze organisatie?"
-                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
+            <WerkbladTextField
+              label="Visie"
+              fieldKey="visie"
+              value={core.visie}
+              draft={drafts.visie}
+              onChange={v => updateCore("visie", v)}
+              onMagic={() => callWerkbladMagic("visie")}
+              onImprove={(preset) => callImprove("visie", core.visie, preset)}
+              onAcceptDraft={() => acceptDraft("visie")}
+              onEditDraft={() => editDraft("visie")}
+              onRejectDraft={() => clearDraft("visie")}
+              magicResult={magic.visie?.error || magic.visie?.noChunks ? magic.visie : undefined}
+              placeholder="Waar staan wij over 5 jaar?"
+            />
+            <WerkbladTextField
+              label="Ambitie (BHAG)"
+              fieldKey="ambitie"
+              value={core.ambitie}
+              draft={drafts.ambitie}
+              onChange={v => updateCore("ambitie", v)}
+              onMagic={() => callWerkbladMagic("ambitie")}
+              onImprove={(preset) => callImprove("ambitie", core.ambitie, preset)}
+              onAcceptDraft={() => acceptDraft("ambitie")}
+              onEditDraft={() => editDraft("ambitie")}
+              onRejectDraft={() => clearDraft("ambitie")}
+              magicResult={magic.ambitie?.error || magic.ambitie?.noChunks ? magic.ambitie : undefined}
+              placeholder="Onze grote, haast onmogelijke doelstelling…"
+            />
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Kernwaarden</label>
+                <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} />
+              </div>
+              <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
+                {core.kernwaarden.map((kw, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#1a365d] bg-[#1a365d]/8 border border-[#1a365d]/20 rounded-full px-2.5 py-1">
+                    {kw}
+                    <button onClick={() => setCore(prev => ({ ...prev, kernwaarden: prev.kernwaarden.filter((_,j) => j !== i) }))}
+                      className="text-[#1a365d]/40 hover:text-red-400 transition-colors"><X size={10} /></button>
+                  </span>
+                ))}
+                <input
+                  placeholder="+ Waarde…"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      setCore(prev => ({ ...prev, kernwaarden: [...prev.kernwaarden, e.target.value.trim()] }));
+                      e.target.value = "";
+                    }
+                  }}
+                  className="text-[10px] bg-transparent border-none focus:outline-none placeholder:text-slate-300 text-slate-600 min-w-[80px]"
                 />
-                <MagicResult result={magic.missie} onAccept={() => acceptMagicText("missie")} onReject={() => rejectMagic("missie")} />
               </div>
-
-              {/* Visie */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("visie")}</label>
-                  <WandButton onClick={() => callMagic("visie", L("visie"), manual.visie)} loading={magic.visie?.loading} />
-                </div>
-                <textarea
-                  value={manual.visie}
-                  onChange={e => updateText("visie", e.target.value)}
-                  rows={4}
-                  placeholder="Wat willen we bereikt hebben in 3–5 jaar?"
-                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
-                />
-                <MagicResult result={magic.visie} onAccept={() => acceptMagicText("visie")} onReject={() => rejectMagic("visie")} />
-              </div>
-
-              {/* Ambitie */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("ambitie")}</label>
-                  <WandButton onClick={() => callMagic("ambitie", L("ambitie"), manual.ambitie)} loading={magic.ambitie?.loading} />
-                </div>
-                <textarea
-                  value={manual.ambitie}
-                  onChange={e => updateText("ambitie", e.target.value)}
-                  rows={3}
-                  placeholder="Wat is onze stoutmoedigste ambitie?"
-                  className="bg-white border border-slate-200 rounded-lg text-slate-700 text-sm p-3 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d]/20 focus:border-[#1a365d]/30 placeholder:text-slate-300"
-                />
-                <MagicResult result={magic.ambitie} onAccept={() => acceptMagicText("ambitie")} onReject={() => rejectMagic("ambitie")} />
-              </div>
-
-              {/* Kernwaarden */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("kernwaarden")}</label>
-                  <WandButton onClick={() => callMagic("kernwaarden", L("kernwaarden"), "", true)} loading={magic.kernwaarden?.loading} />
-                </div>
-                <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-3 flex flex-col gap-1.5">
-                  <CardList
-                    cards={manual.kernwaarden || []}
-                    onAdd={text => addCard("kernwaarden", text)}
-                    onDelete={idx => deleteCard("kernwaarden", idx)}
-                    placeholder="+ Kernwaarde toevoegen (Enter)…"
-                  />
-                </div>
-                <MagicResult result={magic.kernwaarden} onAccept={() => acceptMagicArray("kernwaarden")} onReject={() => rejectMagic("kernwaarden")} />
-              </div>
-
-              {/* AI Insights (read-only) */}
-              {Object.keys(aiInsights).length > 0 && (
-                <div className="bg-[#8dc63f]/5 border border-[#8dc63f]/25 rounded-lg p-4">
-                  <p className="text-[9px] font-semibold uppercase tracking-widest text-[#2c7a4b] mb-2">AI Inzichten</p>
-                  {Object.entries(aiInsights).map(([k, v]) => (
-                    <p key={k} className="text-slate-600 text-xs mb-1 leading-relaxed">{String(v)}</p>
-                  ))}
+              {/* Draft voor kernwaarden */}
+              {drafts.kernwaarden && (
+                <div className="border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
+                  <div className="px-3 py-1.5 bg-amber-100 border-b border-amber-200 flex items-center justify-between">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-amber-700">✨ AI Voorstel — Concept</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => {
+                        const vals = drafts.kernwaarden.split("\n").map(s=>s.trim()).filter(Boolean);
+                        setCore(prev => ({ ...prev, kernwaarden: [...new Set([...prev.kernwaarden, ...vals])] }));
+                        clearDraft("kernwaarden");
+                      }} className="text-[9px] font-bold text-emerald-700">✓ Accepteren</button>
+                      <button onClick={() => clearDraft("kernwaarden")} className="text-[9px] font-bold text-slate-500">✕ Negeren</button>
+                    </div>
+                  </div>
+                  <p className="px-3 py-2 text-xs text-amber-900 whitespace-pre-wrap">{drafts.kernwaarden}</p>
                 </div>
               )}
             </div>
-
-            {/* Rechts: SWOT 2×2 */}
-            <div className="flex-1 flex flex-col gap-3">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-600">{L("swot")}</label>
-              <div className="grid grid-cols-2 gap-4">
-                {SWOT_QUADRANTS.map(q => {
-                  const fk = `swot_${q.key}`;
-                  const qLabel = lang === "en" ? q.labelEn : q.labelNl;
-                  return (
-                    <SwotQuadrant
-                      key={q.key}
-                      quadrant={q}
-                      cards={manual.swot?.[q.key] || []}
-                      lang={lang}
-                      onAdd={text => addSwot(q.key, text)}
-                      onDelete={idx => deleteSwot(q.key, idx)}
-                      magicResult={magic[fk]}
-                      onMagic={() => callMagic(fk, qLabel, "", true)}
-                      onAcceptMagic={() => acceptMagicSwot(q.key)}
-                      onRejectMagic={() => rejectMagic(fk)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
           </div>
-            </>
-          )}
+        </section>
 
+        {/* SECTIE 2: ANALYSE */}
+        <section className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-[#00AEEF] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">2</div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#00AEEF]">Analyse</h3>
+            <div className="flex-1 h-px bg-[#00AEEF]/20" />
+            <p className="text-[9px] text-slate-400 flex-shrink-0">Tag elk item voor de SWOT-rapportage</p>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <AnalyseSection
+              title="Externe Ontwikkelingen"
+              type="extern"
+              items={externItems}
+              onAdd={content => addAnalysisItem("extern", content)}
+              onDelete={removeAnalysisItem}
+              onTagChange={changeAnalysisTag}
+              onMagic={() => callWerkbladMagic("extern", true)}
+              magicResult={magic.extern}
+            />
+            <AnalyseSection
+              title="Interne Ontwikkelingen"
+              type="intern"
+              items={internItems}
+              onAdd={content => addAnalysisItem("intern", content)}
+              onDelete={removeAnalysisItem}
+              onTagChange={changeAnalysisTag}
+              onMagic={() => callWerkbladMagic("intern", true)}
+              magicResult={magic.intern}
+            />
+          </div>
+        </section>
+
+        {/* SECTIE 3: EXECUTIE 7-3-3 */}
+        <section className="space-y-5 pb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-[#8dc63f] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">3</div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-[#2c7a4b]">Executie — 7·3·3 Regel</h3>
+            <div className="flex-1 h-px bg-[#8dc63f]/30" />
+            <p className="text-[9px] text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
+          </div>
+          <div className="space-y-3">
+            {themas.map((thema, i) => (
+              <ThemaAccordeon
+                key={thema.id}
+                thema={thema}
+                index={i}
+                onTitleChange={title => updateThemaTitle(thema.id, title)}
+                onDelete={() => removeThema(thema.id)}
+                onAddKsfKpi={type => addKsfKpi(thema.id, type)}
+                onUpdateKsfKpi={item => updateKsfKpiItem(thema.id, item)}
+                onDeleteKsfKpi={id => removeKsfKpi(thema.id, id)}
+              />
+            ))}
+            {themas.length < 7 && (
+              <button onClick={addThema}
+                className="w-full border-2 border-dashed border-slate-200 hover:border-[#8dc63f]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[#2c7a4b] transition-colors flex items-center justify-center gap-2">
+                <Plus size={14} />
+                Strategisch Thema toevoegen {themas.length > 0 ? `(${themas.length}/7)` : ""}
+              </button>
+            )}
+            {themas.length === 0 && (
+              <p className="text-center text-xs text-slate-300 italic py-4">
+                Nog geen strategische thema's — klik hierboven om te beginnen
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSaved }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Strategy: volledig nieuwe Werkblad
+  if (blockId === "strategy") {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
+        <StrategieWerkblad canvasId={canvasId} onClose={onClose} onManualSaved={onManualSaved} />
+      </div>
+    );
+  }
+
+  // Overige blokken: generieke placeholder
+  return (
+    <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
+      <div className={`flex flex-col flex-1 min-h-0 bg-slate-50 transition-all duration-300 ease-out
+        ${mounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.99]"}`}>
+        <div className="flex items-center gap-3 px-8 py-4 bg-[#1a365d] flex-shrink-0">
+          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+            <ArrowLeft size={18} />
+          </button>
+          <h2 className="text-lg font-bold text-white capitalize">{blockId}</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-slate-400 text-sm">Verdieping voor dit blok komt in een volgende sprint.</p>
         </div>
       </div>
     </div>
