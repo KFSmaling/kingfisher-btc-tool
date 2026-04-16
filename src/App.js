@@ -1991,11 +1991,20 @@ function KsfKpiRow({ item, onChange, onDelete }) {
   );
 }
 
+const KSF_KPI_LOADING_MSGS = [
+  "Balanced Scorecard aan het kalibreren…",
+  "SMART-criteria toepassen op uw ambities…",
+  "KPI's formuleren die de CFO ook begrijpt…",
+  "Succescriteria uitvinden die niet alleen in theorie werken…",
+  "McKinsey-kwaliteit benchmarken tegen eigen targets…",
+];
+
 /** Strategisch Thema accordeon met KSF/KPI tabel */
-function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi }) {
+function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi, onGenerateKsfKpi, ksfKpiDraft, onAcceptKsfKpiDraft, onRejectKsfKpiDraft }) {
   const [open, setOpen] = useState(index === 0);
   const ksfs = (thema.ksf_kpi || []).filter(k => k.type === "ksf").sort((a,b) => a.sort_order - b.sort_order);
   const kpis = (thema.ksf_kpi || []).filter(k => k.type === "kpi").sort((a,b) => a.sort_order - b.sort_order);
+  const loadingMsg = ksfKpiDraft?.loadingMsg || KSF_KPI_LOADING_MSGS[0];
 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -2008,6 +2017,17 @@ function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, on
           placeholder={`Strategisch Thema ${index + 1}…`}
           className="flex-1 text-sm font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
         />
+        {/* KSF/KPI genereren knop */}
+        {onGenerateKsfKpi && thema.title?.trim() && (
+          <button
+            onClick={() => { if (!ksfKpiDraft?.loading) { setOpen(true); onGenerateKsfKpi(); } }}
+            disabled={ksfKpiDraft?.loading}
+            title="KSF & KPI genereren op basis van dit thema"
+            className="flex items-center gap-1 text-[9px] font-bold text-[#8dc63f] hover:text-[#2c7a4b] border border-[#8dc63f]/40 hover:border-[#2c7a4b]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+            <Wand2 size={10} />
+            {ksfKpiDraft?.loading ? "…" : "KSF & KPI"}
+          </button>
+        )}
         <button onClick={() => setOpen(o => !o)}
           className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"
@@ -2024,6 +2044,57 @@ function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, on
       {/* Body */}
       {open && (
         <div className="px-4 py-4 space-y-5">
+
+          {/* KSF/KPI Draft panel */}
+          {ksfKpiDraft && (
+            <div className="border border-amber-300 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+                  {ksfKpiDraft.loading ? "🪄 " + loadingMsg : `🪄 AI Voorstel — ${(ksfKpiDraft.ksf||[]).length} KSF's + ${(ksfKpiDraft.kpi||[]).length} KPI's`}
+                </span>
+                {!ksfKpiDraft.loading && (
+                  <div className="flex gap-2">
+                    <button onClick={onAcceptKsfKpiDraft}
+                      className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
+                      Alles toevoegen
+                    </button>
+                    <button onClick={onRejectKsfKpiDraft}
+                      className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                      Weggooien
+                    </button>
+                  </div>
+                )}
+              </div>
+              {ksfKpiDraft.loading && (
+                <div className="px-4 py-3 text-[10px] text-amber-700 animate-pulse">
+                  {loadingMsg}
+                </div>
+              )}
+              {!ksfKpiDraft.loading && (
+                <div className="divide-y divide-amber-100">
+                  {/* KSF preview */}
+                  {(ksfKpiDraft.ksf || []).map((k, i) => (
+                    <div key={`ksf-${i}`} className="grid grid-cols-[20px_1fr_90px_90px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
+                      <span className="text-[8px] font-black text-[#1a365d]/50 uppercase">KSF</span>
+                      <span className="text-xs text-slate-700">{k.description}</span>
+                      <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
+                      <span className="text-[10px] text-[#2c7a4b] font-semibold text-center">{k.target_value || "—"}</span>
+                    </div>
+                  ))}
+                  {/* KPI preview */}
+                  {(ksfKpiDraft.kpi || []).map((k, i) => (
+                    <div key={`kpi-${i}`} className="grid grid-cols-[20px_1fr_90px_90px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
+                      <span className="text-[8px] font-black text-[#2c7a4b]/70 uppercase">KPI</span>
+                      <span className="text-xs text-slate-700">{k.description}</span>
+                      <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
+                      <span className="text-[10px] text-[#2c7a4b] font-semibold text-center">{k.target_value || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* KSF sectie */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -2048,7 +2119,7 @@ function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, on
                 onChange={updated => onUpdateKsfKpi(updated)}
                 onDelete={() => onDeleteKsfKpi(k.id)} />
             ))}
-            {ksfs.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KSF's — klik Toevoegen</p>}
+            {ksfs.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KSF's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
           </div>
 
           {/* KPI sectie */}
@@ -2075,7 +2146,7 @@ function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, on
                 onChange={updated => onUpdateKsfKpi(updated)}
                 onDelete={() => onDeleteKsfKpi(k.id)} />
             ))}
-            {kpis.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KPI's — klik Toevoegen</p>}
+            {kpis.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KPI's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
           </div>
         </div>
       )}
@@ -2101,6 +2172,10 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
   const [magic, setMagic]       = useState({});
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
+
+  // Executie Magic state
+  const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
+  const [ksfKpiDrafts, setKsfKpiDrafts] = useState({});   // { [themaId]: { loading, loadingMsg, ksf, kpi } }
 
   const debounceRef = useRef(null);
 
@@ -2253,12 +2328,19 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => upsertStrategicTheme({ id, title }), 500);
   };
-  const addKsfKpi = async (themaId, type) => {
+  const addKsfKpi = async (themaId, type, initialData = {}) => {
     const thema = themas.find(t => t.id === themaId);
     const existing = (thema?.ksf_kpi || []).filter(k => k.type === type);
-    if (existing.length >= 3) return;
-    const { data } = await upsertKsfKpi({ theme_id: themaId, type, description: "", current_value: "", target_value: "", sort_order: existing.length });
+    if (existing.length >= 3) return null;
+    const { data } = await upsertKsfKpi({
+      theme_id: themaId, type,
+      description:   initialData.description   || "",
+      current_value: initialData.current_value || "",
+      target_value:  initialData.target_value  || "",
+      sort_order: existing.length,
+    });
     if (data) setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: [...(t.ksf_kpi||[]), data] } : t));
+    return data;
   };
   const updateKsfKpiItem = async (themaId, item) => {
     setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: t.ksf_kpi.map(k => k.id === item.id ? item : k) } : t));
@@ -2268,6 +2350,86 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
   const removeKsfKpi = async (themaId, id) => {
     await deleteKsfKpi(id);
     setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: t.ksf_kpi.filter(k => k.id !== id) } : t));
+  };
+
+  // ── Executie Magic handlers ───────────────────────────────────────────────────
+  const THEME_LOADING_MSGS = [
+    "Bezig met het vertalen van dromen naar spreadsheets…",
+    "De raad van bestuur simuleren voor kritische feedback…",
+    "Zeven thema's destilleren uit de strategische ruis…",
+    "Strategische ambities omzetten naar werkbare richting…",
+    "Coherente koerslijnen uitstippelen voor de komende 3-5 jaar…",
+  ];
+
+  const generateThemas = async () => {
+    const loadingMsg = THEME_LOADING_MSGS[Math.floor(Math.random() * THEME_LOADING_MSGS.length)];
+    setThemaDraft({ loading: true, loadingMsg, lines: [] });
+    try {
+      const res = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "themes", core, items }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      setThemaDraft({ loading: false, loadingMsg, lines: data.themes || [] });
+    } catch (err) {
+      setThemaDraft({ loading: false, loadingMsg, lines: [], error: err.message });
+    }
+  };
+
+  const acceptThemaDraftLine = async (line) => {
+    if (themas.length >= 7) return;
+    const { data } = await upsertStrategicTheme({ canvas_id: canvasId, title: line, sort_order: themas.length });
+    if (data) setThemas(prev => [...prev, { ...data, ksf_kpi: [] }]);
+    setThemaDraft(prev => ({ ...prev, lines: prev.lines.filter(l => l !== line) }));
+  };
+
+  const acceptAllThemaDraft = async () => {
+    const toAdd = (themaDraft?.lines || []).slice(0, 7 - themas.length);
+    for (const line of toAdd) {
+      const { data } = await upsertStrategicTheme({ canvas_id: canvasId, title: line, sort_order: themas.length });
+      if (data) setThemas(prev => [...prev, { ...data, ksf_kpi: [] }]);
+    }
+    setThemaDraft(null);
+  };
+
+  const generateKsfKpiForThema = async (themaId) => {
+    const thema = themas.find(t => t.id === themaId);
+    if (!thema?.title?.trim()) return;
+    const loadingMsg = KSF_KPI_LOADING_MSGS[Math.floor(Math.random() * KSF_KPI_LOADING_MSGS.length)];
+    setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: true, loadingMsg } }));
+    try {
+      const res = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "ksf_kpi", thema: thema.title, core, items }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: false, loadingMsg, ksf: data.ksf || [], kpi: data.kpi || [] } }));
+    } catch (err) {
+      setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: false, loadingMsg, error: err.message } }));
+    }
+  };
+
+  const acceptKsfKpiDraft = async (themaId) => {
+    const draft = ksfKpiDrafts[themaId];
+    if (!draft) return;
+    const thema = themas.find(t => t.id === themaId);
+    const existingKsf = (thema?.ksf_kpi || []).filter(k => k.type === "ksf");
+    const existingKpi = (thema?.ksf_kpi || []).filter(k => k.type === "kpi");
+    for (const ksf of (draft.ksf || []).slice(0, 3 - existingKsf.length)) {
+      await addKsfKpi(themaId, "ksf", ksf);
+    }
+    for (const kpi of (draft.kpi || []).slice(0, 3 - existingKpi.length)) {
+      await addKsfKpi(themaId, "kpi", kpi);
+    }
+    setKsfKpiDrafts(prev => { const n = { ...prev }; delete n[themaId]; return n; });
+  };
+
+  const rejectKsfKpiDraft = (themaId) => {
+    setKsfKpiDrafts(prev => { const n = { ...prev }; delete n[themaId]; return n; });
   };
 
   const externItems = items.filter(i => i.type === "extern");
@@ -2465,7 +2627,68 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
             <h3 className="text-sm font-black uppercase tracking-widest text-[#2c7a4b]">Executie — 7·3·3 Regel</h3>
             <div className="flex-1 h-px bg-[#8dc63f]/30" />
             <p className="text-[9px] text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
+            {themas.length < 7 && (
+              <button
+                onClick={generateThemas}
+                disabled={themaDraft?.loading}
+                className="flex items-center gap-1.5 text-[9px] font-bold text-[#8dc63f] hover:text-[#2c7a4b] border border-[#8dc63f]/40 hover:border-[#2c7a4b]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+                <Wand2 size={10} />
+                {themaDraft?.loading ? "Genereren…" : "Genereer Thema's"}
+              </button>
+            )}
           </div>
+
+          {/* Thema draft panel */}
+          {themaDraft && (
+            <div className="border border-amber-300 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+                  {themaDraft.loading
+                    ? `🪄 ${themaDraft.loadingMsg}`
+                    : `🪄 ${themaDraft.lines.length} thema's voorgesteld — review en selecteer`}
+                </span>
+                {!themaDraft.loading && (
+                  <div className="flex gap-2">
+                    <button onClick={acceptAllThemaDraft}
+                      disabled={themas.length >= 7}
+                      className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
+                      Alle toevoegen
+                    </button>
+                    <button onClick={() => setThemaDraft(null)}
+                      className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                      Weggooien
+                    </button>
+                  </div>
+                )}
+              </div>
+              {themaDraft.loading && (
+                <div className="px-4 py-3 text-[10px] text-amber-700 animate-pulse">{themaDraft.loadingMsg}</div>
+              )}
+              {!themaDraft.loading && themaDraft.error && (
+                <div className="px-4 py-3 text-[10px] text-red-600">{themaDraft.error}</div>
+              )}
+              {!themaDraft.loading && (themaDraft.lines || []).map((line, i) => (
+                <div key={i} className="group flex items-center gap-3 px-4 py-2.5 bg-white hover:bg-amber-50/30 border-b border-amber-100 last:border-0 transition-colors">
+                  <span className="text-[9px] font-black text-[#8dc63f]/70 w-4 flex-shrink-0">{i + 1}</span>
+                  <p className="flex-1 text-sm font-semibold text-slate-700">{line}</p>
+                  <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => acceptThemaDraftLine(line)}
+                      disabled={themas.length >= 7}
+                      className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
+                      ✓ Toevoegen
+                    </button>
+                    <button
+                      onClick={() => setThemaDraft(prev => ({ ...prev, lines: prev.lines.filter((_, j) => j !== i) }))}
+                      className="text-[10px] text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-2 py-0.5 transition-colors">
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="space-y-3">
             {themas.map((thema, i) => (
               <ThemaAccordeon
@@ -2477,18 +2700,22 @@ function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
                 onAddKsfKpi={type => addKsfKpi(thema.id, type)}
                 onUpdateKsfKpi={item => updateKsfKpiItem(thema.id, item)}
                 onDeleteKsfKpi={id => removeKsfKpi(thema.id, id)}
+                onGenerateKsfKpi={() => generateKsfKpiForThema(thema.id)}
+                ksfKpiDraft={ksfKpiDrafts[thema.id]}
+                onAcceptKsfKpiDraft={() => acceptKsfKpiDraft(thema.id)}
+                onRejectKsfKpiDraft={() => rejectKsfKpiDraft(thema.id)}
               />
             ))}
             {themas.length < 7 && (
               <button onClick={addThema}
                 className="w-full border-2 border-dashed border-slate-200 hover:border-[#8dc63f]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[#2c7a4b] transition-colors flex items-center justify-center gap-2">
                 <Plus size={14} />
-                Strategisch Thema toevoegen {themas.length > 0 ? `(${themas.length}/7)` : ""}
+                Strategisch Thema handmatig toevoegen {themas.length > 0 ? `(${themas.length}/7)` : ""}
               </button>
             )}
-            {themas.length === 0 && (
+            {themas.length === 0 && !themaDraft && (
               <p className="text-center text-xs text-slate-300 italic py-4">
-                Nog geen strategische thema's — klik hierboven om te beginnen
+                Gebruik 🪄 Genereer Thema's of voeg een thema handmatig toe
               </p>
             )}
           </div>
