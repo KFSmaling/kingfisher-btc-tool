@@ -1685,15 +1685,19 @@ function MagicResult({ result, onAccept, onReject }) {
 // ── Werkblad sub-components ────────────────────────────────────────────────────
 
 /** Tag-pill voor analyse-items */
-function TagPill({ tag, onChange }) {
-  const tags = [
-    { key: "kans",          label: "Kans",          color: "bg-emerald-100 text-emerald-700 border-emerald-200"  },
-    { key: "sterkte",       label: "Sterkte",        color: "bg-blue-100 text-blue-700 border-blue-200"          },
-    { key: "bedreiging",    label: "Bedreiging",     color: "bg-red-100 text-red-700 border-red-200"             },
-    { key: "zwakte",        label: "Zwakte",         color: "bg-orange-100 text-orange-700 border-orange-200"    },
-    { key: "niet_relevant", label: "Niet relevant",  color: "bg-slate-100 text-slate-400 border-slate-200"       },
-  ];
-  const current = tags.find(t => t.key === tag) || tags[4];
+const ALL_TAGS = [
+  { key: "kans",          label: "Kans",          color: "bg-emerald-100 text-emerald-700 border-emerald-200"  },
+  { key: "sterkte",       label: "Sterkte",        color: "bg-blue-100 text-blue-700 border-blue-200"          },
+  { key: "bedreiging",    label: "Bedreiging",     color: "bg-red-100 text-red-700 border-red-200"             },
+  { key: "zwakte",        label: "Zwakte",         color: "bg-orange-100 text-orange-700 border-orange-200"    },
+  { key: "niet_relevant", label: "Niet relevant",  color: "bg-slate-100 text-slate-400 border-slate-200"       },
+];
+const EXTERN_TAGS = ["kans", "bedreiging", "niet_relevant"];
+const INTERN_TAGS = ["sterkte", "zwakte", "niet_relevant"];
+
+function TagPill({ tag, onChange, allowedKeys }) {
+  const tags = allowedKeys ? ALL_TAGS.filter(t => allowedKeys.includes(t.key)) : ALL_TAGS;
+  const current = ALL_TAGS.find(t => t.key === tag) || ALL_TAGS[4];
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -1706,7 +1710,7 @@ function TagPill({ tag, onChange }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[130px]">
             {tags.map(t => (
               <button key={t.key} onClick={() => { onChange(t.key); setOpen(false); }}
                 className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-slate-50 ${t.key === tag ? "text-[#1a365d]" : "text-slate-600"}`}>
@@ -1817,16 +1821,28 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 
 /** Analyse-lijst (extern of intern) met tagging */
 function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMagic, magicResult, onRejectMagic }) {
+  const allowedTagKeys = type === "extern" ? EXTERN_TAGS : type === "intern" ? INTERN_TAGS : undefined;
   const [draft, setDraft] = useState("");
   const [proposedLines, setProposedLines] = useState([]);
+
+  // Patroon voor paginaverwijzingen en losse kopjes die we willen wegfilteren
+  const isNoise = (line) => {
+    if (/^\[(slide|pagina|page|notes)\s+\d+\]/i.test(line)) return true;  // [Slide 7]
+    if (/\[(slide|pagina|page|notes)\s+\d+\]$/i.test(line)) return true;  // tekst [Slide 7]
+    if (/^(slide|pagina|page)\s+\d+$/i.test(line)) return true;           // "Slide 7"
+    if (line.length < 12) return true;                                     // te kort = kopje
+    if (/^[A-Z][A-Z\s&/–-]{8,}$/.test(line)) return true;                 // ALL CAPS kopje
+    if (/^\d+[.)]\s/.test(line) && line.length < 20) return true;           // "1. Titel"
+    return false;
+  };
 
   // Zodra er een nieuwe magic suggestion binnenkomt: split op regels
   useEffect(() => {
     if (magicResult?.suggestion && !magicResult.loading) {
       const lines = magicResult.suggestion
         .split("\n")
-        .map(l => l.trim())
-        .filter(l => l.length > 4);
+        .map(l => l.trim().replace(/^[-•*]\s*/, ""))  // strip leading bullets
+        .filter(l => l.length > 4 && !isNoise(l));
       setProposedLines(lines);
     } else if (!magicResult || magicResult.loading) {
       setProposedLines([]);
@@ -1926,7 +1942,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
             className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-3 py-2 ${tagColors[item.tag] || tagColors.niet_relevant}`}>
             <p className="flex-1 text-xs text-slate-700 leading-relaxed">{item.content}</p>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} />
+              <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} allowedKeys={allowedTagKeys} />
               <button onClick={() => onDelete(item.id)}
                 className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
                 <X size={12} />
