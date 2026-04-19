@@ -8,18 +8,23 @@ App.js is de orchestrator; alle UI-componenten zitten in deze feature-module.
 ```
 src/features/canvas/
 ├── index.js                          — public API (barrel)
-└── components/
-    ├── BlockCard.jsx                 — dashboard kaart per BTC-blok
-    │   exports: BlockCard (default), BLOCKS, PILLAR_SUBTABS, PRINCIPLES_SUBTABS,
-    │            EXAMPLE_BULLETS, STATUS_COLORS, STATUS_BADGE_KEYS,
-    │            SEV_COLOR, SEV_TEXT, scoreBlock, getBlockStatus, runConsistencyCheck
-    ├── BlockPanel.jsx                — sliding side-panel (Extract / Review / Canvas tabs)
-    ├── TipsModal.jsx                 — tips & tricks modal (NL + EN per blok)
-    │   exports: TipsModal (default), TIPS_DATA
-    ├── ConsistencyModal.jsx          — consistentie-analyse modal met scores per blok
-    ├── CanvasMenu.jsx                — canvas-selector dropdown (nieuw/hernoemen/verwijderen)
-    ├── ProjectInfoSidebar.jsx        — project-metadata sidebar (klant, branche, status)
-    └── StrategyStatusBlock.jsx       — strategie-kaart op dashboard (status monitor + Verdiep-knop)
+├── components/
+│   ├── BlockCard.jsx                 — dashboard kaart per BTC-blok
+│   │   exports: BlockCard (default), BLOCKS, PILLAR_SUBTABS, PRINCIPLES_SUBTABS,
+│   │            EXAMPLE_BULLETS, STATUS_COLORS, STATUS_BADGE_KEYS,
+│   │            SEV_COLOR, SEV_TEXT, scoreBlock, getBlockStatus, runConsistencyCheck
+│   ├── BlockPanel.jsx                — sliding side-panel (Extract / Review / Canvas tabs)
+│   ├── TipsModal.jsx                 — tips & tricks modal (NL + EN per blok)
+│   │   exports: TipsModal (default), TIPS_DATA
+│   ├── ConsistencyModal.jsx          — consistentie-analyse modal met scores per blok
+│   ├── CanvasMenu.jsx                — canvas-selector dropdown (nieuw/hernoemen/verwijderen)
+│   ├── ProjectInfoSidebar.jsx        — project-metadata sidebar (klant, branche, status)
+│   ├── StrategyStatusBlock.jsx       — strategie-kaart op dashboard (status monitor + Verdiep-knop)
+│   └── DeepDiveOverlay.jsx           — volledig scherm werkblad-overlay via WERKBLAD_REGISTRY
+│       exports: DeepDiveOverlay (default), WERKBLAD_REGISTRY
+└── hooks/
+    └── useCanvasState.js             — alle canvas business logic (state + handlers)
+        exports: useCanvasState
 ```
 
 ## DB-tabellen
@@ -44,19 +49,34 @@ Service: `src/shared/services/canvas.service.js`
 
 Labels worden via `useLang()` / `t(block.titleKey)` opgehaald — IP-beschermd in block_definitions tabel.
 
-## Canvas state (in App.js — AppInner)
+## Canvas state (in useCanvasState hook)
 ```js
+activeCanvasId: string | null
+canvases:       Canvas[]        // lijst van gebruikerscanvassen incl. canvas_uploads count
 scope:          string          // canvas naam
+meta:           { client_name, author_name, industry, transformation_type, org_size, project_status, project_description }
 docs:           { [blockKey]: string[] }
 insights:       { [blockKey]: Insight[] }
 bullets:        { [blockKey]: Bullet[] }
-meta:           { client_name, author_name, industry, transformation_type, org_size, project_status, project_description }
-activeCanvasId: string | null
-canvases:       Canvas[]        // lijst van gebruikerscanvassen incl. canvas_uploads count
+strategyManual: object | null   // executive_summary + andere manual-velden uit strategy werkblad
+saveStatus:     "idle" | "saving" | "saved" | "error"
+multiTabWarning: boolean
 ```
 
+App.js houdt alleen UI-state bij (activeBlockId, deepDiveBlockId, showTips, showImporter, etc.)
+
 ## Autosave
-Debounced 1500ms na elke wijziging → `upsertCanvas(id, { scope, docs, insights, bullets, meta })`
+Debounced 500ms na elke wijziging → `upsertCanvas(id, { scope, docs, insights, bullets, meta })`
+
+## WERKBLAD_REGISTRY (DeepDiveOverlay.jsx)
+Koppelt block-id aan lazy-loaded werkblad component. Nieuw werkblad toevoegen = 1 regel in registry:
+```js
+const WERKBLAD_REGISTRY = {
+  strategy: React.lazy(() => import("../../strategie/StrategieWerkblad")),
+  // people:  React.lazy(() => import("../../people/PeopleWerkblad")),
+};
+```
+App.js nooit aanpassen voor nieuwe werkbladen.
 
 ## Scoring & consistentie
 `scoreBlock(bullets)` — 0-100 score op basis van aantal + specificiteit bullets  
