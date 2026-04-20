@@ -1,9 +1,8 @@
 -- ============================================================
 -- Sprint 4B — Strategie Werkblad tabellen
+-- Idempotent: veilig opnieuw uit te voeren
 -- ============================================================
 
--- ── strategy_core ─────────────────────────────────────────────
--- 1:1 per canvas — missie, visie, ambitie, kernwaarden
 CREATE TABLE IF NOT EXISTS strategy_core (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   canvas_id   uuid NOT NULL REFERENCES canvases(id) ON DELETE CASCADE,
@@ -15,8 +14,6 @@ CREATE TABLE IF NOT EXISTS strategy_core (
   UNIQUE (canvas_id)
 );
 
--- ── analysis_items ────────────────────────────────────────────
--- Externe/interne ontwikkelingen met SWOT-tag
 CREATE TABLE IF NOT EXISTS analysis_items (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   canvas_id  uuid NOT NULL REFERENCES canvases(id) ON DELETE CASCADE,
@@ -28,8 +25,6 @@ CREATE TABLE IF NOT EXISTS analysis_items (
   created_at timestamptz DEFAULT now()
 );
 
--- ── strategic_themes ─────────────────────────────────────────
--- Max 7 strategische thema's per canvas
 CREATE TABLE IF NOT EXISTS strategic_themes (
   id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   canvas_id  uuid NOT NULL REFERENCES canvases(id) ON DELETE CASCADE,
@@ -38,8 +33,6 @@ CREATE TABLE IF NOT EXISTS strategic_themes (
   created_at timestamptz DEFAULT now()
 );
 
--- ── ksf_kpi ──────────────────────────────────────────────────
--- Max 3 KSF + 3 KPI per strategisch thema
 CREATE TABLE IF NOT EXISTS ksf_kpi (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   theme_id      uuid NOT NULL REFERENCES strategic_themes(id) ON DELETE CASCADE,
@@ -51,26 +44,24 @@ CREATE TABLE IF NOT EXISTS ksf_kpi (
   created_at    timestamptz DEFAULT now()
 );
 
--- ── RLS ──────────────────────────────────────────────────────
 ALTER TABLE strategy_core    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analysis_items   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategic_themes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ksf_kpi          ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Own canvas" ON strategy_core;
+DROP POLICY IF EXISTS "Own canvas" ON analysis_items;
+DROP POLICY IF EXISTS "Own canvas" ON strategic_themes;
+DROP POLICY IF EXISTS "Own theme"  ON ksf_kpi;
+
 CREATE POLICY "Own canvas" ON strategy_core
-  FOR ALL USING (
-    canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid())
-  );
+  FOR ALL USING (canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid()));
 
 CREATE POLICY "Own canvas" ON analysis_items
-  FOR ALL USING (
-    canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid())
-  );
+  FOR ALL USING (canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid()));
 
 CREATE POLICY "Own canvas" ON strategic_themes
-  FOR ALL USING (
-    canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid())
-  );
+  FOR ALL USING (canvas_id IN (SELECT id FROM canvases WHERE user_id = auth.uid()));
 
 CREATE POLICY "Own theme" ON ksf_kpi
   FOR ALL USING (
