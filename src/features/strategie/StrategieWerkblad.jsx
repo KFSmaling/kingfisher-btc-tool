@@ -264,7 +264,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{title}</h4>
-        {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
+        {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} disabled={proposedLines.length > 0} />}
       </div>
 
       {/* Laden */}
@@ -395,7 +395,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
             </div>
           )}
           {/* Magic Staff */}
-          {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} />}
+          {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} disabled={hasDraft} />}
         </div>
       </div>
 
@@ -417,8 +417,8 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
         />
       )}
 
-      {/* Magic Staff result */}
-      {magicResult && <MagicResult result={magicResult} onAccept={() => { onChange(magicResult.suggestion); onRejectDraft && onRejectDraft(); }} onReject={() => onRejectDraft && onRejectDraft()} />}
+      {/* Magic Staff result — alleen bij error of geen chunks */}
+      {(magicResult?.error || magicResult?.noChunks) && <MagicResult result={magicResult} onAccept={() => { onChange(magicResult.suggestion); onRejectDraft && onRejectDraft(); }} onReject={() => onRejectDraft && onRejectDraft()} />}
 
       {/* Draft overlay */}
       {hasDraft && (
@@ -840,7 +840,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onAcceptDraft={() => acceptDraft("missie")}
               onEditDraft={() => editDraft("missie")}
               onRejectDraft={() => clearDraft("missie")}
-              magicResult={magic.missie?.error || magic.missie?.noChunks ? magic.missie : undefined}
+              magicResult={magic.missie}
               placeholder="Waarom bestaan wij?"
             />
             <WerkbladTextField
@@ -854,7 +854,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onAcceptDraft={() => acceptDraft("visie")}
               onEditDraft={() => editDraft("visie")}
               onRejectDraft={() => clearDraft("visie")}
-              magicResult={magic.visie?.error || magic.visie?.noChunks ? magic.visie : undefined}
+              magicResult={magic.visie}
               placeholder="Waar staan wij over 5 jaar?"
             />
             <WerkbladTextField
@@ -868,13 +868,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onAcceptDraft={() => acceptDraft("ambitie")}
               onEditDraft={() => editDraft("ambitie")}
               onRejectDraft={() => clearDraft("ambitie")}
-              magicResult={magic.ambitie?.error || magic.ambitie?.noChunks ? magic.ambitie : undefined}
+              magicResult={magic.ambitie}
               placeholder="Onze grote, haast onmogelijke doelstelling…"
             />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Kernwaarden</label>
-                <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} />
+                <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} disabled={!!drafts.kernwaarden} />
               </div>
               <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
                 {core.kernwaarden.map((kw, i) => (
