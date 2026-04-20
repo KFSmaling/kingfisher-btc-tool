@@ -7,6 +7,8 @@ import {
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
+import { AppConfigProvider } from "./shared/context/AppConfigContext";
+import AdminPage from "./features/admin/AdminPage";
 
 // Canvas feature
 import BlockCard, { BLOCKS, getBlockStatus } from "./features/canvas/components/BlockCard";
@@ -326,8 +328,11 @@ function AppInner() {
 }
 
 // ── Auth-guard wrapper ────────────────────────────────────────────────────────
+const ADMIN_EMAIL = "keessmaling@gmail.com";
+
 function AuthGate() {
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
+  const isAdminRoute = window.location.pathname === "/admin";
 
   if (session === undefined) {
     return (
@@ -338,7 +343,29 @@ function AuthGate() {
   }
 
   if (!session) return <LoginScreen />;
-  return <AppInner />;
+
+  // Admin route — alleen voor beheerder
+  if (isAdminRoute) {
+    if (session.user?.email !== ADMIN_EMAIL) {
+      return (
+        <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
+          <div className="text-center text-white space-y-3">
+            <p className="text-lg font-bold">Geen toegang</p>
+            <p className="text-white/60 text-sm">Deze pagina is alleen voor beheerders.</p>
+            <a href="/" className="block text-[#8dc63f] text-sm hover:underline">← Terug naar app</a>
+          </div>
+        </div>
+      );
+    }
+    return <AdminPage user={session.user} onSignOut={signOut} />;
+  }
+
+  // Normale app — met config provider
+  return (
+    <AppConfigProvider>
+      <AppInner />
+    </AppConfigProvider>
+  );
 }
 
 export default function App() {

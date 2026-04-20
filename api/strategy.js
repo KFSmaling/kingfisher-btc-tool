@@ -45,10 +45,10 @@ ${zwaktes}
 }
 
 // ── MODE: THEMES ──────────────────────────────────────────────────────────────
-async function generateThemes(core, items, apiKey) {
+async function generateThemes(core, items, apiKey, systemOverride) {
   const context = buildSwotContext(core, items);
 
-  const system = `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
+  const system = systemOverride || `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
 
 REGELS:
 - Maximaal 7 thema's
@@ -82,10 +82,10 @@ ${context}`;
 }
 
 // ── MODE: KSF_KPI ─────────────────────────────────────────────────────────────
-async function generateKsfKpi(themaTitle, core, items, apiKey) {
+async function generateKsfKpi(themaTitle, core, items, apiKey, systemOverride) {
   const context = buildSwotContext(core, items);
 
-  const system = `Je bent een Senior Strategie Consultant én Balanced Scorecard-expert. Je formuleert KSF's (Kritieke Succesfactoren) en KPI's (Key Performance Indicators) voor strategische thema's.
+  const system = systemOverride || `Je bent een Senior Strategie Consultant én Balanced Scorecard-expert. Je formuleert KSF's (Kritieke Succesfactoren) en KPI's (Key Performance Indicators) voor strategische thema's.
 
 DEFINITIES:
 - KSF: de voorwaarden waaraan voldaan moet zijn om het thema te realiseren (kwalitatief, kritisch)
@@ -150,7 +150,7 @@ Gebruik de Balanced Scorecard-lenzen. Maak de KPI's SMART met realistische huidi
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { mode, core = {}, items = [], thema } = req.body || {};
+  const { mode, core = {}, items = [], thema, systemPromptThemes, systemPromptKsfKpi } = req.body || {};
   if (!mode) return res.status(400).json({ error: "Missing mode" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -158,12 +158,12 @@ module.exports = async function handler(req, res) {
 
   try {
     if (mode === "themes") {
-      const themes = await generateThemes(core, items, apiKey);
+      const themes = await generateThemes(core, items, apiKey, systemPromptThemes);
       return res.status(200).json({ themes });
     }
     if (mode === "ksf_kpi") {
       if (!thema) return res.status(400).json({ error: "Missing thema" });
-      const result = await generateKsfKpi(thema, core, items, apiKey);
+      const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi);
       return res.status(200).json(result);
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });

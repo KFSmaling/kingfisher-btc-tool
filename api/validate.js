@@ -42,7 +42,7 @@ isValid = true als minimaal één blok score >= 30 heeft.`;
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { documentText } = req.body;
+  const { documentText, systemPrompt: systemPromptOverride } = req.body;
   if (!documentText) return res.status(400).json({ error: "Missing documentText" });
 
   try {
@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
         max_tokens: 1200,
         messages: [{
           role: "user",
-          content: VALIDATION_PROMPT + "\n\nTE BEOORDELEN DOCUMENT:\n" + documentText.slice(0, 6000),
+          content: (systemPromptOverride || VALIDATION_PROMPT) + "\n\nTE BEOORDELEN DOCUMENT:\n" + documentText.slice(0, 6000),
         }],
       }),
     });

@@ -62,14 +62,20 @@ function buildContext(chunks) {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { field, chunks = [], existingText = "", isArray = false, heavy = false } = req.body || {};
+  const {
+    field, chunks = [], existingText = "", isArray = false, heavy = false,
+    systemPromptStandard, systemPromptHeavy,  // optioneel vanuit AppConfigContext
+  } = req.body || {};
   if (!field) return res.status(400).json({ error: "Missing field" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
   const context = buildContext(chunks);
-  const systemPrompt = heavy ? SYSTEM_HEAVY : SYSTEM_STANDARD;
+  // Gebruik DB-prompt als meegegeven, anders hardcoded fallback
+  const systemPrompt = heavy
+    ? (systemPromptHeavy    || SYSTEM_HEAVY)
+    : (systemPromptStandard || SYSTEM_STANDARD);
   const model = heavy ? "claude-sonnet-4-5" : "claude-haiku-4-5-20251001";
   const maxTokens = heavy ? 1500 : 600;
 

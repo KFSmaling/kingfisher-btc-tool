@@ -14,13 +14,14 @@ const PRESETS = {
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  const { text, preset, field } = req.body || {};
+  const { text, preset, field, presetInstruction } = req.body || {};
   if (!text || !preset) return res.status(400).json({ error: "Ontbrekende parameters: text en preset zijn vereist" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
-  const instruction = PRESETS[preset];
+  // Gebruik DB-instructie als meegegeven, anders hardcoded fallback
+  const instruction = presetInstruction || PRESETS[preset];
   if (!instruction) return res.status(400).json({ error: `Onbekende preset: ${preset}` });
 
   const system = `Je bent een senior strategie-consultant bij Kingfisher & Partners die teksten voor het Business Transformatie Canvas verfijnt.
