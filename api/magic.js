@@ -66,6 +66,7 @@ module.exports = async function handler(req, res) {
     field, chunks = [], existingText = "", isArray = false, heavy = false,
     systemPromptStandard, systemPromptHeavy,  // optioneel vanuit AppConfigContext
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
+    fieldInstruction,  // per-veld instructie vanuit app_config (optioneel)
   } = req.body || {};
   if (!field) return res.status(400).json({ error: "Missing field" });
 
@@ -88,7 +89,11 @@ module.exports = async function handler(req, res) {
   }
   if (existingText) userParts.push(`HUIDIGE TEKST IN HET VELD:\n${existingText}`);
 
-  if (heavy) {
+  // Per-veld instructie (app_config) gaat voor op generieke fallback
+  if (fieldInstruction) {
+    // Vervang {taal_instructie} placeholder in de veld-prompt
+    userParts.push(fieldInstruction.replace(/\{taal_instructie\}/g, languageInstruction));
+  } else if (heavy) {
     userParts.push(
       isArray
         ? `Zoek in de brondocumenten specifiek naar SWOT-analyse content, sterke/zwakke punten, kansen, bedreigingen, strategische factoren en capabilities — ook als deze in het Engels staan of verspreid zijn over meerdere slides. Schrijf een scherpe lijst van maximaal 8 items voor het BTC-veld "${field}". ${languageInstruction} Gebruik kwantitatieve data waar beschikbaar. Citeer bronnen inline. Één item per regel.`

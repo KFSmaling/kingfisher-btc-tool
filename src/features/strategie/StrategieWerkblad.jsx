@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Wand2, Trash2, Plus, X, ArrowLeft, Zap } from "lucide-react";
 import { useLang } from "../../i18n";
+import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
 import MagicResult from "../../shared/components/MagicResult";
 import TagPill, { EXTERN_TAGS, INTERN_TAGS } from "../../shared/components/TagPill";
@@ -450,6 +451,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 
 export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
   const { t } = useLang();
+  const { prompt: appPrompt } = useAppConfig();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -549,7 +551,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
       const magicRes = await fetch("/api/magic", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ field: fieldKey, chunks, isArray, heavy: isHeavy, languageInstruction: t("ai.language") }),
+        body: JSON.stringify({
+          field: fieldKey,
+          chunks,
+          isArray,
+          heavy: isHeavy,
+          languageInstruction: t("ai.language"),
+          fieldInstruction: appPrompt(`magic.field.${fieldKey}`) || undefined,
+        }),
       });
       const magicData = await magicRes.json();
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
