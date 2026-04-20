@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Save, RefreshCw, LogOut, ChevronDown, ChevronUp, Check, AlertOctagon } from "lucide-react";
 import { supabase } from "../../services/supabaseClient";
 
-const ADMIN_EMAIL = "keessmaling@gmail.com";
 const CATEGORIES  = ["label", "prompt", "setting"];
 const CATEGORY_LABELS = { label: "UI Labels", prompt: "AI Prompts", setting: "Instellingen" };
 
