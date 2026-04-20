@@ -113,55 +113,6 @@ function AnalysisPrintSection({ recommendations }) {
   );
 }
 
-// ── AI Analyse interactief panel (no-print, in overlay) ───────────────────────
-function AnalysisPanel({ recommendations, loading, error, onGenerate }) {
-  const iconMap = { warning: AlertTriangle, info: Info, success: CheckCircle };
-  const colorMap = {
-    warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800", icon: "text-orange-500" },
-    info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800",   icon: "text-blue-500"   },
-    success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800",  icon: "text-green-500"  },
-  };
-
-  return (
-    <div className="no-print border-t border-white/10 bg-[#0f2544] px-6 py-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-[#8dc63f]" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/70">AI Strategische Analyse</span>
-        </div>
-        <button
-          onClick={onGenerate}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50">
-          {loading ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
-          {loading ? "Analyseren…" : recommendations ? "Opnieuw analyseren" : "Analyseer strategie"}
-        </button>
-      </div>
-      {error && <p className="text-[10px] text-red-400 italic">{error}</p>}
-      {loading && <p className="text-[10px] text-white/40 italic animate-pulse">AI analyseert uw strategie op coherentie, volledigheid en kansen…</p>}
-      {!loading && recommendations && recommendations.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
-          {recommendations.map((rec, i) => {
-            const c = colorMap[rec.type] || colorMap.info;
-            const Icon = iconMap[rec.type] || Info;
-            return (
-              <div key={i} className={`rounded-lg border p-3 ${c.bg} ${c.border}`}>
-                <div className="flex items-start gap-2 mb-1">
-                  <Icon size={11} className={`flex-shrink-0 mt-0.5 ${c.icon}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${c.title}`}>{rec.title}</span>
-                </div>
-                <p className={`text-[10px] leading-relaxed ${c.text}`}>{rec.text}</p>
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {!loading && !recommendations && !error && (
-        <p className="text-[10px] text-white/30 italic">Klik "Analyseer strategie" voor AI-aanbevelingen op basis van uw volledige strategie.</p>
-      )}
-    </div>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TEMPLATE 1 — Strategie Overzicht
