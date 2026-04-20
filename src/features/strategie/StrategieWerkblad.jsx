@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText } from "lucide-react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText, Sparkles, RefreshCw } from "lucide-react";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
@@ -503,6 +503,10 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
   const [showOnePager,   setShowOnePager]       = useState(false);
+  const [showAdvies,     setShowAdvies]         = useState(false);
+  const [analysis,       setAnalysis]           = useState(null);
+  const [analysisLoading, setAnalysisLoading]   = useState(false);
+  const [analysisError,   setAnalysisError]     = useState(null);
 
   // Executie Magic state
   const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
@@ -532,6 +536,19 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       setIsLoaded(true);
     });
   }, [canvasId]);
+
+  // Herstel analyse uit localStorage als canvasId wisselt
+  useEffect(() => {
+    if (!canvasId) return;
+    const saved = localStorage.getItem(`btc.analysis.${canvasId}`);
+    try { setAnalysis(saved ? JSON.parse(saved) : null); } catch { setAnalysis(null); }
+  }, [canvasId]);
+
+  // Sla analyse op in localStorage als hij verandert
+  useEffect(() => {
+    if (!canvasId || analysis === null) return;
+    localStorage.setItem(`btc.analysis.${canvasId}`, JSON.stringify(analysis));
+  }, [canvasId, analysis]);
 
   // Debounced autosave van strategy_core
   useEffect(() => {
@@ -682,6 +699,29 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       setMagicFor(fieldKey, { loading: false, error: err.message });
     }
   };
+
+  // ── Strategisch Advies — AI analyse ─────────────────────────────────────────
+  const handleAnalyze = useCallback(async () => {
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      const res = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "analysis", core, items, themas,
+          systemPromptAnalysis: appPrompt("strategy.analysis") || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      setAnalysis(data.recommendations || []);
+    } catch (e) {
+      setAnalysisError(e.message);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [core, items, themas, appPrompt]);
 
   // ── Full Draft ───────────────────────────────────────────────────────────────
   const handleFullDraft = async () => {
@@ -937,7 +977,18 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </div>
         <div className="flex items-center gap-3">
           {saveLabel && <span className={`text-[10px] font-semibold ${saveColor}`}>{saveLabel}</span>}
-          {/* OnePager knop */}
+          {/* Strategisch Advies knop */}
+          <button
+            onClick={() => setShowAdvies(true)}
+            className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
+              ${analysis
+                ? "bg-[#8dc63f]/10 border-[#8dc63f]/50 text-[#2c7a4b] hover:border-[#8dc63f]"
+                : "bg-white border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d]"}`}
+          >
+            <Sparkles size={13} />
+            Strategisch Advies{analysis ? " ✓" : ""}
+          </button>
+          {/* Strategie Rapport knop */}
           <button
             onClick={() => setShowOnePager(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d] text-xs font-bold rounded-lg transition-colors">
@@ -1216,8 +1267,77 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             themas={themas}
             canvasId={canvasId}
             onClose={() => setShowOnePager(false)}
+            analysis={analysis}
           />
         </Suspense>
+      )}
+
+      {/* ── Strategisch Advies overlay ── */}
+      {showAdvies && (
+        <div className="fixed inset-0 z-[59] flex flex-col bg-[#0f2544]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <Sparkles size={16} className="text-[#8dc63f]" />
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Kingfisher &amp; Partners</p>
+                <h2 className="text-base font-black uppercase tracking-widest text-white">Strategisch Advies</h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleAnalyze}
+                disabled={analysisLoading}
+                className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
+              >
+                {analysisLoading
+                  ? <RefreshCw size={12} className="animate-spin" />
+                  : <Sparkles size={12} />}
+                {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}
+              </button>
+              <button onClick={() => setShowAdvies(false)} className="text-white/40 hover:text-white transition-colors ml-1">
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-auto p-8">
+            {analysisError && (
+              <p className="text-red-400 text-sm italic mb-4">{analysisError}</p>
+            )}
+            {analysisLoading && (
+              <p className="text-white/40 text-sm italic animate-pulse">
+                AI analyseert uw strategie op coherentie, volledigheid en kansen…
+              </p>
+            )}
+            {!analysisLoading && analysis && analysis.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+                {analysis.map((rec, i) => {
+                  const cm = {
+                    warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
+                    info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
+                    success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
+                  };
+                  const c = cm[rec.type] || cm.info;
+                  return (
+                    <div key={i} className={`rounded-xl border p-5 ${c.bg} ${c.border}`}>
+                      <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>{rec.title}</p>
+                      <p className={`text-sm leading-relaxed ${c.text}`}>{rec.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {!analysisLoading && !analysis && !analysisError && (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-white/30 text-sm italic text-center max-w-sm">
+                  Klik "Analyseer strategie" voor AI-aanbevelingen op basis van uw missie, visie, SWOT en strategische thema's.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

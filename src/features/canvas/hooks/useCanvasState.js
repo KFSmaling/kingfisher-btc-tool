@@ -59,6 +59,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
   const applyCanvasData = useCallback((full) => {
     suppressSaveRef.current = true;
     setActiveCanvasId(full.id);
+    localStorage.setItem("btc.lastCanvasId", full.id);
     setScope(full.name || "");
     setDocs(full.blocks?.docs || {});
     setInsights(full.blocks?.insights || {});
@@ -94,7 +95,10 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
 
       if (data && data.length > 0) {
         setCanvases(data);
-        const { data: full, error: loadErr } = await loadCanvasById(data[0].id);
+        // Herstel het laatste actieve canvas uit localStorage; val terug op data[0]
+        const lastId = localStorage.getItem("btc.lastCanvasId");
+        const target = lastId ? data.find(c => c.id === lastId) : null;
+        const { data: full, error: loadErr } = await loadCanvasById(target ? target.id : data[0].id);
         log("[init] canvas laden:", full, loadErr);
         if (full) applyCanvasData(full);
       } else {

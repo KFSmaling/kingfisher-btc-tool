@@ -9,10 +9,9 @@
  * Print: window.print() + @media print CSS → browser PDF
  */
 
-import React, { useState, useEffect, useCallback } from "react";
-import { X, Printer, LayoutGrid, Target, TrendingUp, Sparkles, RefreshCw, AlertTriangle, Info, CheckCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Printer, LayoutGrid, Target, TrendingUp, Sparkles } from "lucide-react";
 import { supabase } from "../../services/supabaseClient";
-import { useAppConfig } from "../../shared/context/AppConfigContext";
 
 // ── Kleurendefinities ────────────────────────────────────────────────────────
 const C = {
@@ -554,17 +553,12 @@ const TABS = [
   { id: "overview",  label: "Strategie Overzicht", icon: LayoutGrid  },
   { id: "swot",      label: "SWOT Analyse",        icon: Target       },
   { id: "scorecard", label: "Balanced Scorecard",  icon: TrendingUp   },
-  { id: "advies",    label: "Strategisch Advies",  icon: Sparkles     },
 ];
 
-export default function StrategyOnePager({ core, items, themas, canvasId, onClose }) {
-  const { prompt: appPrompt } = useAppConfig();
+export default function StrategyOnePager({ core, items, themas, canvasId, onClose, analysis = null }) {
   const [activeTab,      setActiveTab]      = useState("overview");
   const [includeInPrint, setIncludeInPrint] = useState(false);
   const [canvasName,     setCanvasName]     = useState("");
-  const [analysis,       setAnalysis]       = useState(null);   // null | recommendation[]
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisError,   setAnalysisError]   = useState(null);
 
   // Laad canvasnaam
   useEffect(() => {
@@ -575,29 +569,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
 
   const handlePrint = () => window.print();
 
-  const handleAnalyze = useCallback(async () => {
-    setAnalysisLoading(true);
-    setAnalysisError(null);
-    try {
-      const res = await fetch("/api/strategy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "analysis", core, items, themas,
-          systemPromptAnalysis: appPrompt("strategy.analysis") || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI fout");
-      setAnalysis(data.recommendations || []);
-    } catch (err) {
-      setAnalysisError(err.message);
-    } finally {
-      setAnalysisLoading(false);
-    }
-  }, [core, items, themas, appPrompt]);
-
-  // Analyseresultaten meenemen in print alleen als toggle aan staat (of op advies-tab)
+  // Analyseresultaten meenemen in print alleen als toggle aan staat
   const analysisForPrint = includeInPrint ? analysis : null;
   const props = { core, items, themas, canvasName, analysis: analysisForPrint };
 
@@ -651,20 +623,21 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
 
           {/* Print-toggle + Print + Sluiten */}
           <div className="flex items-center gap-3">
-            {/* Toggle: toon alleen als er analyse is én we niet op de advies-tab zitten */}
-            {analysis && activeTab !== "advies" && (
-              <button
-                onClick={() => setIncludeInPrint(v => !v)}
-                title={includeInPrint ? "Klik om AI-advies uit print te verwijderen" : "Klik om AI-advies toe te voegen aan print"}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors
-                  ${includeInPrint
+            {/* Toggle: altijd zichtbaar; disabled/uitgegrijsd als er nog geen analyse is */}
+            <button
+              onClick={() => analysis && setIncludeInPrint(v => !v)}
+              disabled={!analysis}
+              title={!analysis ? "Genereer eerst Strategisch Advies via het werkblad" : includeInPrint ? "Klik om AI-advies uit print te verwijderen" : "Klik om AI-advies toe te voegen aan print"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors
+                ${!analysis
+                  ? "opacity-30 cursor-not-allowed text-white/40 border-white/20"
+                  : includeInPrint
                     ? "bg-[#8dc63f]/20 text-[#8dc63f] border-[#8dc63f]/50 hover:bg-[#8dc63f]/30"
                     : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"}`}
-              >
-                <Sparkles size={10} />
-                {includeInPrint ? "Advies in print ✓" : "Advies in print"}
-              </button>
-            )}
+            >
+              <Sparkles size={10} />
+              {includeInPrint ? "Advies in print ✓" : "Advies in print"}
+            </button>
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
@@ -680,16 +653,6 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
           </div>
         </div>
 
-        {/* AI Analyse panel — alleen zichtbaar op advies-tab, boven preview */}
-        {activeTab === "advies" && (
-          <AnalysisPanel
-            recommendations={analysis}
-            loading={analysisLoading}
-            error={analysisError}
-            onGenerate={handleAnalyze}
-          />
-        )}
-
         {/* Preview area (scrollable) */}
         <div className="flex-1 overflow-auto p-6 flex justify-center">
           <div
@@ -700,7 +663,6 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
             {activeTab === "overview"  && <OverviewTemplate  {...props} />}
             {activeTab === "swot"      && <SwotTemplate      {...props} />}
             {activeTab === "scorecard" && <ScorecardTemplate {...props} />}
-            {activeTab === "advies"    && <AdviesTemplate canvasName={canvasName} analysis={analysis} />}
           </div>
         </div>
 
