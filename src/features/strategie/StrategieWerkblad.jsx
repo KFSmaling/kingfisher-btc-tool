@@ -712,7 +712,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     } catch (err) {
       setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: false, loadingMsg, error: err.message } }));
     }
-  }, [themas, core, items]);
+  }, [themas, core, items, t]);
 
   const acceptKsfKpiDraft = useCallback(async (themaId) => {
     const draft = ksfKpiDrafts[themaId];
