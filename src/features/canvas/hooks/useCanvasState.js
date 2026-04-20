@@ -193,27 +193,18 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
     const { error } = await deleteCanvas(canvasId);
     if (error) { err("[delete] canvas verwijderen mislukt:", error.message); return; }
 
-    setCanvases(prev => {
-      const remaining = prev.filter(c => c.id !== canvasId);
+    // Verwijder uit lijst
+    setCanvases(prev => prev.filter(c => c.id !== canvasId));
 
-      // Als het actieve canvas verwijderd wordt: switch naar eerste resterende
-      if (activeCanvasId === canvasId) {
-        if (remaining.length > 0) {
-          loadCanvasById(remaining[0].id).then(({ data: full }) => {
-            if (full) applyCanvasData(full);
-          });
-        } else {
-          // Geen canvassen meer over
-          setActiveCanvasId(null);
-          setScope("");
-          setDocs({}); setInsights({}); setBullets({});
-        }
-        onCanvasSwitch?.();
-      }
-
-      return remaining;
-    });
-  }, [activeCanvasId, applyCanvasData, onCanvasSwitch]);
+    // Als het actieve canvas verwijderd wordt: reset state en laat gebruiker ander canvas kiezen
+    if (activeCanvasId === canvasId) {
+      setActiveCanvasId(null);
+      setScope("");
+      setDocs({}); setInsights({}); setBullets({});
+      setStrategyManual(null);
+      onCanvasSwitch?.();
+    }
+  }, [activeCanvasId, onCanvasSwitch]);
 
   const handleLoadExample = useCallback(() => {
     suppressSaveRef.current = true;

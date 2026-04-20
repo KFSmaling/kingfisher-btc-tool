@@ -405,8 +405,8 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           value={value || ""}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
-          rows={3}
-          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+          rows={5}
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
         />
       ) : (
         <input
@@ -504,7 +504,11 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     debounceRef.current = setTimeout(async () => {
       const { error } = await upsertStrategyCore(canvasId, core);
       setSaveStatus(error ? "error" : "saved");
-      if (!error) setTimeout(() => setSaveStatus("idle"), 2500);
+      if (!error) {
+        setTimeout(() => setSaveStatus("idle"), 2500);
+        // Sync naar canvas dashboard zodat checkmarks bijwerken
+        onManualSaved?.(core);
+      }
     }, 800);
     return () => clearTimeout(debounceRef.current);
   }, [core, isLoaded, canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -781,14 +785,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-[#1a365d] flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-white/60 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">De Werkkamer</p>
-            <h2 className="text-lg font-bold text-white leading-tight">Strategie Werkblad</h2>
+            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">De Werkkamer</p>
+            <h2 className="text-lg font-bold text-[#1a365d] leading-tight">Strategie Werkblad</h2>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -799,7 +803,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             disabled={autoDraftRunning}
             className="flex items-center gap-2 px-4 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
             <Zap size={13} />
-            {autoDraftRunning ? "Bezig…" : "Full Draft"}
+            {autoDraftRunning ? "Bezig…" : "Creëer Full Draft"}
           </button>
         </div>
       </div>

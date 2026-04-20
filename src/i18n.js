@@ -12,17 +12,17 @@ const TRANSLATIONS = {
     // Blocks
     "block.strategy.title":   "Strategie",
     "block.strategy.sub":     "Missie · Visie · Thema's · KPIs",
-    "block.principles.title": "Richtlijnen",
+    "block.principles.title": "Leidende principes",
     "block.principles.sub":   "Spelregels voor alle pijlers",
-    "block.customers.title":  "Klanten & Diensten",
+    "block.customers.title":  "Klanten & Dienstverlening",
     "block.customers.sub":    "Groepen · Journeys · Kanalen · Producten",
-    "block.processes.title":  "Proces & Organisatie",
+    "block.processes.title":  "Processen & Organisatie",
     "block.processes.sub":    "Procesmodel · Org-design · Governance",
     "block.people.title":     "Mensen & Competenties",
     "block.people.sub":       "Leiderschap · Skills · Cultuur",
     "block.technology.title": "Informatie & Technologie",
     "block.technology.sub":   "Data · Applicaties · Platformen",
-    "block.portfolio.title":  "Veranderprogramma",
+    "block.portfolio.title":  "Verander Portfolio",
     "block.portfolio.sub":    "Initiatieven · Waarde · Complexiteit · Eigenaar",
 
     // Sub-tabs
@@ -117,7 +117,7 @@ const TRANSLATIONS = {
     // Consistency issues
     "check.issue.strategy_portfolio":  "Strategie heeft meerdere thema's maar het veranderprogramma is onderontwikkeld.",
     "check.issue.people_technology":   "Sterke technologieagenda maar Mensen & Competenties is onderontwikkeld — uitvoeringsrisico.",
-    "check.issue.principles":          "Richtlijnen zijn dun — deze zouden beslissingen in alle 4 pijlers moeten sturen.",
+    "check.issue.principles":          "Leidende principes zijn dun — deze zouden beslissingen in alle 4 pijlers moeten sturen.",
     "check.issue.customers_processes": "Klantambities zijn gedefinieerd, maar het operating model om ze waar te maken ontbreekt.",
     "check.issue.default":             "Controleer of elke richtlijn een strategische keuze direct versterkt.",
 

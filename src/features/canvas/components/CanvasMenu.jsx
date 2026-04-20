@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Edit3, Plus, Trash2, FileText } from "lucide-react";
+import { Edit3, Plus, Trash2 } from "lucide-react";
 import { useLang } from "../../../i18n";
 
 // ── Canvas Manager (Supabase) ────────────────────────────────────────────────
@@ -77,14 +77,6 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
               >
                 <Plus size={13} className="text-[#1a365d] shrink-0" />
                 <span className="font-semibold">{t("menu.new.canvas")}</span>
-              </button>
-              {/* Voorbeeld laden */}
-              <button
-                onClick={() => { onLoadExample(); setOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-500 hover:bg-slate-50 flex items-center gap-2 transition-colors"
-              >
-                <FileText size={13} className="text-slate-400 shrink-0" />
-                <span>{t("menu.load.example")}</span>
               </button>
             </div>
 

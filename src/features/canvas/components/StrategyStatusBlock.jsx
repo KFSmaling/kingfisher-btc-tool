@@ -1,5 +1,5 @@
 import React from "react";
-import { Maximize2, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useLang } from "../../../i18n";
 import { STATUS_COLORS, STATUS_BADGE_KEYS } from "./BlockCard";
 
@@ -40,22 +40,16 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
           {badge && (
             <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider ${badge.color}`}>{badge.label}</span>
           )}
-          <button
-            onClick={e => { e.stopPropagation(); onDeepDive(); }}
-            className="flex items-center gap-1 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm shadow transition-colors"
-          >
-            <Maximize2 size={9} /> Verdiep
-          </button>
         </div>
       </div>
 
-      {/* Strategische samenvatting (executive summary uit DB) */}
-      {filled(strategyManual?.executive_summary) ? (
+      {/* Missie-preview als ingevuld, anders subtiele klik-hint */}
+      {filled(strategyManual?.missie) ? (
         <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic">
-          {String(strategyManual.executive_summary).slice(0, 200)}{strategyManual.executive_summary.length > 200 ? "…" : ""}
+          {String(strategyManual.missie).slice(0, 220)}{strategyManual.missie.length > 220 ? "…" : ""}
         </p>
       ) : (
-        <p className="text-[11px] text-slate-300 italic">Voeg een Executive Summary toe via Verdieping →</p>
+        <p className="text-[11px] text-slate-300 italic">Klik om het strategie werkblad te openen →</p>
       )}
 
       {/* Status monitor — checkmarks voor kleurenblindheid */}

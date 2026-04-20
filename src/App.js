@@ -253,14 +253,14 @@ function AppInner() {
           <div className="mt-8 flex items-center justify-between">
             <div className="flex items-center gap-6">
               {[
-                { label: "Empty",            color: "bg-slate-200"  },
-                { label: "Uploaded",         color: "bg-[#00AEEF]"  },
-                { label: "Insights pending", color: "bg-orange-400" },
-                { label: "Done",             color: "bg-green-500"  },
+                { nl: "Leeg",                en: "Empty",            color: "bg-slate-200"  },
+                { nl: "Documenten geladen",  en: "Docs uploaded",    color: "bg-[#00AEEF]"  },
+                { nl: "Inzichten wachten",   en: "Insights pending", color: "bg-orange-400" },
+                { nl: "Klaar",               en: "Done",             color: "bg-green-500"  },
               ].map(item => (
-                <div key={item.label} className="flex items-center gap-2">
+                <div key={item.nl} className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                  <span className="text-[9px] text-slate-400 uppercase tracking-wider">{item.label}</span>
+                  <span className="text-[9px] text-slate-400 uppercase tracking-wider">{lang === "en" ? item.en : item.nl}</span>
                 </div>
               ))}
             </div>
