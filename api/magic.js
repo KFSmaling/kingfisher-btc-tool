@@ -77,6 +77,7 @@ module.exports = async function handler(req, res) {
   const {
     field, chunks = [], existingText = "", isArray = false, heavy = false,
     useGeneralKnowledge = false,              // true als Dossier leeg/onvoldoende is
+    organizationContext,                      // missie/visie/ambitie voor specifiekere output
     systemPromptStandard, systemPromptHeavy, systemPromptGeneralKnowledge,
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
     fieldInstruction,
@@ -93,6 +94,7 @@ module.exports = async function handler(req, res) {
 
     const userParts = [];
     userParts.push(`VELD: "${field}"\nMODUS: Geen Dossier beschikbaar — gebruik algemene sectorkennis.`);
+    if (organizationContext) userParts.push(`ORGANISATIECONTEXT (gebruik dit voor specifieke, relevante output):\n${organizationContext}`);
     if (existingText) userParts.push(`BESTAANDE TEKST:\n${existingText}`);
 
     if (fieldInstruction) {

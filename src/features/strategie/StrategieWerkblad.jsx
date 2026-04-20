@@ -578,13 +578,24 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   };
 
   // Hulpfunctie: roep magic aan met general knowledge fallback (geen dossier)
+  // Stuurt missie/visie/ambitie mee als organisatiecontext zodat Claude specifiek kan zijn
   const callGeneralKnowledgeMagic = async (fieldKey, isArray) => {
     const resolvedFieldInstruction = appPrompt(`magic.field.${fieldKey}`) || undefined;
+
+    // Bouw organisatiecontext op uit ingevulde core-velden
+    const contextParts = [];
+    if (core.missie?.trim())   contextParts.push(`Missie: ${core.missie.trim()}`);
+    if (core.visie?.trim())    contextParts.push(`Visie: ${core.visie.trim()}`);
+    if (core.ambitie?.trim())  contextParts.push(`Ambitie: ${core.ambitie.trim()}`);
+    if (core.kernwaarden?.length) contextParts.push(`Kernwaarden: ${Array.isArray(core.kernwaarden) ? core.kernwaarden.join(", ") : core.kernwaarden}`);
+    const organizationContext = contextParts.length > 0 ? contextParts.join("\n") : undefined;
+
     const res = await fetch("/api/magic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         field: fieldKey, chunks: [], isArray, heavy: false,
         useGeneralKnowledge: true,
+        organizationContext,
         languageInstruction: t("ai.language"),
         fieldInstruction: resolvedFieldInstruction,
       }),
