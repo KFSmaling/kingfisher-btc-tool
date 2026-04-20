@@ -449,7 +449,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 }
 
 export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
-  const { lang, t } = useLang();
+  const { t } = useLang();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
