@@ -1,4 +1,8 @@
 {
+  "alias": [
+    "btcprod.vercel.app",
+    "kingfisher-btcprod.vercel.app"
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
