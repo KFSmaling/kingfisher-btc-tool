@@ -502,19 +502,67 @@ function ScorecardTemplate({ core, themas, canvasName, analysis }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// TEMPLATE 4 — Strategisch Advies (AI-analyse, volledige pagina)
+// ══════════════════════════════════════════════════════════════════════════════
+function AdviesTemplate({ canvasName, analysis }) {
+  if (!analysis || analysis.length === 0) {
+    return (
+      <div style={S.page}>
+        <PageHeader canvasName={canvasName} subtitle="Strategisch Advies" />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
+          <p style={{ color: "#9ca3af", fontSize: "11px", fontStyle: "italic", textAlign: "center" }}>
+            Gebruik "Analyseer strategie" om AI-aanbevelingen te genereren.
+          </p>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  }
+  return (
+    <div style={S.page}>
+      <PageHeader canvasName={canvasName} subtitle="Strategisch Advies" />
+      <div style={{ padding: "16px 20px 10px" }}>
+        <div style={{ ...S.sectionLabel, color: C.navy, marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "10px" }}>✦</span> AI Strategische Analyse &amp; Aanbevelingen
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+          {analysis.map((rec, i) => {
+            const s = TYPE_STYLES[rec.type] || TYPE_STYLES.info;
+            return (
+              <div key={i} style={{ background: s.bg, border: `1px solid ${s.border}50`, borderLeft: `4px solid ${s.border}`, borderRadius: "6px", padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "10px", color: s.label, fontWeight: 900 }}>{s.icon}</span>
+                  <span style={{ fontSize: "9px", fontWeight: 800, color: s.label, textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                    {rec.title}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "10px", color: s.text, lineHeight: 1.5 }}>{rec.text}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <PageFooter />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // HOOFD COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
-const TEMPLATES = [
+const TABS = [
   { id: "overview",  label: "Strategie Overzicht", icon: LayoutGrid  },
   { id: "swot",      label: "SWOT Analyse",        icon: Target       },
   { id: "scorecard", label: "Balanced Scorecard",  icon: TrendingUp   },
+  { id: "advies",    label: "Strategisch Advies",  icon: Sparkles     },
 ];
 
 export default function StrategyOnePager({ core, items, themas, canvasId, onClose }) {
   const { prompt: appPrompt } = useAppConfig();
-  const [template,    setTemplate]     = useState("overview");
-  const [canvasName,  setCanvasName]   = useState("");
-  const [analysis,    setAnalysis]     = useState(null);   // null | recommendation[]
+  const [activeTab,      setActiveTab]      = useState("overview");
+  const [includeInPrint, setIncludeInPrint] = useState(false);
+  const [canvasName,     setCanvasName]     = useState("");
+  const [analysis,       setAnalysis]       = useState(null);   // null | recommendation[]
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError,   setAnalysisError]   = useState(null);
 
@@ -549,7 +597,9 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
     }
   }, [core, items, themas, appPrompt]);
 
-  const props = { core, items, themas, canvasName, analysis };
+  // Analyseresultaten meenemen in print alleen als toggle aan staat (of op advies-tab)
+  const analysisForPrint = includeInPrint ? analysis : null;
+  const props = { core, items, themas, canvasName, analysis: analysisForPrint };
 
   return (
     <>
@@ -582,14 +632,14 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
         {/* Controls (no-print) */}
         <div className="no-print flex items-center justify-between px-6 py-3 bg-[#1a365d] border-b border-white/10 flex-shrink-0">
 
-          {/* Template tabs */}
+          {/* Tabs */}
           <div className="flex items-center gap-1">
-            {TEMPLATES.map(({ id, label, icon: Icon }) => (
+            {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setTemplate(id)}
+                onClick={() => setActiveTab(id)}
                 className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all
-                  ${template === id
+                  ${activeTab === id
                     ? "bg-[#8dc63f] text-[#1a365d]"
                     : "text-white/50 hover:text-white hover:bg-white/10"}`}
               >
@@ -599,8 +649,22 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
             ))}
           </div>
 
-          {/* Print + Sluiten */}
+          {/* Print-toggle + Print + Sluiten */}
           <div className="flex items-center gap-3">
+            {/* Toggle: toon alleen als er analyse is én we niet op de advies-tab zitten */}
+            {analysis && activeTab !== "advies" && (
+              <button
+                onClick={() => setIncludeInPrint(v => !v)}
+                title={includeInPrint ? "Klik om AI-advies uit print te verwijderen" : "Klik om AI-advies toe te voegen aan print"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors
+                  ${includeInPrint
+                    ? "bg-[#8dc63f]/20 text-[#8dc63f] border-[#8dc63f]/50 hover:bg-[#8dc63f]/30"
+                    : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"}`}
+              >
+                <Sparkles size={10} />
+                {includeInPrint ? "Advies in print ✓" : "Advies in print"}
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
@@ -616,6 +680,16 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
           </div>
         </div>
 
+        {/* AI Analyse panel — alleen zichtbaar op advies-tab, boven preview */}
+        {activeTab === "advies" && (
+          <AnalysisPanel
+            recommendations={analysis}
+            loading={analysisLoading}
+            error={analysisError}
+            onGenerate={handleAnalyze}
+          />
+        )}
+
         {/* Preview area (scrollable) */}
         <div className="flex-1 overflow-auto p-6 flex justify-center">
           <div
@@ -623,19 +697,12 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
             className="bg-white shadow-2xl rounded-sm overflow-hidden"
             style={{ width: "297mm", minHeight: "210mm" }}
           >
-            {template === "overview"  && <OverviewTemplate  {...props} />}
-            {template === "swot"      && <SwotTemplate      {...props} />}
-            {template === "scorecard" && <ScorecardTemplate {...props} />}
+            {activeTab === "overview"  && <OverviewTemplate  {...props} />}
+            {activeTab === "swot"      && <SwotTemplate      {...props} />}
+            {activeTab === "scorecard" && <ScorecardTemplate {...props} />}
+            {activeTab === "advies"    && <AdviesTemplate canvasName={canvasName} analysis={analysis} />}
           </div>
         </div>
-
-        {/* AI Analyse panel */}
-        <AnalysisPanel
-          recommendations={analysis}
-          loading={analysisLoading}
-          error={analysisError}
-          onGenerate={handleAnalyze}
-        />
 
         {/* Hint */}
         <div className="no-print text-center py-2 text-[9px] text-slate-400 uppercase tracking-widest flex-shrink-0 bg-slate-100">
