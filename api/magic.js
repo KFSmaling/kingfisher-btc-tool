@@ -92,7 +92,10 @@ module.exports = async function handler(req, res) {
   // Per-veld instructie (app_config) gaat voor op generieke fallback
   if (fieldInstruction) {
     // Vervang {taal_instructie} placeholder in de veld-prompt
-    userParts.push(fieldInstruction.replace(/\{taal_instructie\}/g, languageInstruction));
+    const resolved = fieldInstruction.replace(/\{taal_instructie\}/g, languageInstruction);
+    // Als de placeholder er niet in zat: voeg taalinstelling alsnog toe als expliciete afsluiting
+    const hadPlaceholder = /\{taal_instructie\}/.test(fieldInstruction);
+    userParts.push(hadPlaceholder ? resolved : `${resolved}\n\n${languageInstruction}`);
   } else if (heavy) {
     userParts.push(
       isArray

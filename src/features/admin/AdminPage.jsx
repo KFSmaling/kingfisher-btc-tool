@@ -9,8 +9,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Save, RefreshCw, LogOut, ChevronDown, ChevronUp, Check, AlertOctagon } from "lucide-react";
 import { supabase } from "../../services/supabaseClient";
 
-const CATEGORIES  = ["label", "prompt", "setting"];
-const CATEGORY_LABELS = { label: "UI Labels", prompt: "AI Prompts", setting: "Instellingen" };
+const CATEGORIES  = ["prompt", "label", "setting", "blocks"];
+const CATEGORY_LABELS = { label: "UI Labels", prompt: "AI Prompts", setting: "Instellingen", blocks: "Blok Titels" };
 
 // ── Één bewerkbaar config-rij ────────────────────────────────────────────────
 function ConfigRow({ row, onSave }) {
@@ -103,19 +103,90 @@ function ConfigRow({ row, onSave }) {
   );
 }
 
+// ── Blok definitie rij (block_definitions tabel) ────────────────────────────
+function BlockDefRow({ row, onSave }) {
+  const [nlVal,  setNlVal]  = useState(row.label_nl  || "");
+  const [enVal,  setEnVal]  = useState(row.label_en  || "");
+  const [status, setStatus] = useState("idle");
+
+  const isDirty = nlVal !== (row.label_nl || "") || enVal !== (row.label_en || "");
+
+  const handleSave = async () => {
+    setStatus("saving");
+    const { error } = await supabase
+      .from("block_definitions")
+      .update({ label_nl: nlVal, label_en: enVal })
+      .eq("key", row.key);
+    if (error) {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    } else {
+      setStatus("saved");
+      onSave(row.key, { label_nl: nlVal, label_en: enVal });
+      setTimeout(() => setStatus("idle"), 2500);
+    }
+  };
+
+  return (
+    <div className={`border rounded-sm overflow-hidden ${isDirty ? "border-amber-300 bg-amber-50/30" : "border-slate-200 bg-white"}`}>
+      <div className="grid grid-cols-[180px_1fr_1fr_auto] gap-3 items-center px-4 py-3">
+        {/* Key */}
+        <code className="text-xs font-mono text-[#1a365d] font-semibold">{row.key}</code>
+        {/* NL */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">NL</span>
+          <input
+            value={nlVal}
+            onChange={e => setNlVal(e.target.value)}
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700"
+          />
+        </div>
+        {/* EN */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">EN</span>
+          <input
+            value={enVal}
+            onChange={e => setEnVal(e.target.value)}
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700"
+          />
+        </div>
+        {/* Opslaan */}
+        <button
+          onClick={handleSave}
+          disabled={!isDirty || status === "saving"}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-sm text-xs font-bold uppercase tracking-widest transition-all self-end
+            ${isDirty && status === "idle"
+              ? "bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] shadow-sm"
+              : status === "saved"  ? "bg-green-100 text-green-700"
+              : status === "error"  ? "bg-red-100 text-red-600"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
+        >
+          {status === "saving" && <RefreshCw size={11} className="animate-spin" />}
+          {status === "saved"  && <Check size={11} />}
+          {status === "error"  && <AlertOctagon size={11} />}
+          {(status === "idle" || status === "saving") && <Save size={11} />}
+          {status === "saving" ? "Opslaan…" : status === "saved" ? "Opgeslagen" : status === "error" ? "Fout" : "Opslaan"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Hoofd AdminPage ──────────────────────────────────────────────────────────
 export default function AdminPage({ user, onSignOut }) {
-  const [rows, setRows]       = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows]           = useState([]);
+  const [blockDefs, setBlockDefs] = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [activeTab, setActiveTab] = useState("prompt");
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("app_config")
-      .select("key, value, category, description, updated_at")
-      .order("key");
-    if (data) setRows(data);
+    const [{ data: configData }, { data: defsData }] = await Promise.all([
+      supabase.from("app_config").select("key, value, category, description, updated_at").order("key"),
+      supabase.from("block_definitions").select("key, label_nl, label_en").order("key"),
+    ]);
+    if (configData) setRows(configData);
+    if (defsData)   setBlockDefs(defsData);
     setLoading(false);
   }, []);
 
@@ -123,6 +194,10 @@ export default function AdminPage({ user, onSignOut }) {
 
   const handleSave = (key, newValue) => {
     setRows(prev => prev.map(r => r.key === key ? { ...r, value: newValue } : r));
+  };
+
+  const handleBlockDefSave = (key, patch) => {
+    setBlockDefs(prev => prev.map(r => r.key === key ? { ...r, ...patch } : r));
   };
 
   const filtered = rows.filter(r => r.category === activeTab);
@@ -176,7 +251,7 @@ export default function AdminPage({ user, onSignOut }) {
             >
               {CATEGORY_LABELS[cat]}
               <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
-                {rows.filter(r => r.category === cat).length}
+                {cat === "blocks" ? blockDefs.length : rows.filter(r => r.category === cat).length}
               </span>
             </button>
           ))}
@@ -188,6 +263,19 @@ export default function AdminPage({ user, onSignOut }) {
             <RefreshCw size={16} className="animate-spin" />
             <span className="text-sm">Config laden…</span>
           </div>
+        ) : activeTab === "blocks" ? (
+          blockDefs.length === 0 ? (
+            <p className="text-slate-400 text-sm text-center py-12">Geen blok definities gevonden</p>
+          ) : (
+            <div className="space-y-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-sm px-5 py-3 text-sm text-blue-800">
+                Wijzigingen zijn direct actief na de volgende pagina-refresh in de app. De sleutel (key) is niet aanpasbaar.
+              </div>
+              {blockDefs.map(row => (
+                <BlockDefRow key={row.key} row={row} onSave={handleBlockDefSave} />
+              ))}
+            </div>
+          )
         ) : filtered.length === 0 ? (
           <p className="text-slate-400 text-sm text-center py-12">Geen rijen gevonden</p>
         ) : (

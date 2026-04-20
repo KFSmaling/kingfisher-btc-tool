@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText } from "lucide-react";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
@@ -19,19 +19,26 @@ import {
 } from "./services/strategy.service";
 import { searchDocumentChunks } from "../../shared/services/embedding.service";
 
-/** KSF/KPI tabel-rij */
-const KsfKpiRow = React.memo(function KsfKpiRow({ item, onChange, onDelete }) {
+const StrategyOnePager = lazy(() => import("./StrategyOnePager"));
+
+/** KSF/KPI tabel-rij — KSF heeft geen Huidig/Target */
+const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete }) {
+  const isKsf = type === "ksf";
   return (
-    <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 items-center group">
+    <div className={`grid ${isKsf ? "grid-cols-[1fr_20px]" : "grid-cols-[1fr_90px_90px_20px]"} gap-1.5 items-center group`}>
       <input value={item.description} onChange={e => onChange({ ...item, description: e.target.value })}
         placeholder="Omschrijving…"
-        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
-      <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
-        placeholder="Huidig"
-        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
-      <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
-        placeholder="Target"
-        className="text-xs bg-white border border-slate-200 rounded px-2.5 py-1.5 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
+        className="text-[13px] bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
+      {!isKsf && (
+        <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
+          placeholder="Huidig"
+          className="text-[13px] bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
+      )}
+      {!isKsf && (
+        <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
+          placeholder="Target"
+          className="text-[13px] bg-white border border-slate-200 rounded px-2 py-1.5 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
+      )}
       <button onClick={onDelete}
         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
         <X size={12} />
@@ -49,7 +56,7 @@ const KSF_KPI_LOADING_MSGS = [
 ];
 
 /** Strategisch Thema accordeon met KSF/KPI tabel */
-const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi, onGenerateKsfKpi, ksfKpiDraft, onAcceptKsfKpiDraft, onRejectKsfKpiDraft }) {
+const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi, onGenerateKsfKpi, ksfKpiDraft, onAcceptKsfKpiDraft, onRejectKsfKpiDraft, onRemoveDraftItem }) {
   const [open, setOpen] = useState(index === 0);
   const ksfs = (thema.ksf_kpi || []).filter(k => k.type === "ksf").sort((a,b) => a.sort_order - b.sort_order);
   const kpis = (thema.ksf_kpi || []).filter(k => k.type === "kpi").sort((a,b) => a.sort_order - b.sort_order);
@@ -64,7 +71,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
           value={thema.title}
           onChange={e => onTitleChange(e.target.value)}
           placeholder={`Strategisch Thema ${index + 1}…`}
-          className="flex-1 text-sm font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
+          className="flex-1 text-[15px] font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
         />
         {/* KSF/KPI genereren knop */}
         {onGenerateKsfKpi && thema.title?.trim() && (
@@ -92,9 +99,9 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
 
       {/* Body */}
       {open && (
-        <div className="px-4 py-4 space-y-5">
+        <div className="px-4 py-4 space-y-4">
 
-          {/* KSF/KPI Draft panel */}
+          {/* KSF/KPI Draft panel — volle breedte */}
           {ksfKpiDraft && (
             <div className="border border-amber-300 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
@@ -123,79 +130,95 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                 <div className="divide-y divide-amber-100">
                   {/* KSF preview */}
                   {(ksfKpiDraft.ksf || []).map((k, i) => (
-                    <div key={`ksf-${i}`} className="grid grid-cols-[20px_1fr_90px_90px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
+                    <div key={`ksf-${i}`} className="group grid grid-cols-[20px_1fr_20px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
                       <span className="text-[8px] font-black text-[#1a365d]/50 uppercase">KSF</span>
                       <span className="text-xs text-slate-700">{k.description}</span>
-                      <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
-                      <span className="text-[10px] text-[#2c7a4b] font-semibold text-center">{k.target_value || "—"}</span>
+                      <button onClick={() => onRemoveDraftItem?.("ksf", i)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
+                        <X size={11} />
+                      </button>
                     </div>
                   ))}
                   {/* KPI preview */}
                   {(ksfKpiDraft.kpi || []).map((k, i) => (
-                    <div key={`kpi-${i}`} className="grid grid-cols-[20px_1fr_90px_90px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
+                    <div key={`kpi-${i}`} className="group grid grid-cols-[20px_1fr_90px_90px_20px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
                       <span className="text-[8px] font-black text-[#2c7a4b]/70 uppercase">KPI</span>
                       <span className="text-xs text-slate-700">{k.description}</span>
                       <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
                       <span className="text-[10px] text-[#2c7a4b] font-semibold text-center">{k.target_value || "—"}</span>
+                      <button onClick={() => onRemoveDraftItem?.("kpi", i)}
+                        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
+                        <X size={11} />
+                      </button>
                     </div>
                   ))}
+                  {(ksfKpiDraft.ksf || []).length === 0 && (ksfKpiDraft.kpi || []).length === 0 && (
+                    <p className="text-[10px] text-slate-400 italic px-4 py-3">Alle items verwijderd — klik Annuleer of genereer opnieuw.</p>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* KSF sectie */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h5 className="text-[9px] font-black uppercase tracking-widest text-[#1a365d]">
-                KSF — Kritieke Succesfactoren <span className="font-normal text-slate-400">({ksfs.length}/3)</span>
-              </h5>
-              {ksfs.length < 3 && (
-                <button onClick={() => onAddKsfKpi("ksf")}
-                  className="text-[9px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
-                  <Plus size={10} /> Toevoegen
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 pb-1 border-b border-slate-100">
-              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Omschrijving</span>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 text-center">Huidig</span>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-[#2c7a4b] text-center">Target</span>
-              <span />
-            </div>
-            {ksfs.map(k => (
-              <KsfKpiRow key={k.id} item={k}
-                onChange={updated => onUpdateKsfKpi(updated)}
-                onDelete={() => onDeleteKsfKpi(k.id)} />
-            ))}
-            {ksfs.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KSF's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
-          </div>
+          {/* KSF + KPI naast elkaar */}
+          <div className="grid grid-cols-2 gap-6">
 
-          {/* KPI sectie */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h5 className="text-[9px] font-black uppercase tracking-widest text-[#2c7a4b]">
-                KPI — Prestatie-indicatoren <span className="font-normal text-slate-400">({kpis.length}/3)</span>
-              </h5>
-              {kpis.length < 3 && (
-                <button onClick={() => onAddKsfKpi("kpi")}
-                  className="text-[9px] font-bold text-[#2c7a4b] hover:text-[#2c7a4b]/70 flex items-center gap-1">
-                  <Plus size={10} /> Toevoegen
-                </button>
-              )}
+            {/* KSF kolom */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <h5 className="text-[11px] font-black uppercase tracking-widest text-[#1a365d]">
+                  KSF — Succesfactoren <span className="font-normal text-slate-400">({ksfs.length}/3)</span>
+                </h5>
+                {ksfs.length < 3 && (
+                  <button onClick={() => onAddKsfKpi("ksf")}
+                    className="text-[10px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
+                    <Plus size={10} /> Toevoegen
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-[1fr_20px] gap-1.5 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
+                <span />
+              </div>
+              <div className="space-y-1.5 overflow-y-auto max-h-60">
+                {ksfs.map(k => (
+                  <KsfKpiRow key={k.id} item={k} type="ksf"
+                    onChange={updated => onUpdateKsfKpi(updated)}
+                    onDelete={() => onDeleteKsfKpi(k.id)} />
+                ))}
+                {ksfs.length === 0 && <p className="text-[11px] text-slate-300 italic">Nog geen KSF's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
+              </div>
             </div>
-            <div className="grid grid-cols-[1fr_100px_100px_24px] gap-2 pb-1 border-b border-slate-100">
-              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Omschrijving</span>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-slate-400 text-center">Huidig</span>
-              <span className="text-[8px] font-bold uppercase tracking-widest text-[#2c7a4b] text-center">Target</span>
-              <span />
+
+            {/* KPI kolom */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <h5 className="text-[11px] font-black uppercase tracking-widest text-[#2c7a4b]">
+                  KPI — Indicatoren <span className="font-normal text-slate-400">({kpis.length}/3)</span>
+                </h5>
+                {kpis.length < 3 && (
+                  <button onClick={() => onAddKsfKpi("kpi")}
+                    className="text-[10px] font-bold text-[#2c7a4b] hover:text-[#2c7a4b]/70 flex items-center gap-1">
+                    <Plus size={10} /> Toevoegen
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-[1fr_90px_90px_20px] gap-1.5 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Huidig</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#2c7a4b] text-center">Target</span>
+                <span />
+              </div>
+              <div className="space-y-1.5 overflow-y-auto max-h-60">
+                {kpis.map(k => (
+                  <KsfKpiRow key={k.id} item={k} type="kpi"
+                    onChange={updated => onUpdateKsfKpi(updated)}
+                    onDelete={() => onDeleteKsfKpi(k.id)} />
+                ))}
+                {kpis.length === 0 && <p className="text-[11px] text-slate-300 italic">Nog geen KPI's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
+              </div>
             </div>
-            {kpis.map(k => (
-              <KsfKpiRow key={k.id} item={k}
-                onChange={updated => onUpdateKsfKpi(updated)}
-                onDelete={() => onDeleteKsfKpi(k.id)} />
-            ))}
-            {kpis.length === 0 && <p className="text-[10px] text-slate-300 italic">Nog geen KPI's — klik Toevoegen of gebruik 🪄 KSF &amp; KPI</p>}
+
           </div>
         </div>
       )}
@@ -468,6 +491,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [magic, setMagic]       = useState({});
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
+  const [showOnePager,   setShowOnePager]       = useState(false);
 
   // Executie Magic state
   const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
@@ -504,14 +528,18 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     debounceRef.current = setTimeout(async () => {
       const { error } = await upsertStrategyCore(canvasId, core);
       setSaveStatus(error ? "error" : "saved");
-      if (!error) {
-        setTimeout(() => setSaveStatus("idle"), 2500);
-        // Sync naar canvas dashboard zodat checkmarks bijwerken
-        onManualSaved?.(core);
-      }
+      if (!error) setTimeout(() => setSaveStatus("idle"), 2500);
     }, 800);
     return () => clearTimeout(debounceRef.current);
   }, [core, isLoaded, canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dashboard-sync: stuurt themaCount + swotCount mee zodat checkmarks kloppen
+  useEffect(() => {
+    if (!isLoaded) return;
+    const swotCount = items.filter(i => i.tag && i.tag !== "niet_relevant").length;
+    onManualSaved?.({ ...core, themaCount: themas.length, swotCount });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [core, themas.length, items, isLoaded]);
 
   // ── Core field handlers ──────────────────────────────────────────────────────
   const updateCore = (field, value) => setCore(prev => ({ ...prev, [field]: value }));
@@ -638,8 +666,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const updateThemaTitle = useCallback(async (id, title) => {
     setThemas(prev => prev.map(t => t.id === id ? { ...t, title } : t));
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => upsertStrategicTheme({ id, title }), 500);
-  }, []);
+    // canvas_id meesturen zodat de INSERT-path van upsert de RLS-check doorstaat
+    debounceRef.current = setTimeout(() => upsertStrategicTheme({ id, canvas_id: canvasId, title }), 500);
+  }, [canvasId]);
 
   const addKsfKpi = useCallback(async (themaId, type, initialData = {}) => {
     const thema = themas.find(t => t.id === themaId);
@@ -683,7 +712,11 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const res = await fetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "themes", core, items, languageInstruction: t("ai.language") }),
+        body: JSON.stringify({
+          mode: "themes", core, items,
+          languageInstruction: t("ai.language"),
+          systemPromptThemes: appPrompt("strategy.themes") || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
@@ -702,12 +735,39 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
   const acceptAllThemaDraft = useCallback(async () => {
     const toAdd = (themaDraft?.lines || []).slice(0, 7 - themas.length);
+    const newThemas = [];
     for (const line of toAdd) {
-      const { data } = await upsertStrategicTheme({ canvas_id: canvasId, title: line, sort_order: themas.length });
-      if (data) setThemas(prev => [...prev, { ...data, ksf_kpi: [] }]);
+      const { data } = await upsertStrategicTheme({ canvas_id: canvasId, title: line, sort_order: themas.length + newThemas.length });
+      if (data) newThemas.push({ ...data, ksf_kpi: [] });
     }
+    setThemas(prev => [...prev, ...newThemas]);
     setThemaDraft(null);
-  }, [canvasId, themaDraft, themas.length]);
+
+    // Auto-genereer KSF/KPI voor elk nieuw thema (400ms pauze)
+    for (let i = 0; i < newThemas.length; i++) {
+      const thema = newThemas[i];
+      if (!thema.title?.trim()) continue;
+      if (i > 0) await new Promise(r => setTimeout(r, 400));
+      const loadingMsg = KSF_KPI_LOADING_MSGS[Math.floor(Math.random() * KSF_KPI_LOADING_MSGS.length)];
+      setKsfKpiDrafts(prev => ({ ...prev, [thema.id]: { loading: true, loadingMsg } }));
+      try {
+        const res = await fetch("/api/strategy", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "ksf_kpi", thema: thema.title, core, items,
+            languageInstruction: t("ai.language"),
+            systemPromptKsfKpi: appPrompt("strategy.ksf_kpi") || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setKsfKpiDrafts(prev => ({ ...prev, [thema.id]: { loading: false, loadingMsg, ksf: data.ksf || [], kpi: data.kpi || [] } }));
+        }
+      } catch (_) {
+        setKsfKpiDrafts(prev => { const n = { ...prev }; delete n[thema.id]; return n; });
+      }
+    }
+  }, [canvasId, themaDraft, themas.length, core, items, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generateKsfKpiForThema = useCallback(async (themaId) => {
     const thema = themas.find(t => t.id === themaId);
@@ -718,7 +778,11 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const res = await fetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "ksf_kpi", thema: thema.title, core, items, languageInstruction: t("ai.language") }),
+        body: JSON.stringify({
+          mode: "ksf_kpi", thema: thema.title, core, items,
+          languageInstruction: t("ai.language"),
+          systemPromptKsfKpi: appPrompt("strategy.ksf_kpi") || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
@@ -726,7 +790,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     } catch (err) {
       setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: false, loadingMsg, error: err.message } }));
     }
-  }, [themas, core, items, t]);
+  }, [themas, core, items, t, appPrompt]);
 
   const acceptKsfKpiDraft = useCallback(async (themaId) => {
     const draft = ksfKpiDrafts[themaId];
@@ -745,6 +809,21 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
   const rejectKsfKpiDraft = useCallback((themaId) => {
     setKsfKpiDrafts(prev => { const n = { ...prev }; delete n[themaId]; return n; });
+  }, []);
+
+  // Verwijder één item uit een KSF/KPI draft (hover × knop)
+  const removeKsfKpiDraftItem = useCallback((themaId, type, idx) => {
+    setKsfKpiDrafts(prev => {
+      const draft = prev[themaId];
+      if (!draft) return prev;
+      return {
+        ...prev,
+        [themaId]: {
+          ...draft,
+          [type]: (draft[type] || []).filter((_, i) => i !== idx),
+        },
+      };
+    });
   }, []);
 
   // ── Memoized per-thema handlers ──────────────────────────────────────────────
@@ -797,6 +876,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </div>
         <div className="flex items-center gap-3">
           {saveLabel && <span className={`text-[10px] font-semibold ${saveColor}`}>{saveLabel}</span>}
+          {/* OnePager knop */}
+          <button
+            onClick={() => setShowOnePager(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d] text-xs font-bold rounded-lg transition-colors">
+            <FileText size={13} />
+            Strategie Rapport
+          </button>
           {/* Full Draft */}
           <button
             onClick={() => setAutoDraftOpen(true)}
@@ -1038,8 +1124,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                   onDeleteKsfKpi={handlers.onDeleteKsfKpi || (id => removeKsfKpi(thema.id, id))}
                   onGenerateKsfKpi={handlers.onGenerateKsfKpi || (() => generateKsfKpiForThema(thema.id))}
                   ksfKpiDraft={ksfKpiDrafts[thema.id]}
-                  onAcceptKsfKpiDraft={handlers.onAcceptKsfKpiDraft || (() => acceptKsfKpiDraft(thema.id))}
-                  onRejectKsfKpiDraft={handlers.onRejectKsfKpiDraft || (() => rejectKsfKpiDraft(thema.id))}
+                  onAcceptKsfKpiDraft={() => acceptKsfKpiDraft(thema.id)}
+                  onRejectKsfKpiDraft={() => rejectKsfKpiDraft(thema.id)}
+                  onRemoveDraftItem={(type, idx) => removeKsfKpiDraftItem(thema.id, type, idx)}
                 />
               );
             })}
@@ -1058,6 +1145,19 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           </div>
         </section>
       </div>
+
+      {/* ── Strategie OnePager overlay ── */}
+      {showOnePager && (
+        <Suspense fallback={null}>
+          <StrategyOnePager
+            core={core}
+            items={items}
+            themas={themas}
+            canvasId={canvasId}
+            onClose={() => setShowOnePager(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -55,6 +55,21 @@ async function extractFileText(file) {
     }
     return pages.join("\n\n");
   }
+  if (ext === "docx") {
+    const zip = await JSZip.loadAsync(arrayBuf);
+    const docXml = await zip.files["word/document.xml"]?.async("string");
+    if (!docXml) throw new Error("Geen tekst gevonden in Word-document.");
+    // Vervang alineamarkeringen door newlines, verwijder overige XML-tags
+    const text = docXml
+      .replace(/<w:br[^>]*\/>/g, "\n")
+      .replace(/<\/w:p>/g, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    if (text.length < 30) throw new Error("Word-document bevat geen leesbare tekst.");
+    return text;
+  }
   throw new Error(`Bestandstype .${ext} wordt niet ondersteund.`);
 }
 
@@ -88,7 +103,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
   const processFile = async (file) => {
     const localId = `${Date.now()}_${Math.random()}`;
     const ext = file.name.split(".").pop().toLowerCase();
-    if (!["pdf","pptx","txt","csv"].includes(ext)) {
+    if (!["pdf","pptx","docx","txt","csv"].includes(ext)) {
       setJobs(prev => [...prev, { id: localId, file, phase: "error", error: `.${ext} niet ondersteund.` }]);
       return;
     }
@@ -167,14 +182,14 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
           className={`mx-6 mt-5 border-2 border-dashed rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all
             ${dragOver ? "border-[#1a365d] bg-[#1a365d]/5" : "border-slate-200 hover:border-[#1a365d]/40 hover:bg-slate-50"}`}
         >
-          <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.txt,.csv" multiple className="hidden"
+          <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.docx,.txt,.csv" multiple className="hidden"
             onChange={e => handleFiles(e.target.files)} />
           <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${dragOver ? "bg-[#1a365d]/10" : "bg-slate-100"}`}>
             <Upload size={18} className={dragOver ? "text-[#1a365d]" : "text-slate-400"} />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">Bestanden toevoegen aan Dossier</p>
-            <p className="text-xs text-slate-400">PDF · PPTX · TXT · CSV — sleep of klik</p>
+            <p className="text-xs text-slate-400">PDF · PPTX · DOCX · TXT · CSV — sleep of klik</p>
           </div>
         </div>
 

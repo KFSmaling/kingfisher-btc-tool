@@ -15,15 +15,17 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
     if (Array.isArray(val)) return val.length > 0;
     return String(val).trim().length > 0;
   };
-  const swotFilled = Object.values(strategyManual?.swot || {}).some(v => Array.isArray(v) ? v.length > 0 : false);
+  // SWOT: nieuw via swotCount (analysis_items), fallback op legacy JSONB-veld
+  const swotFilled = (strategyManual?.swotCount > 0) ||
+    Object.values(strategyManual?.swot || {}).some(v => Array.isArray(v) ? v.length > 0 : false);
 
   const STATUS_FIELDS = [
-    { key: "missie",         nl: "Missie",           en: "Mission"    },
-    { key: "visie",          nl: "Visie",            en: "Vision"     },
-    { key: "ambitie",        nl: "Ambitie",          en: "Ambition"   },
-    { key: "kernwaarden",    nl: "Kernwaarden",      en: "Core Values"     },
-    { key: "doelstellingen", nl: "Doelstellingen",   en: "Objectives" },
-    { key: "swot",           nl: "SWOT",             en: "SWOT",      swot: true },
+    { key: "missie",         nl: "Missie",           en: "Mission"                          },
+    { key: "visie",          nl: "Visie",            en: "Vision"                           },
+    { key: "ambitie",        nl: "Ambitie",          en: "Ambition"                         },
+    { key: "kernwaarden",    nl: "Kernwaarden",      en: "Core Values"                      },
+    { key: "doelstellingen", nl: "Doelstellingen",   en: "Objectives",  themas: true        },
+    { key: "swot",           nl: "SWOT",             en: "SWOT",        swot: true          },
   ];
 
   return (
@@ -55,7 +57,9 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
       {/* Status monitor — checkmarks voor kleurenblindheid */}
       <div className="flex items-center gap-4 flex-wrap pt-1 border-t border-slate-100">
         {STATUS_FIELDS.map(f => {
-          const isOk = f.swot ? swotFilled : filled(strategyManual?.[f.key]);
+          const isOk = f.themas ? (strategyManual?.themaCount > 0)
+                    : f.swot   ? swotFilled
+                    : filled(strategyManual?.[f.key]);
           const label = lang === "en" ? f.en : f.nl;
           return (
             <div key={f.key} className="flex items-center gap-1.5">

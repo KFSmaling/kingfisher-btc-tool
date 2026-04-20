@@ -148,13 +148,77 @@ Gebruik de Balanced Scorecard-lenzen. Maak de KPI's SMART met realistische huidi
   return JSON.parse(jsonMatch[0]);
 }
 
+// ── MODE: ANALYSIS ────────────────────────────────────────────────────────────
+async function generateAnalysis(core, items, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+  const context = buildSwotContext(core, items);
+
+  // Bouw thema-overzicht
+  const themasContext = themas.length > 0
+    ? themas.map((t, i) => {
+        const ksfs = (t.ksf_kpi || []).filter(k => k.type === "ksf").map(k => k.description).filter(Boolean);
+        const kpis = (t.ksf_kpi || []).filter(k => k.type === "kpi").map(k => `${k.description}${k.target_value ? ` (target: ${k.target_value})` : ""}`).filter(Boolean);
+        return `${i + 1}. ${t.title || "(geen titel)"}${ksfs.length ? `\n   KSF: ${ksfs.join(" | ")}` : ""}${kpis.length ? `\n   KPI: ${kpis.join(" | ")}` : ""}`;
+      }).join("\n")
+    : "(Geen strategische thema's aangemaakt)";
+
+  const rawSystem = systemOverride || `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en geeft 4 tot 6 concrete, prioritaire aanbevelingen.
+
+FOCUS:
+- Coherentie: sluiten thema's aan bij missie/visie/ambitie?
+- Volledigheid: zijn alle Balanced Scorecard-perspectieven gedekt?
+- Kwaliteit: zijn missie/visie/ambitie scherp geformuleerd of te vaag?
+- Risico's: ontbreken er kritische thema's of KPI's?
+- Overlap of tegenstrijdigheden tussen thema's?
+
+OUTPUT FORMAT — antwoord EXACT in dit JSON-formaat, geen uitleg erbuiten:
+{
+  "recommendations": [
+    { "type": "warning", "title": "Korte titel (max 6 woorden)", "text": "Concrete aanbeveling in 1-2 zinnen." },
+    { "type": "info",    "title": "...", "text": "..." },
+    { "type": "success", "title": "...", "text": "..." }
+  ]
+}
+
+TYPE WAARDEN:
+- "warning" = urgent verbeterpunt
+- "info"    = kans of aandachtspunt
+- "success" = sterkte die benut kan worden
+
+{taal_instructie}`;
+  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+
+  const user = `Analyseer deze strategische kaart en geef 4-6 prioritaire aanbevelingen.
+
+${context}
+
+STRATEGISCHE THEMA'S & KSF/KPI:
+${themasContext}`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: HEADERS(apiKey),
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1000,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
+  const raw = (data.content || []).map(c => c.text || "").join("").trim();
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
+  return JSON.parse(jsonMatch[0]);
+}
+
 // ── HANDLER ───────────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const {
-    mode, core = {}, items = [], thema,
-    systemPromptThemes, systemPromptKsfKpi,
+    mode, core = {}, items = [], themas = [], thema,
+    systemPromptThemes, systemPromptKsfKpi, systemPromptAnalysis,
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
   } = req.body || {};
   if (!mode) return res.status(400).json({ error: "Missing mode" });
@@ -170,6 +234,10 @@ module.exports = async function handler(req, res) {
     if (mode === "ksf_kpi") {
       if (!thema) return res.status(400).json({ error: "Missing thema" });
       const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi, languageInstruction);
+      return res.status(200).json(result);
+    }
+    if (mode === "analysis") {
+      const result = await generateAnalysis(core, items, themas, apiKey, systemPromptAnalysis, languageInstruction);
       return res.status(200).json(result);
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });
