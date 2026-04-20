@@ -158,6 +158,17 @@ function AppInner() {
             <SlidersHorizontal size={15} />
           </button>
 
+          {/* Admin link — alleen zichtbaar voor beheerder */}
+          {user?.email === process.env.REACT_APP_ADMIN_EMAIL && (
+            <a
+              href="/admin"
+              className="flex items-center gap-1.5 text-white/40 hover:text-[#8dc63f] transition-colors ml-1"
+              title="App Config beheren"
+            >
+              <SlidersHorizontal size={13} />
+            </a>
+          )}
+
           <button
             onClick={signOut}
             className="flex items-center gap-1.5 text-white/40 hover:text-white transition-colors ml-1"
