@@ -530,25 +530,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       loadAnalysisItems(canvasId),
       loadStrategicThemes(canvasId),
     ]).then(([{ data: coreData }, { data: itemsData }, { data: themasData }]) => {
-      if (coreData) setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [] });
+      if (coreData) {
+        setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [] });
+        setAnalysis(coreData.analysis || null);
+      }
       if (itemsData) setItems(itemsData);
       if (themasData) setThemas(themasData);
       setIsLoaded(true);
     });
   }, [canvasId]);
-
-  // Herstel analyse uit localStorage als canvasId wisselt
-  useEffect(() => {
-    if (!canvasId) return;
-    const saved = localStorage.getItem(`btc.analysis.${canvasId}`);
-    try { setAnalysis(saved ? JSON.parse(saved) : null); } catch { setAnalysis(null); }
-  }, [canvasId]);
-
-  // Sla analyse op in localStorage als hij verandert
-  useEffect(() => {
-    if (!canvasId || analysis === null) return;
-    localStorage.setItem(`btc.analysis.${canvasId}`, JSON.stringify(analysis));
-  }, [canvasId, analysis]);
 
   // Debounced autosave van strategy_core
   useEffect(() => {
@@ -715,7 +705,10 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
-      setAnalysis(data.recommendations || []);
+      const recs = data.recommendations || [];
+      setAnalysis(recs);
+      // Sla op in DB (strategy_core.analysis)
+      await upsertStrategyCore(canvasId, { analysis: recs });
     } catch (e) {
       setAnalysisError(e.message);
     } finally {
@@ -1272,17 +1265,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </Suspense>
       )}
 
-      {/* ── Strategisch Advies overlay ── */}
+      {/* ── Strategisch Advies overlay ── zelfde look & feel als Strategie Rapport */}
       {showAdvies && (
-        <div className="fixed inset-0 z-[59] flex flex-col bg-[#0f2544]">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <Sparkles size={16} className="text-[#8dc63f]" />
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Kingfisher &amp; Partners</p>
-                <h2 className="text-base font-black uppercase tracking-widest text-white">Strategisch Advies</h2>
-              </div>
+        <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
+
+          {/* Header — identiek aan StrategyOnePager header */}
+          <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Sparkles size={12} className="text-[#8dc63f]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white">Strategisch Advies</span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -1290,9 +1281,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 disabled={analysisLoading}
                 className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
-                {analysisLoading
-                  ? <RefreshCw size={12} className="animate-spin" />
-                  : <Sparkles size={12} />}
+                {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}
               </button>
               <button onClick={() => setShowAdvies(false)} className="text-white/40 hover:text-white transition-colors ml-1">
@@ -1302,40 +1291,47 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-8">
-            {analysisError && (
-              <p className="text-red-400 text-sm italic mb-4">{analysisError}</p>
-            )}
-            {analysisLoading && (
-              <p className="text-white/40 text-sm italic animate-pulse">
-                AI analyseert uw strategie op coherentie, volledigheid en kansen…
-              </p>
-            )}
-            {!analysisLoading && analysis && analysis.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-                {analysis.map((rec, i) => {
-                  const cm = {
-                    warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
-                    info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
-                    success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
-                  };
-                  const c = cm[rec.type] || cm.info;
-                  return (
-                    <div key={i} className={`rounded-xl border p-5 ${c.bg} ${c.border}`}>
-                      <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>{rec.title}</p>
-                      <p className={`text-sm leading-relaxed ${c.text}`}>{rec.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {!analysisLoading && !analysis && !analysisError && (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-white/30 text-sm italic text-center max-w-sm">
-                  Klik "Analyseer strategie" voor AI-aanbevelingen op basis van uw missie, visie, SWOT en strategische thema's.
+          <div className="flex-1 overflow-auto p-6 flex justify-center">
+            <div className="w-full max-w-5xl">
+              {analysisError && (
+                <p className="text-red-500 text-sm italic mb-4">{analysisError}</p>
+              )}
+              {analysisLoading && (
+                <p className="text-slate-400 text-sm italic animate-pulse pt-8 text-center">
+                  AI analyseert uw strategie op coherentie, volledigheid en kansen…
                 </p>
-              </div>
-            )}
+              )}
+              {!analysisLoading && analysis && analysis.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {analysis.map((rec, i) => {
+                    const cm = {
+                      warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
+                      info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
+                      success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
+                    };
+                    const c = cm[rec.type] || cm.info;
+                    return (
+                      <div key={i} className={`rounded-xl border p-5 bg-white shadow-sm ${c.border} border-l-4`}>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>{rec.title}</p>
+                        <p className={`text-sm leading-relaxed ${c.text}`}>{rec.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {!analysisLoading && !analysis && !analysisError && (
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-slate-400 text-sm italic text-center max-w-sm">
+                    Klik "Analyseer strategie" voor AI-aanbevelingen op basis van uw missie, visie, SWOT en strategische thema's.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer hint */}
+          <div className="text-center py-2 text-[9px] text-slate-400 uppercase tracking-widest flex-shrink-0 bg-slate-100">
+            AI-analyse op basis van missie, visie, SWOT en strategische thema's · opgeslagen per canvas
           </div>
         </div>
       )}
