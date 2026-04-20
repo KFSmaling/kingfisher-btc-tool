@@ -1,7 +1,7 @@
 /**
  * AdminPage — beheer prompts + UI labels zonder deploy
  *
- * Toegankelijk via /admin — alleen voor keessmaling@gmail.com
+ * Toegankelijk via /admin — alleen voor REACT_APP_ADMIN_EMAIL
  * Directe schrijftoegang via Supabase RLS (email-check in policy)
  */
 

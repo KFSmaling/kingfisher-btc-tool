@@ -328,7 +328,7 @@ function AppInner() {
 }
 
 // ── Auth-guard wrapper ────────────────────────────────────────────────────────
-const ADMIN_EMAIL = "keessmaling@gmail.com";
+const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "";
 
 function AuthGate() {
   const { session, signOut } = useAuth();
