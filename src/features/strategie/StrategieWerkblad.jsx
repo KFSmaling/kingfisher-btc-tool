@@ -449,7 +449,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 }
 
 export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
-  const { lang } = useLang(); // eslint-disable-line no-unused-vars
+  const { lang, t } = useLang();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -549,7 +549,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
       const magicRes = await fetch("/api/magic", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ field: fieldKey, chunks, isArray, heavy: isHeavy }),
+        body: JSON.stringify({ field: fieldKey, chunks, isArray, heavy: isHeavy, languageInstruction: t("ai.language") }),
       });
       const magicData = await magicRes.json();
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
@@ -669,7 +669,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const res = await fetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "themes", core, items }),
+        body: JSON.stringify({ mode: "themes", core, items, languageInstruction: t("ai.language") }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
@@ -704,7 +704,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const res = await fetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "ksf_kpi", thema: thema.title, core, items }),
+        body: JSON.stringify({ mode: "ksf_kpi", thema: thema.title, core, items, languageInstruction: t("ai.language") }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");

@@ -45,10 +45,10 @@ ${zwaktes}
 }
 
 // ── MODE: THEMES ──────────────────────────────────────────────────────────────
-async function generateThemes(core, items, apiKey, systemOverride) {
+async function generateThemes(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
   const context = buildSwotContext(core, items);
 
-  const system = systemOverride || `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
+  const rawSystem = systemOverride || `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
 
 REGELS:
 - Maximaal 7 thema's
@@ -56,9 +56,10 @@ REGELS:
 - Thema's zijn complementair en dekken samen de volledige strategische agenda
 - Gebruik Balanced Scorecard-denken: financieel, klant, intern proces, innovatie & groei
 - Koppel elk thema impliciet aan kansen of sterktes uit de analyse
-- Schrijf ALTIJD in het Nederlands
+- {taal_instructie}
 - Geen nummering, bullets, uitleg of toelichting — één thema per regel
 - Als data ontbreekt: formuleer op basis van missie/visie/ambitie`;
+  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
 
   const user = `Genereer maximaal 7 strategische thema's voor deze organisatie. De thema's vormen samen de strategische agenda — elke koersrichting krijgt één thema.
 
@@ -82,10 +83,10 @@ ${context}`;
 }
 
 // ── MODE: KSF_KPI ─────────────────────────────────────────────────────────────
-async function generateKsfKpi(themaTitle, core, items, apiKey, systemOverride) {
+async function generateKsfKpi(themaTitle, core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
   const context = buildSwotContext(core, items);
 
-  const system = systemOverride || `Je bent een Senior Strategie Consultant én Balanced Scorecard-expert. Je formuleert KSF's (Kritieke Succesfactoren) en KPI's (Key Performance Indicators) voor strategische thema's.
+  const rawSystem = systemOverride || `Je bent een Senior Strategie Consultant én Balanced Scorecard-expert. Je formuleert KSF's (Kritieke Succesfactoren) en KPI's (Key Performance Indicators) voor strategische thema's.
 
 DEFINITIES:
 - KSF: de voorwaarden waaraan voldaan moet zijn om het thema te realiseren (kwalitatief, kritisch)
@@ -117,8 +118,9 @@ REGELS:
 - KPI beschrijvingen bevatten de meeteenheid (bijv. "NPS-score", "% omzetgroei YoY")
 - KPI current_value: realistisch startpunt op basis van de analyseontwikkelingen ("~30%", "onbekend" als niet te schatten)
 - KPI target_value: ambitieus maar haalbaar in 2-3 jaar ("60%", ">50")
-- Schrijf ALTIJD in het Nederlands
+- {taal_instructie}
 - Geen markdown, geen uitleg buiten de JSON`;
+  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
 
   const user = `Formuleer 3 KSF's en 3 KPI's voor het strategisch thema: "${themaTitle}"
 
@@ -150,7 +152,11 @@ Gebruik de Balanced Scorecard-lenzen. Maak de KPI's SMART met realistische huidi
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { mode, core = {}, items = [], thema, systemPromptThemes, systemPromptKsfKpi } = req.body || {};
+  const {
+    mode, core = {}, items = [], thema,
+    systemPromptThemes, systemPromptKsfKpi,
+    languageInstruction = "Schrijf ALTIJD in het Nederlands.",
+  } = req.body || {};
   if (!mode) return res.status(400).json({ error: "Missing mode" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -158,12 +164,12 @@ module.exports = async function handler(req, res) {
 
   try {
     if (mode === "themes") {
-      const themes = await generateThemes(core, items, apiKey, systemPromptThemes);
+      const themes = await generateThemes(core, items, apiKey, systemPromptThemes, languageInstruction);
       return res.status(200).json({ themes });
     }
     if (mode === "ksf_kpi") {
       if (!thema) return res.status(400).json({ error: "Missing thema" });
-      const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi);
+      const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi, languageInstruction);
       return res.status(200).json(result);
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });

@@ -65,6 +65,7 @@ module.exports = async function handler(req, res) {
   const {
     field, chunks = [], existingText = "", isArray = false, heavy = false,
     systemPromptStandard, systemPromptHeavy,  // optioneel vanuit AppConfigContext
+    languageInstruction = "Schrijf ALTIJD in het Nederlands.",
   } = req.body || {};
   if (!field) return res.status(400).json({ error: "Missing field" });
 
@@ -90,14 +91,14 @@ module.exports = async function handler(req, res) {
   if (heavy) {
     userParts.push(
       isArray
-        ? `Zoek in de brondocumenten specifiek naar SWOT-analyse content, sterke/zwakke punten, kansen, bedreigingen, strategische factoren en capabilities — ook als deze in het Engels staan of verspreid zijn over meerdere slides. Schrijf een scherpe lijst van maximaal 8 items voor het BTC-veld "${field}". Schrijf ALTIJD in het Nederlands, ook als de brondocumenten in het Engels zijn. Gebruik kwantitatieve data waar beschikbaar. Citeer bronnen inline. Één item per regel.`
-        : `Zoek in de brondocumenten specifiek naar SWOT-analyse content, strategische factoren en capabilities — ook als deze in het Engels staan of verspreid zijn over meerdere slides. Schrijf een vlijmscherp, concreet voorstel (max. 200 woorden) voor het BTC-veld "${field}". Schrijf ALTIJD in het Nederlands, ook als de brondocumenten in het Engels zijn. Gebruik kwantitatieve data waar beschikbaar. Citeer bronnen inline als (Bron: bestandsnaam, p.X).`
+        ? `Zoek in de brondocumenten specifiek naar SWOT-analyse content, sterke/zwakke punten, kansen, bedreigingen, strategische factoren en capabilities — ook als deze in het Engels staan of verspreid zijn over meerdere slides. Schrijf een scherpe lijst van maximaal 8 items voor het BTC-veld "${field}". ${languageInstruction} Gebruik kwantitatieve data waar beschikbaar. Citeer bronnen inline. Één item per regel.`
+        : `Zoek in de brondocumenten specifiek naar SWOT-analyse content, strategische factoren en capabilities — ook als deze in het Engels staan of verspreid zijn over meerdere slides. Schrijf een vlijmscherp, concreet voorstel (max. 200 woorden) voor het BTC-veld "${field}". ${languageInstruction} Gebruik kwantitatieve data waar beschikbaar. Citeer bronnen inline als (Bron: bestandsnaam, p.X).`
     );
   } else {
     userParts.push(
       isArray
-        ? `Schrijf een beknopte lijst van maximaal 6 items voor het BTC-veld "${field}". Schrijf ALTIJD in het Nederlands. Citeer de bron inline. Één item per regel.`
-        : `Schrijf een krachtig, concreet voorstel (max. 120 woorden) voor het BTC-veld "${field}". Schrijf ALTIJD in het Nederlands. Citeer de bron inline.`
+        ? `Schrijf een beknopte lijst van maximaal 6 items voor het BTC-veld "${field}". ${languageInstruction} Citeer de bron inline. Één item per regel.`
+        : `Schrijf een krachtig, concreet voorstel (max. 120 woorden) voor het BTC-veld "${field}". ${languageInstruction} Citeer de bron inline.`
     );
   }
 
