@@ -304,44 +304,54 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
       )}
 
       {/* Voorgestelde items (regel-voor-regel) */}
-      {proposedLines.length > 0 && (
-        <div className="border border-amber-300 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
-            <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
-              🪄 Voorstel — {proposedLines.length} item{proposedLines.length !== 1 ? "s" : ""}
-            </span>
-            <div className="flex gap-1.5">
-              <button onClick={acceptAll}
-                className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
-                Alle toevoegen
-              </button>
-              <button onClick={dismissAll}
-                className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
-                Weggooien
-              </button>
+      {proposedLines.length > 0 && (() => {
+        const isGK = magicResult?.isGeneralKnowledge;
+        const borderCls   = isGK ? "border-[#00AEEF]/50"   : "border-amber-300";
+        const headerBg    = isGK ? "bg-[#00AEEF]/8"        : "bg-amber-50";
+        const headerBdr   = isGK ? "border-[#00AEEF]/30"   : "border-amber-200";
+        const labelCls    = isGK ? "text-[#00AEEF]"        : "text-amber-700";
+        const dividerCls  = isGK ? "divide-[#00AEEF]/15"   : "divide-amber-100";
+        const hoverRowCls = isGK ? "hover:bg-[#00AEEF]/5"  : "hover:bg-amber-50/40";
+        return (
+          <div className={`border ${borderCls} rounded-xl overflow-hidden`}>
+            <div className={`flex items-center justify-between ${headerBg} px-3 py-2 border-b ${headerBdr}`}>
+              <span className={`text-[9px] font-black uppercase tracking-widest ${labelCls}`}>
+                {isGK ? "🌐 Algemene kennis" : "🪄 Voorstel"} — {proposedLines.length} item{proposedLines.length !== 1 ? "s" : ""}
+                {isGK && <span className="ml-1.5 font-normal normal-case tracking-normal opacity-70">· geen Dossier gevonden</span>}
+              </span>
+              <div className="flex gap-1.5">
+                <button onClick={acceptAll}
+                  className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
+                  Alle toevoegen
+                </button>
+                <button onClick={dismissAll}
+                  className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                  Weggooien
+                </button>
+              </div>
+            </div>
+            <div className={`divide-y ${dividerCls}`}>
+              {proposedLines.map((line, i) => (
+                <div key={i} className={`group flex items-start gap-2 bg-white ${hoverRowCls} px-3 py-2 transition-colors`}>
+                  <p className="flex-1 text-xs text-slate-700 leading-relaxed">{line}</p>
+                  <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => acceptLine(i)}
+                      title="Toevoegen"
+                      className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded px-1.5 py-0.5 transition-colors">
+                      ✓
+                    </button>
+                    <button onClick={() => setProposedLines(prev => prev.filter((_, j) => j !== i))}
+                      title="Overslaan"
+                      className="text-xs text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-1.5 py-0.5 transition-colors">
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="divide-y divide-amber-100">
-            {proposedLines.map((line, i) => (
-              <div key={i} className="group flex items-start gap-2 bg-white hover:bg-amber-50/40 px-3 py-2 transition-colors">
-                <p className="flex-1 text-xs text-slate-700 leading-relaxed">{line}</p>
-                <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => acceptLine(i)}
-                    title="Toevoegen"
-                    className="text-xs font-bold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded px-1.5 py-0.5 transition-colors">
-                    ✓
-                  </button>
-                  <button onClick={() => setProposedLines(prev => prev.filter((_, j) => j !== i))}
-                    title="Overslaan"
-                    className="text-xs text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-1.5 py-0.5 transition-colors">
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Bestaande items */}
       <div className="space-y-1.5">
@@ -567,9 +577,27 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     themas:    "strategic themes priorities strategic pillars focus areas key initiatives transformation themes",
   };
 
+  // Hulpfunctie: roep magic aan met general knowledge fallback (geen dossier)
+  const callGeneralKnowledgeMagic = async (fieldKey, isArray) => {
+    const resolvedFieldInstruction = appPrompt(`magic.field.${fieldKey}`) || undefined;
+    const res = await fetch("/api/magic", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        field: fieldKey, chunks: [], isArray, heavy: false,
+        useGeneralKnowledge: true,
+        languageInstruction: t("ai.language"),
+        fieldInstruction: resolvedFieldInstruction,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "AI fout");
+    return data.suggestion || "";
+  };
+
   const callWerkbladMagic = async (fieldKey, isArray = false) => {
     if (!canvasId) { setMagicFor(fieldKey, { error: "Sla het canvas eerst op." }); return; }
     const isHeavy = ["extern","intern","themas"].includes(fieldKey);
+    const isAnalysisField = ["extern","intern"].includes(fieldKey);
     const matchCount = isHeavy ? 30 : 12;
     setMagicFor(fieldKey, { loading: true, suggestion: null, error: null });
     try {
@@ -579,19 +607,29 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const { embeddings } = await embRes.json();
       const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, matchCount);
       if (searchErr) console.warn("[werkblad magic] RPC fout:", searchErr);
-      if (!chunks || chunks.length === 0) {
-        setMagicFor(fieldKey, { loading: false, noChunks: true, suggestion: null });
+
+      const hasChunks = chunks && chunks.length > 0;
+
+      // Geen documenten: voor analyse-velden fallback op algemene kennis, anders stoppen
+      if (!hasChunks) {
+        if (!isAnalysisField) {
+          setMagicFor(fieldKey, { loading: false, noChunks: true, suggestion: null });
+          return;
+        }
+        // Extern/intern zonder dossier → general knowledge
+        const suggestion = await callGeneralKnowledgeMagic(fieldKey, isArray);
+        setMagicFor(fieldKey, { loading: false, suggestion, citations: [], isGeneralKnowledge: true });
+        if (suggestion) setDraftFor(fieldKey, suggestion);
         return;
       }
+
+      // Normale RAG aanroep
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
       const resolvedFieldInstruction = appPrompt(`magic.field.${fieldKey}`) || undefined;
       const magicRes = await fetch("/api/magic", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          field: fieldKey,
-          chunks,
-          isArray,
-          heavy: isHeavy,
+          field: fieldKey, chunks, isArray, heavy: isHeavy,
           languageInstruction: t("ai.language"),
           fieldInstruction: resolvedFieldInstruction,
         }),
@@ -600,6 +638,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       if (!magicRes.ok) throw new Error(magicData.error || "AI fout");
       const suggestion = magicData.suggestion || "";
       const isNoInfo = suggestion.toLowerCase().includes("geen relevante informatie") || suggestion.toLowerCase().includes("onvoldoende");
+
+      // Dossier heeft onvoldoende info voor analyse-velden → fallback op algemene kennis
+      if (isNoInfo && isAnalysisField) {
+        const fbSuggestion = await callGeneralKnowledgeMagic(fieldKey, isArray);
+        setMagicFor(fieldKey, { loading: false, suggestion: fbSuggestion, citations: [], isGeneralKnowledge: true });
+        if (fbSuggestion) setDraftFor(fieldKey, fbSuggestion);
+        return;
+      }
+
       setMagicFor(fieldKey, { loading: false, suggestion, citations, isNoInfo });
       if (!isNoInfo) setDraftFor(fieldKey, suggestion);
     } catch (err) {

@@ -22,6 +22,18 @@ WERKWIJZE:
 6. Geen preamble of uitleg — alleen het voorstel zelf.
 7. Bij lijstvelden: één item per regel, zonder nummering, bullets of streepjes.`;
 
+const SYSTEM_GENERAL_KNOWLEDGE = `Je bent een Senior Strategie Consultant bij Kingfisher & Partners, gespecialiseerd in business transformatie.
+
+Het Dossier bevat onvoldoende informatie voor dit veld. Genereer op basis van jouw brede kennis van businessstrategie, marktdynamiek en sectortrends een gefundeerd voorstel.
+
+WERKWIJZE:
+1. Baseer je voorstel op algemeen erkende strategische inzichten, best practices en actuele markttrends.
+2. Wees specifiek en praktisch — geen vage generalisaties.
+3. Geef items die als startpunt dienen voor verdere verdieping door de consultant.
+4. Geen preamble of uitleg — alleen het voorstel zelf.
+5. Bij lijstvelden: één item per regel, zonder nummering, bullets of streepjes.
+6. Maximaal 8 items.`;
+
 const SYSTEM_HEAVY = `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau, gespecialiseerd in business transformatie voor de financiële en verzekeringssector bij Kingfisher & Partners.
 
 WERKWIJZE — SYNTHESIS ANALYSE:
@@ -64,17 +76,54 @@ module.exports = async function handler(req, res) {
 
   const {
     field, chunks = [], existingText = "", isArray = false, heavy = false,
-    systemPromptStandard, systemPromptHeavy,  // optioneel vanuit AppConfigContext
+    useGeneralKnowledge = false,              // true als Dossier leeg/onvoldoende is
+    systemPromptStandard, systemPromptHeavy, systemPromptGeneralKnowledge,
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
-    fieldInstruction,  // per-veld instructie vanuit app_config (optioneel)
+    fieldInstruction,
   } = req.body || {};
   if (!field) return res.status(400).json({ error: "Missing field" });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
+  // ── General Knowledge modus ──────────────────────────────────────────────────
+  if (useGeneralKnowledge) {
+    const systemPrompt = systemPromptGeneralKnowledge || SYSTEM_GENERAL_KNOWLEDGE;
+    const model = "claude-haiku-4-5-20251001";
+
+    const userParts = [];
+    userParts.push(`VELD: "${field}"\nMODUS: Geen Dossier beschikbaar — gebruik algemene sectorkennis.`);
+    if (existingText) userParts.push(`BESTAANDE TEKST:\n${existingText}`);
+
+    if (fieldInstruction) {
+      const resolved = fieldInstruction.replace(/\{taal_instructie\}/g, languageInstruction);
+      const hadPlaceholder = /\{taal_instructie\}/.test(fieldInstruction);
+      userParts.push(hadPlaceholder ? resolved : `${resolved}\n\n${languageInstruction}`);
+    } else {
+      userParts.push(
+        isArray
+          ? `Genereer op basis van algemene sectorkennis een scherpe lijst van maximaal 8 items voor het veld "${field}". ${languageInstruction} Eén item per regel.`
+          : `Schrijf een gefundeerd voorstel (max. 120 woorden) voor het veld "${field}" op basis van algemene sectorkennis. ${languageInstruction}`
+      );
+    }
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
+        body: JSON.stringify({ model, max_tokens: 600, system: systemPrompt, messages: [{ role: "user", content: userParts.join("\n\n") }] }),
+      });
+      const data = await response.json();
+      if (!response.ok) return res.status(response.status).json({ error: data.error?.message || "AI fout" });
+      const suggestion = (data.content || []).map(c => c.text || "").join("").trim();
+      return res.status(200).json({ suggestion, isGeneralKnowledge: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── Normale RAG modus ────────────────────────────────────────────────────────
   const context = buildContext(chunks);
-  // Gebruik DB-prompt als meegegeven, anders hardcoded fallback
   const systemPrompt = heavy
     ? (systemPromptHeavy    || SYSTEM_HEAVY)
     : (systemPromptStandard || SYSTEM_STANDARD);
@@ -91,9 +140,7 @@ module.exports = async function handler(req, res) {
 
   // Per-veld instructie (app_config) gaat voor op generieke fallback
   if (fieldInstruction) {
-    // Vervang {taal_instructie} placeholder in de veld-prompt
     const resolved = fieldInstruction.replace(/\{taal_instructie\}/g, languageInstruction);
-    // Als de placeholder er niet in zat: voeg taalinstelling alsnog toe als expliciete afsluiting
     const hadPlaceholder = /\{taal_instructie\}/.test(fieldInstruction);
     userParts.push(hadPlaceholder ? resolved : `${resolved}\n\n${languageInstruction}`);
   } else if (heavy) {
