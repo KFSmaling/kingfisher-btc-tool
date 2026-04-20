@@ -714,7 +714,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     } finally {
       setAnalysisLoading(false);
     }
-  }, [core, items, themas, appPrompt]);
+  }, [core, items, themas, canvasId, appPrompt]);
 
   // ── Full Draft ───────────────────────────────────────────────────────────────
   const handleFullDraft = async () => {
