@@ -14,6 +14,8 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
   const [editingName, setEditingName]       = useState(false);
   const [draftName, setDraftName]           = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleteError, setDeleteError]       = useState(null);
+  const [deleting, setDeleting]             = useState(false);
 
   const displayName = currentName || t("menu.unnamed");
 
@@ -99,15 +101,30 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
                         Verwijder "{c.name || "Naamloos"}"?
                       </p>
                       <p className="text-[9px] text-red-500 mb-2">Dit verwijdert ook alle geüploade documenten en chunks.</p>
+                      {deleteError && (
+                        <p className="text-[9px] text-red-600 font-semibold mb-2 bg-red-100 rounded px-2 py-1">{deleteError}</p>
+                      )}
                       <div className="flex gap-2">
                         <button
-                          onClick={() => { onDelete(c.id); setConfirmDeleteId(null); setOpen(false); }}
-                          className="flex-1 text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 rounded px-2 py-1 transition-colors"
+                          disabled={deleting}
+                          onClick={async () => {
+                            setDeleteError(null);
+                            setDeleting(true);
+                            const result = await onDelete(c.id);
+                            setDeleting(false);
+                            if (result?.error) {
+                              setDeleteError("Verwijderen mislukt. Probeer het opnieuw.");
+                            } else {
+                              setConfirmDeleteId(null);
+                              setOpen(false);
+                            }
+                          }}
+                          className="flex-1 text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 rounded px-2 py-1 transition-colors"
                         >
-                          Ja, verwijder
+                          {deleting ? "Bezig…" : "Ja, verwijder"}
                         </button>
                         <button
-                          onClick={() => setConfirmDeleteId(null)}
+                          onClick={() => { setConfirmDeleteId(null); setDeleteError(null); }}
                           className="flex-1 text-[10px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded px-2 py-1 transition-colors"
                         >
                           Annuleer
@@ -130,8 +147,8 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
                         ? <span className="text-[8px] font-bold text-[#1a365d]/60 uppercase tracking-widest pr-3 flex-shrink-0">Actief</span>
                         : (
                           <button
-                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(c.id); }}
-                            className="opacity-0 group-hover/item:opacity-100 transition-opacity pr-2.5 text-slate-300 hover:text-red-400 flex-shrink-0"
+                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(c.id); setDeleteError(null); }}
+                            className="opacity-30 group-hover/item:opacity-100 transition-opacity pr-2.5 text-slate-400 hover:text-red-400 flex-shrink-0"
                             title="Canvas verwijderen"
                           >
                             <Trash2 size={13} />

@@ -173,13 +173,45 @@ export async function saveBlockManualData(canvasId, blockKey, manualData) {
 
 /**
  * Verwijder een canvas op basis van ID.
+ *
+ * De RLS-policies op child-tabellen controleren of canvas_id nog in de
+ * canvases-tabel staat. Supabase CASCADE-deletes lopen als de huidige
+ * authenticated-gebruiker, waardoor RLS-checks falen zodra het canvas
+ * al gemarkeerd is voor verwijdering.
+ *
+ * Oplossing: verwijder child-records expliciet in de juiste volgorde,
+ * terwijl het canvas nog bestaat. Daarna pas het canvas zelf verwijderen.
  */
 export async function deleteCanvas(id) {
   if (!supabase) return { error: "Supabase niet geconfigureerd" };
-  const { error } = await supabase
-    .from("canvases")
-    .delete()
-    .eq("id", id);
-  if (error) console.error("Canvas verwijderen mislukt:", error.message);
+
+  // 1. document_chunks — RLS gebruikt canvas_id subquery, moet vóór canvas-delete
+  const { error: chunksErr } = await supabase
+    .from("document_chunks").delete().eq("canvas_id", id);
+  if (chunksErr) console.error("[deleteCanvas] chunks:", chunksErr.message);
+
+  // 2. canvas_uploads
+  const { error: uploadsErr } = await supabase
+    .from("canvas_uploads").delete().eq("canvas_id", id);
+  if (uploadsErr) console.error("[deleteCanvas] uploads:", uploadsErr.message);
+
+  // 3. strategic_themes (cascade → ksf_kpi)
+  const { error: themesErr } = await supabase
+    .from("strategic_themes").delete().eq("canvas_id", id);
+  if (themesErr) console.error("[deleteCanvas] themes:", themesErr.message);
+
+  // 4. analysis_items
+  const { error: itemsErr } = await supabase
+    .from("analysis_items").delete().eq("canvas_id", id);
+  if (itemsErr) console.error("[deleteCanvas] items:", itemsErr.message);
+
+  // 5. strategy_core
+  const { error: coreErr } = await supabase
+    .from("strategy_core").delete().eq("canvas_id", id);
+  if (coreErr) console.error("[deleteCanvas] core:", coreErr.message);
+
+  // 6. Verwijder het canvas zelf (cascades vinden nu niets meer)
+  const { error } = await supabase.from("canvases").delete().eq("id", id);
+  if (error) console.error("[deleteCanvas] canvas:", error.message);
   return { error };
 }

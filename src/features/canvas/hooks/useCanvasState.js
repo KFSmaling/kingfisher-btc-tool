@@ -191,7 +191,10 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
 
   const handleDeleteCanvas = useCallback(async (canvasId) => {
     const { error } = await deleteCanvas(canvasId);
-    if (error) { err("[delete] canvas verwijderen mislukt:", error.message); return; }
+    if (error) {
+      err("[delete] canvas verwijderen mislukt:", error.message);
+      return { error };
+    }
 
     // Verwijder uit lijst
     setCanvases(prev => prev.filter(c => c.id !== canvasId));
@@ -204,6 +207,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
       setStrategyManual(null);
       onCanvasSwitch?.();
     }
+    return { error: null };
   }, [activeCanvasId, onCanvasSwitch]);
 
   const handleLoadExample = useCallback(() => {
