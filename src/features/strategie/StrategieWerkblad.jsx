@@ -550,8 +550,6 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       }
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
       const resolvedFieldInstruction = appPrompt(`magic.field.${fieldKey}`) || undefined;
-      // DEBUG — verwijder na verificatie
-      console.log(`[werkblad magic] veld="${fieldKey}" fieldInstruction=${resolvedFieldInstruction ? `aanwezig (${resolvedFieldInstruction.slice(0,60)}…)` : "null — DB niet bereikt of rij ontbreekt"}`);
       const magicRes = await fetch("/api/magic", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({

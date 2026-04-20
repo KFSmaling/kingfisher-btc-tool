@@ -70,9 +70,6 @@ module.exports = async function handler(req, res) {
   } = req.body || {};
   if (!field) return res.status(400).json({ error: "Missing field" });
 
-  // DEBUG — verwijder na verificatie
-  console.log(`[magic] field="${field}" fieldInstruction=${fieldInstruction ? `aanwezig (${fieldInstruction.slice(0, 60)}…)` : "ONTBREEKT — gebruikt generieke fallback"}`);
-
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
