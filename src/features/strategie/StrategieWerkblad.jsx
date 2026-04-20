@@ -10,6 +10,7 @@ import {
   upsertStrategyCore,
   loadAnalysisItems,
   upsertAnalysisItem,
+  changeAnalysisItemTag,
   deleteAnalysisItem,
   loadStrategicThemes,
   upsertStrategicTheme,
@@ -497,7 +498,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
   const [ksfKpiDrafts, setKsfKpiDrafts] = useState({});   // { [themaId]: { loading, loadingMsg, ksf, kpi } }
 
-  const debounceRef = useRef(null);
+  const coreDebounceRef  = useRef(null); // autosave strategy_core
+  const titleDebounceRef = useRef(null); // updateThemaTitle
+  const kpiDebounceRef   = useRef(null); // updateKsfKpiItem
 
   // Entrance animation
   useEffect(() => {
@@ -523,14 +526,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   // Debounced autosave van strategy_core
   useEffect(() => {
     if (!isLoaded || !canvasId) return;
-    clearTimeout(debounceRef.current);
+    clearTimeout(coreDebounceRef.current);
     setSaveStatus("saving");
-    debounceRef.current = setTimeout(async () => {
+    coreDebounceRef.current = setTimeout(async () => {
       const { error } = await upsertStrategyCore(canvasId, core);
       setSaveStatus(error ? "error" : "saved");
       if (!error) setTimeout(() => setSaveStatus("idle"), 2500);
     }, 800);
-    return () => clearTimeout(debounceRef.current);
+    return () => clearTimeout(coreDebounceRef.current);
   }, [core, isLoaded, canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dashboard-sync: stuurt themaCount + swotCount mee zodat checkmarks kloppen
@@ -648,7 +651,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
   const changeAnalysisTag = useCallback(async (id, tag) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, tag } : i));
-    await upsertAnalysisItem({ id, tag });
+    await changeAnalysisItemTag(id, tag);
   }, []);
 
   // ── Thema handlers ────────────────────────────────────────────────────────────
@@ -665,9 +668,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
   const updateThemaTitle = useCallback(async (id, title) => {
     setThemas(prev => prev.map(t => t.id === id ? { ...t, title } : t));
-    clearTimeout(debounceRef.current);
+    clearTimeout(titleDebounceRef.current);
     // canvas_id meesturen zodat de INSERT-path van upsert de RLS-check doorstaat
-    debounceRef.current = setTimeout(() => upsertStrategicTheme({ id, canvas_id: canvasId, title }), 500);
+    titleDebounceRef.current = setTimeout(() => upsertStrategicTheme({ id, canvas_id: canvasId, title }), 500);
   }, [canvasId]);
 
   const addKsfKpi = useCallback(async (themaId, type, initialData = {}) => {
@@ -687,8 +690,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
   const updateKsfKpiItem = useCallback(async (themaId, item) => {
     setThemas(prev => prev.map(t => t.id === themaId ? { ...t, ksf_kpi: t.ksf_kpi.map(k => k.id === item.id ? item : k) } : t));
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => upsertKsfKpi(item), 500);
+    clearTimeout(kpiDebounceRef.current);
+    kpiDebounceRef.current = setTimeout(() => upsertKsfKpi(item), 500);
   }, []);
 
   const removeKsfKpi = useCallback(async (themaId, id) => {

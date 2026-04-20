@@ -43,6 +43,20 @@ export async function upsertAnalysisItem(item) {
   return { data, error };
 }
 
+/**
+ * Update alleen het tag-veld van een analysis_item.
+ * Gebruikt .update() i.p.v. upsert om de INSERT-fase (en NOT NULL errors) te vermijden.
+ */
+export async function changeAnalysisItemTag(id, tag) {
+  if (!supabase) return { error: "Supabase niet geconfigureerd" };
+  const { error } = await supabase
+    .from("analysis_items")
+    .update({ tag })
+    .eq("id", id);
+  if (error) console.error("[analysis_items] tag update mislukt:", error.message);
+  return { error };
+}
+
 export async function deleteAnalysisItem(id) {
   if (!supabase) return { error: "Supabase niet geconfigureerd" };
   const { error } = await supabase.from("analysis_items").delete().eq("id", id);

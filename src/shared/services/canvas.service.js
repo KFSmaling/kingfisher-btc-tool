@@ -17,7 +17,7 @@ export async function saveCanvasUpload({ fileName, rawText, insights, blockKey, 
       block_key:  blockKey,
       canvas_id:  canvasId  || null,
       user_id:    userId    || null,
-    }, { onConflict: "user_id,file_name" })
+    }, { onConflict: "canvas_id,file_name" })
     .select("id")
     .maybeSingle();
 
