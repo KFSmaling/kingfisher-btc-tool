@@ -451,51 +451,6 @@ function ScorecardTemplate({ core, themas, canvasName, analysis }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// TEMPLATE 4 — Strategisch Advies (AI-analyse, volledige pagina)
-// ══════════════════════════════════════════════════════════════════════════════
-function AdviesTemplate({ canvasName, analysis }) {
-  if (!analysis || analysis.length === 0) {
-    return (
-      <div style={S.page}>
-        <PageHeader canvasName={canvasName} subtitle="Strategisch Advies" />
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 20px" }}>
-          <p style={{ color: "#9ca3af", fontSize: "11px", fontStyle: "italic", textAlign: "center" }}>
-            Gebruik "Analyseer strategie" om AI-aanbevelingen te genereren.
-          </p>
-        </div>
-        <PageFooter />
-      </div>
-    );
-  }
-  return (
-    <div style={S.page}>
-      <PageHeader canvasName={canvasName} subtitle="Strategisch Advies" />
-      <div style={{ padding: "16px 20px 10px" }}>
-        <div style={{ ...S.sectionLabel, color: C.navy, marginBottom: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ fontSize: "10px" }}>✦</span> AI Strategische Analyse &amp; Aanbevelingen
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
-          {analysis.map((rec, i) => {
-            const s = TYPE_STYLES[rec.type] || TYPE_STYLES.info;
-            return (
-              <div key={i} style={{ background: s.bg, border: `1px solid ${s.border}50`, borderLeft: `4px solid ${s.border}`, borderRadius: "6px", padding: "12px 14px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                  <span style={{ fontSize: "10px", color: s.label, fontWeight: 900 }}>{s.icon}</span>
-                  <span style={{ fontSize: "9px", fontWeight: 800, color: s.label, textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                    {rec.title}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: "10px", color: s.text, lineHeight: 1.5 }}>{rec.text}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <PageFooter />
-    </div>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HOOFD COMPONENT
