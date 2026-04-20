@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { AuthProvider, useAuth } from "./services/authContext";
 import LoginScreen from "./LoginScreen";
+import ErrorBoundary from "./shared/components/ErrorBoundary";
 
 // Canvas feature
 import BlockCard, { BLOCKS, getBlockStatus } from "./features/canvas/components/BlockCard";
@@ -342,10 +343,12 @@ function AuthGate() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <LangProvider>
-        <AuthGate />
-      </LangProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <LangProvider>
+          <AuthGate />
+        </LangProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -20,6 +20,7 @@ import {
   deleteCanvas,
 } from "../../../services/canvasStorage";
 import { BLOCKS, EXAMPLE_BULLETS } from "../components/BlockCard";
+import { log, err } from "../../../shared/utils/logger";
 
 /**
  * @param {object} options
@@ -86,15 +87,15 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
 
     loadUserCanvases(user.id).then(async ({ data, error }) => {
       if (error) {
-        console.error("[init] Canvassen laden mislukt:", error.code, error.message);
+        err("[init] Canvassen laden mislukt:", error.code, error.message);
         return;
       }
-      console.log("[init] canvassen geladen:", data?.length, data);
+      log("[init] canvassen geladen:", data?.length, data);
 
       if (data && data.length > 0) {
         setCanvases(data);
         const { data: full, error: loadErr } = await loadCanvasById(data[0].id);
-        console.log("[init] canvas laden:", full, loadErr);
+        log("[init] canvas laden:", full, loadErr);
         if (full) applyCanvasData(full);
       } else {
         // Geen canvassen — maak direct een nieuw aan
@@ -102,7 +103,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
         const { data: created, error: createErr } = await createCanvas({
           userId: user.id, name, language: lang,
         });
-        console.log("[init] nieuw canvas:", created, createErr);
+        log("[init] nieuw canvas:", created, createErr);
         if (created) {
           suppressSaveRef.current = true;
           setCanvases([created]);
@@ -117,9 +118,9 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
 
   // ── Autosave (500ms debounce, last-write-wins) ──────────────────────────────
   useEffect(() => {
-    if (!activeCanvasId) { console.log("[autosave] skip: geen activeCanvasId"); return; }
-    if (!user)           { console.log("[autosave] skip: geen user"); return; }
-    if (suppressSaveRef.current) { console.log("[autosave] skip: suppress actief"); return; }
+    if (!activeCanvasId) { log("[autosave] skip: geen activeCanvasId"); return; }
+    if (!user)           { log("[autosave] skip: geen user"); return; }
+    if (suppressSaveRef.current) { log("[autosave] skip: suppress actief"); return; }
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
 
@@ -190,7 +191,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
 
   const handleDeleteCanvas = useCallback(async (canvasId) => {
     const { error } = await deleteCanvas(canvasId);
-    if (error) { console.error("[delete] canvas verwijderen mislukt:", error.message); return; }
+    if (error) { err("[delete] canvas verwijderen mislukt:", error.message); return; }
 
     setCanvases(prev => {
       const remaining = prev.filter(c => c.id !== canvasId);
