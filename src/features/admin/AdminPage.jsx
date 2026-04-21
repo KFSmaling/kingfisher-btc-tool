@@ -305,6 +305,39 @@ const TABS = [
   { id: "blocks",  label: "Blok Titels",   groups: null           },
 ];
 
+// ── Standaard labels — worden automatisch geseed als ze ontbreken in de DB ───
+// Dit is de enige bron van waarheid voor label-defaults; migrations zijn een backup.
+const DEFAULT_LABELS = [
+  // Applicatie
+  { key: "label.app.title",                    description: "App-titel in de header",                        value: "Business Transformation Canvas"                  },
+  { key: "label.app.subtitle",                 description: "App-subtitel in de header",                     value: "From strategy to execution"                      },
+  { key: "label.footer.tagline",               description: "Voettekst onderaan het canvas",                 value: "Kingfisher & Partners · From strategy to execution"},
+  // Werkblad namen
+  { key: "label.werkblad.strategie",           description: "Naam van het Strategie Werkblad",               value: "Strategie Werkblad"                               },
+  { key: "label.werkblad.richtlijnen",         description: "Naam van het Richtlijnen Werkblad",             value: "Richtlijnen & Leidende Principes"                 },
+  // Strategie Werkblad — sectiekoppen
+  { key: "label.strat.section.identiteit",     description: "Sectienaam Identiteit (h3)",                    value: "Identiteit"                                       },
+  { key: "label.strat.section.analyse",        description: "Sectienaam Analyse (h3)",                       value: "Analyse"                                          },
+  { key: "label.strat.section.executie",       description: "Sectienaam Executie (h3)",                      value: "Executie — 7·3·3 Regel"                           },
+  // Strategie Werkblad — veldnamen
+  { key: "label.strat.field.missie",           description: "Veldnaam Missie",                               value: "Missie"                                           },
+  { key: "label.strat.field.visie",            description: "Veldnaam Visie",                                value: "Visie"                                            },
+  { key: "label.strat.field.ambitie",          description: "Veldnaam Ambitie (BHAG)",                       value: "Ambitie (BHAG)"                                   },
+  { key: "label.strat.field.kernwaarden",      description: "Veldnaam Kernwaarden",                          value: "Kernwaarden"                                      },
+  { key: "label.strat.field.samenvatting",     description: "Veldnaam Strategische Samenvatting (max 2 zinnen)", value: "Strategische Samenvatting"                   },
+  { key: "label.strat.field.extern",           description: "Kolomnaam Externe analyse",                     value: "Externe Ontwikkelingen"                           },
+  { key: "label.strat.field.intern",           description: "Kolomnaam Interne analyse",                     value: "Interne Ontwikkelingen"                           },
+  // Richtlijnen Werkblad — segment namen + subtitels
+  { key: "label.richtl.segment.generiek",      description: "Segment naam Generiek",                         value: "Generiek"                                         },
+  { key: "label.richtl.segment.generiek.sub",  description: "Segment subtitel Generiek",                     value: "Strategie & Governance"                           },
+  { key: "label.richtl.segment.klanten",       description: "Segment naam Klanten",                          value: "Klanten"                                          },
+  { key: "label.richtl.segment.klanten.sub",   description: "Segment subtitel Klanten",                      value: "Markt & Dienstverlening"                          },
+  { key: "label.richtl.segment.organisatie",   description: "Segment naam Organisatie",                      value: "Organisatie"                                      },
+  { key: "label.richtl.segment.organisatie.sub",description:"Segment subtitel Organisatie",                  value: "Mens & Proces"                                    },
+  { key: "label.richtl.segment.it",            description: "Segment naam IT",                               value: "IT"                                               },
+  { key: "label.richtl.segment.it.sub",        description: "Segment subtitel IT",                           value: "Technologie & Data"                               },
+];
+
 // ── Hoofd AdminPage ──────────────────────────────────────────────────────────
 export default function AdminPage({ user, onSignOut }) {
   const [rows, setRows]           = useState([]);
@@ -318,8 +351,24 @@ export default function AdminPage({ user, onSignOut }) {
       supabase.from("app_config").select("key, value, category, description, updated_at").order("key"),
       supabase.from("block_definitions").select("key, label_nl, label_en").order("key"),
     ]);
-    if (configData) setRows(configData);
-    if (defsData)   setBlockDefs(defsData);
+
+    // Seed ontbrekende labels automatisch — onafhankelijk van migraties
+    if (configData) {
+      const existingKeys = new Set(configData.map(r => r.key));
+      const missing = DEFAULT_LABELS.filter(l => !existingKeys.has(l.key));
+      if (missing.length > 0) {
+        const toInsert = missing.map(l => ({ key: l.key, category: "label", description: l.description, value: l.value }));
+        const { error } = await supabase.from("app_config").insert(toInsert);
+        if (!error) {
+          // Herlaad na seed zodat admin de nieuwe rijen ziet
+          const { data: fresh } = await supabase.from("app_config").select("key, value, category, description, updated_at").order("key");
+          if (fresh) { setRows(fresh); setLoading(false); if (defsData) setBlockDefs(defsData); return; }
+        }
+      }
+      setRows(configData);
+    }
+
+    if (defsData) setBlockDefs(defsData);
     setLoading(false);
   }, []);
 
