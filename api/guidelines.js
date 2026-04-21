@@ -180,6 +180,55 @@ OUTPUT FORMAT: Exact JSON:
   return JSON.parse(m[0]);
 }
 
+// ── MODE: LINK_THEMES ─────────────────────────────────────────────────────────
+// Stuurt alle principes + thema's naar Claude; vraagt welke thema-indices
+// duidelijk bij welk principe horen. Twijfelgevallen → lege array.
+// Gebruikt indices (niet UUIDs) om hallucination te voorkomen.
+async function linkThemes(guidelines, themas, apiKey, languageInstruction) {
+  if (!themas.length || !guidelines.length) return {};
+
+  const themasCtx     = themas.map((t, i) => `${i}. "${t.title}"`).join("\n");
+  const guidelinesCtx = guidelines.map((g, i) =>
+    `${i}. [${(g.segment || "").toUpperCase()}] "${g.title}"${g.description ? ` — ${g.description.slice(0, 120)}` : ""}`
+  ).join("\n");
+
+  const system = `Je koppelt Leidende Principes aan Strategische Thema's op basis van inhoudelijke relevantie.
+
+REGELS:
+- Koppel ALLEEN bij een duidelijke, directe inhoudelijke relatie
+- Bij twijfel of een zwakke relatie: geen koppeling — lege array
+- Een principe kan aan meerdere thema's gekoppeld worden (max 3)
+- Niet elk principe hoeft een koppeling te krijgen
+- Gebruik uitsluitend de index-nummers uit de lijsten
+
+OUTPUT: Exact JSON — één entry per principe (ook als de array leeg is):
+{"links":{"<principe-index>":[<thema-index>, ...]}}`;
+
+  const userMsg = `STRATEGISCHE THEMA'S:\n${themasCtx}\n\nLEIDENDE PRINCIPES:\n${guidelinesCtx}\n\nKoppel de principes aan de meest passende thema's.`;
+
+  const res  = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: HEADERS(apiKey),
+    body: JSON.stringify({ model: MODEL, max_tokens: 800, system, messages: [{ role: "user", content: userMsg }] }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "AI fout (link_themes)");
+  const raw  = (data.content || []).map(c => c.text || "").join("").trim();
+  const m    = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
+  const parsed = JSON.parse(m[0]);
+
+  // Vertaal indices → IDs
+  const result = {};
+  Object.entries(parsed.links || {}).forEach(([gIdxStr, tIdxs]) => {
+    const g = guidelines[parseInt(gIdxStr)];
+    if (!g) return;
+    result[g.id] = (Array.isArray(tIdxs) ? tIdxs : [])
+      .map(ti => themas[parseInt(ti)]?.id)
+      .filter(Boolean);
+  });
+  return result;
+}
+
 // ── HANDLER ───────────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -223,6 +272,11 @@ module.exports = async function handler(req, res) {
       if (!title) return res.status(400).json({ error: "Missing title" });
       const result = await generateImplications(title, description, context, apiKey, systemPromptImplications, languageInstruction);
       return res.status(200).json(result);
+    }
+
+    if (mode === "link_themes") {
+      const result = await linkThemes(guidelines, themas, apiKey, languageInstruction);
+      return res.status(200).json({ links: result });
     }
 
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });

@@ -365,6 +365,9 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   // Per-guideline implications loading: { [id]: bool }
   const [implLoadings, setImplLoadings] = useState({});
 
+  // Auto-link thema's loading
+  const [linkingThemes, setLinkingThemes] = useState(false);
+
   // Debounce refs
   const guidelinesRef  = useRef([]);
   const pendingUpdates = useRef({});
@@ -566,6 +569,40 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     }
   }, [guidelines, themas, core, canvasId, appPrompt, t]);
 
+  // ── AI: Auto-link principes aan strategische thema's ─────────────────────
+  const handleLinkThemes = useCallback(async () => {
+    if (!themas.length || !guidelines.length) return;
+    setLinkingThemes(true);
+    try {
+      const res  = await apiFetch("/api/guidelines", {
+        method: "POST",
+        body: JSON.stringify({
+          mode: "link_themes",
+          guidelines: guidelines.map(g => ({ id: g.id, title: g.title, description: g.description, segment: g.segment })),
+          themas: themas.map(th => ({ id: th.id, title: th.title })),
+          languageInstruction: t("ai.language"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      const { links } = data;
+      // Pas toe: voeg AI-links samen met bestaande (verwijder nooit bestaande koppelingen)
+      setGuidelines(prev => prev.map(g => {
+        const suggested = links[g.id];
+        if (!suggested || suggested.length === 0) return g;
+        const existing = Array.isArray(g.linked_themes) ? g.linked_themes : [];
+        const merged   = [...new Set([...existing, ...suggested])];
+        if (merged.length === existing.length && merged.every(id => existing.includes(id))) return g; // geen wijziging
+        scheduleDbSave(g.id, { linked_themes: merged });
+        return { ...g, linked_themes: merged };
+      }));
+    } catch (err) {
+      console.error("[linkThemes]", err.message);
+    } finally {
+      setLinkingThemes(false);
+    }
+  }, [guidelines, themas, t, scheduleDbSave]);
+
   // ── Per-segment memoized handlers ─────────────────────────────────────────
   const segmentHandlers = useMemo(() =>
     SEGMENTS.reduce((acc, seg) => ({
@@ -655,9 +692,22 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
 
           {/* Paneel 2: Strategische Thema's */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
-              Strategische Thema's
-            </p>
+            <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d]">
+                Strategische Thema's
+              </p>
+              {themas.length > 0 && guidelines.length > 0 && (
+                <button
+                  onClick={handleLinkThemes}
+                  disabled={linkingThemes}
+                  title="AI koppelt alle principes automatisch aan de meest passende thema's"
+                  className="flex items-center gap-1 text-[9px] font-bold text-[#1a365d]/50 hover:text-[#1a365d] border border-[#1a365d]/20 hover:border-[#1a365d]/40 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
+                >
+                  <Wand2 size={9} />
+                  {linkingThemes ? "Bezig…" : "Auto-link"}
+                </button>
+              )}
+            </div>
             {themas.length === 0 ? (
               <p className="text-xs text-slate-300 italic">Geen thema's — voeg ze toe in het Strategie Werkblad</p>
             ) : (
