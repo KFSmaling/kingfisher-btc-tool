@@ -1,4 +1,5 @@
 import { supabase } from "../../services/supabaseClient";
+import { apiFetch } from "./apiClient";
 
 /**
  * Upload een bronbestand naar Supabase Storage (bucket: 'documents').
@@ -122,7 +123,7 @@ export async function indexDocumentChunks(uploadId, canvasId, rawText, onProgres
 
     let embeddings;
     try {
-      const embRes = await fetch("/api/embed", {
+      const embRes = await apiFetch("/api/embed", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ texts }),

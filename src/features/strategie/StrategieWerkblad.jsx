@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
 import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText, Sparkles, RefreshCw } from "lucide-react";
+import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
@@ -597,7 +598,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     if (core.kernwaarden?.length) contextParts.push(`Kernwaarden: ${Array.isArray(core.kernwaarden) ? core.kernwaarden.join(", ") : core.kernwaarden}`);
     const organizationContext = contextParts.length > 0 ? contextParts.join("\n") : undefined;
 
-    const res = await fetch("/api/magic", {
+    const res = await apiFetch("/api/magic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         field: fieldKey, chunks: [], isArray, heavy: false,
@@ -620,7 +621,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     setMagicFor(fieldKey, { loading: true, suggestion: null, error: null });
     try {
       const query = FIELD_QUERIES[fieldKey] || fieldKey;
-      const embRes = await fetch("/api/embed", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ texts: [query] }) });
+      const embRes = await apiFetch("/api/embed", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ texts: [query] }) });
       if (!embRes.ok) throw new Error("Embedding mislukt");
       const { embeddings } = await embRes.json();
       const { data: chunks, error: searchErr } = await searchDocumentChunks(embeddings[0], canvasId, matchCount);
@@ -644,7 +645,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       // Normale RAG aanroep
       const citations = [...new Set(chunks.map(c => c.file_name).filter(Boolean))];
       const resolvedFieldInstruction = appPrompt(`magic.field.${fieldKey}`) || undefined;
-      const magicRes = await fetch("/api/magic", {
+      const magicRes = await apiFetch("/api/magic", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           field: fieldKey, chunks, isArray, heavy: isHeavy,
@@ -677,7 +678,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     if (!text) return;
     setMagicFor(fieldKey, { loading: true });
     try {
-      const res = await fetch("/api/improve", {
+      const res = await apiFetch("/api/improve", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ text, preset, field: fieldKey }),
       });
@@ -695,7 +696,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     setAnalysisLoading(true);
     setAnalysisError(null);
     try {
-      const res = await fetch("/api/strategy", {
+      const res = await apiFetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -803,7 +804,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     const loadingMsg = THEME_LOADING_MSGS[Math.floor(Math.random() * THEME_LOADING_MSGS.length)];
     setThemaDraft({ loading: true, loadingMsg, lines: [] });
     try {
-      const res = await fetch("/api/strategy", {
+      const res = await apiFetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -845,7 +846,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       const loadingMsg = KSF_KPI_LOADING_MSGS[Math.floor(Math.random() * KSF_KPI_LOADING_MSGS.length)];
       setKsfKpiDrafts(prev => ({ ...prev, [thema.id]: { loading: true, loadingMsg } }));
       try {
-        const res = await fetch("/api/strategy", {
+        const res = await apiFetch("/api/strategy", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mode: "ksf_kpi", thema: thema.title, core, items,
@@ -869,7 +870,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     const loadingMsg = KSF_KPI_LOADING_MSGS[Math.floor(Math.random() * KSF_KPI_LOADING_MSGS.length)];
     setKsfKpiDrafts(prev => ({ ...prev, [themaId]: { loading: true, loadingMsg } }));
     try {
-      const res = await fetch("/api/strategy", {
+      const res = await apiFetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

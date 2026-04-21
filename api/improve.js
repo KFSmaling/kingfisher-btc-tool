@@ -12,8 +12,12 @@ const PRESETS = {
   financieel:    "Herschrijf de tekst met een expliciete focus op financiële impact, ROI, kostenreductie of groeipercentages. Voeg kwantitatieve taal toe waar passend.",
 };
 
+const { requireAuth } = require("./_auth");
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const user = await requireAuth(req, res);
+  if (!user) return;
   const { text, preset, field, presetInstruction } = req.body || {};
   if (!text || !preset) return res.status(400).json({ error: "Ontbrekende parameters: text en preset zijn vereist" });
 

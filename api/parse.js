@@ -3,8 +3,12 @@
  * Kingfisher & Partners — April 2026
  */
 
+const { requireAuth } = require("./_auth");
+
 const handler = async function (req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const user = await requireAuth(req, res);
+  if (!user) return;
 
   const { base64, filename } = req.body;
   if (!base64 || !filename) return res.status(400).json({ error: "Missing base64 or filename" });

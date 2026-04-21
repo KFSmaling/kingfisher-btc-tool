@@ -71,8 +71,12 @@ function buildContext(chunks) {
   }).join("\n\n---\n\n");
 }
 
+const { requireAuth } = require("./_auth");
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const user = await requireAuth(req, res);
+  if (!user) return;
 
   const {
     field, chunks = [], existingText = "", isArray = false, heavy = false,
