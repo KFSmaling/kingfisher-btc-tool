@@ -30,16 +30,16 @@ const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete
     <div className={`grid ${isKsf ? "grid-cols-[1fr_20px]" : "grid-cols-[1fr_90px_90px_20px]"} gap-1.5 items-center group`}>
       <input value={item.description} onChange={e => onChange({ ...item, description: e.target.value })}
         placeholder="Omschrijving…"
-        className="text-[13px] bg-white border border-slate-200 rounded px-2.5 py-1.5 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
+        className="text-base bg-white border border-slate-200 rounded px-3 py-2 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
       {!isKsf && (
         <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
           placeholder="Huidig"
-          className="text-[13px] bg-white border border-slate-200 rounded px-2 py-1.5 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
+          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
       )}
       {!isKsf && (
         <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
           placeholder="Target"
-          className="text-[13px] bg-white border border-slate-200 rounded px-2 py-1.5 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
+          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
       )}
       <button onClick={onDelete}
         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
@@ -65,15 +65,15 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
   const loadingMsg = ksfKpiDraft?.loadingMsg || KSF_KPI_LOADING_MSGS[0];
 
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
+    <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
-        <span className="text-[10px] font-black text-[#1a365d]/60 uppercase tracking-widest w-5 flex-shrink-0">{index + 1}</span>
+      <div className="flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-200">
+        <span className="text-xs font-black text-[#1a365d]/60 uppercase tracking-widest w-5 flex-shrink-0">{index + 1}</span>
         <input
           value={thema.title}
           onChange={e => onTitleChange(e.target.value)}
           placeholder={`Strategisch Thema ${index + 1}…`}
-          className="flex-1 text-[15px] font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
+          className="flex-1 text-base font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300 placeholder:font-normal"
         />
         {/* KSF/KPI genereren knop */}
         {onGenerateKsfKpi && thema.title?.trim() && (
@@ -101,7 +101,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
 
       {/* Body */}
       {open && (
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-8 py-6 space-y-6">
 
           {/* KSF/KPI Draft panel — volle breedte */}
           {ksfKpiDraft && (
@@ -163,12 +163,12 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
           )}
 
           {/* KSF + KPI naast elkaar */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-8">
 
             {/* KSF kolom */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                <h5 className="text-[11px] font-black uppercase tracking-widest text-[#1a365d]">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h5 className="text-sm font-black uppercase tracking-widest text-[#1a365d]">
                   KSF — Succesfactoren <span className="font-normal text-slate-400">({ksfs.length}/3)</span>
                 </h5>
                 {ksfs.length < 3 && (
@@ -193,9 +193,9 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             </div>
 
             {/* KPI kolom */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                <h5 className="text-[11px] font-black uppercase tracking-widest text-[#2c7a4b]">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h5 className="text-sm font-black uppercase tracking-widest text-[#2c7a4b]">
                   KPI — Indicatoren <span className="font-normal text-slate-400">({kpis.length}/3)</span>
                 </h5>
                 {kpis.length < 3 && (
@@ -278,17 +278,17 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
   };
 
   const tagColors = {
-    kans:          "bg-emerald-50 border-l-emerald-400",
-    sterkte:       "bg-blue-50 border-l-blue-400",
-    bedreiging:    "bg-red-50 border-l-red-400",
-    zwakte:        "bg-orange-50 border-l-orange-400",
-    niet_relevant: "bg-slate-50 border-l-slate-200",
+    kans:          "border-l-emerald-400",
+    sterkte:       "border-l-blue-400",
+    bedreiging:    "border-l-red-400",
+    zwakte:        "border-l-orange-400",
+    niet_relevant: "border-l-slate-200",
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h4 className="text-[13px] font-semibold text-slate-600">{title}</h4>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between sticky top-0 bg-slate-50 py-2 z-10">
+        <h4 className="text-base font-semibold text-slate-700">{title}</h4>
         {onMagic && <WandButton onClick={onMagic} loading={magicResult?.loading} disabled={proposedLines.length > 0} />}
       </div>
 
@@ -358,7 +358,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
       <div className="space-y-1.5">
         {items.map(item => (
           <div key={item.id}
-            className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-3 py-2 ${tagColors[item.tag] || tagColors.niet_relevant}`}>
+            className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-4 py-3 bg-white shadow-sm ${tagColors[item.tag] || tagColors.niet_relevant}`}>
             <p className="flex-1 text-xs text-slate-700 leading-relaxed">{item.content}</p>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} allowedKeys={allowedTagKeys} />
@@ -404,7 +404,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
     <div className="space-y-1.5">
       {/* Label + knoppen */}
       <div className="flex items-center justify-between gap-2">
-        <label className="text-[13px] font-semibold text-slate-600">{label}</label>
+        <label className="text-base font-semibold text-slate-700">{label}</label>
         <div className="flex items-center gap-1.5">
           {/* Improve dropdown — alleen als er tekst is */}
           {value && onImprove && (
@@ -441,14 +441,14 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
           rows={rows}
-          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+          className="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
         />
       ) : (
         <input
           value={value || ""}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
-          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
+          className="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
         />
       )}
 
@@ -1054,16 +1054,16 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       )}
 
       {/* ── Scrollable body ── */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-10">
+      <div className="flex-1 overflow-y-auto px-8 py-12 space-y-10">
 
         {/* SECTIE 1: IDENTITEIT */}
-        <section className="space-y-5">
+        <section className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">1</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#1a365d]">{appLabel("strat.section.identiteit", "Identiteit")}</h3>
+            <div className="w-8 h-8 rounded-full bg-[#1a365d] text-white text-xs font-black flex items-center justify-center flex-shrink-0">1</div>
+            <h3 className="text-2xl font-bold text-[#1a365d]">{appLabel("strat.section.identiteit", "Identiteit")}</h3>
             <div className="flex-1 h-px bg-[#1a365d]/15" />
           </div>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-8">
             <WerkbladTextField
               label={appLabel("strat.field.missie", "Missie")}
               fieldKey="missie"
@@ -1108,7 +1108,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[13px] font-semibold text-slate-600">{appLabel("strat.field.kernwaarden", "Kernwaarden")}</label>
+                <label className="text-base font-semibold text-slate-700">{appLabel("strat.field.kernwaarden", "Kernwaarden")}</label>
                 <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} disabled={!!drafts.kernwaarden} />
               </div>
               <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
@@ -1170,15 +1170,18 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           </div>
         </section>
 
+        {/* ── Green Horizon — scheidingslijn identiteit / werkgebied ── */}
+        <div className="border-t-4 border-[#8dc63f] -mx-8" />
+
         {/* SECTIE 2: ANALYSE */}
-        <section className="space-y-5">
+        <section className="space-y-6 pb-6">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#00AEEF] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">2</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#00AEEF]">{appLabel("strat.section.analyse", "Analyse")}</h3>
+            <div className="w-8 h-8 rounded-full bg-[#00AEEF] text-white text-xs font-black flex items-center justify-center flex-shrink-0">2</div>
+            <h3 className="text-2xl font-bold text-[#00AEEF]">{appLabel("strat.section.analyse", "Analyse")}</h3>
             <div className="flex-1 h-px bg-[#00AEEF]/20" />
-            <p className="text-[9px] text-slate-400 flex-shrink-0">Tag elk item voor de SWOT-rapportage</p>
+            <p className="text-xs text-slate-400 flex-shrink-0">Tag elk item voor de SWOT-rapportage</p>
           </div>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-8">
             <AnalyseSection
               title={appLabel("strat.field.extern", "Externe Ontwikkelingen")}
               type="extern"
@@ -1205,12 +1208,12 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </section>
 
         {/* SECTIE 3: EXECUTIE 7-3-3 */}
-        <section className="space-y-5 pb-8">
+        <section className="space-y-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#8dc63f] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">3</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#2c7a4b]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
+            <div className="w-8 h-8 rounded-full bg-[#8dc63f] text-white text-xs font-black flex items-center justify-center flex-shrink-0">3</div>
+            <h3 className="text-2xl font-bold text-[#2c7a4b]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
             <div className="flex-1 h-px bg-[#8dc63f]/30" />
-            <p className="text-[9px] text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
+            <p className="text-xs text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
             {themas.length < 7 && (
               <button
                 onClick={generateThemas}
