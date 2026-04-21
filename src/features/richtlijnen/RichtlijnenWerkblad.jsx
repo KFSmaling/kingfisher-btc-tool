@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import {
   ArrowLeft, Plus, Trash2, Wand2, X, Sparkles, FileText, RefreshCw,
-  BookOpen, Link2, RotateCcw,
+  BookOpen, Link2, RotateCcw, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
@@ -83,106 +83,125 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
   onChangeField, onChangeImplication, onToggleTheme, onDelete,
   implLoading, onGenerateImplications,
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const linked = Array.isArray(guideline.linked_themes) ? guideline.linked_themes : [];
   const impl   = guideline.implications || EMPTY_IMPL;
 
-  return (
-    <div className={`bg-white rounded-2xl border border-slate-200 border-l-4 ${segment.borderL} shadow-sm`}>
+  // Thema badge met custom tooltip
+  const ThemaBadge = ({ t, i }) => {
+    const isActive = linked.includes(t.id);
+    return (
+      <div className="relative group/badge">
+        <button
+          onClick={() => onToggleTheme(t.id)}
+          className={`text-xs font-black rounded-full w-7 h-7 flex items-center justify-center transition-all
+            ${isActive
+              ? segment.badgeActive + " shadow-sm ring-2 ring-white"
+              : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+        >
+          {i + 1}
+        </button>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-slate-800 text-white text-[11px] font-medium rounded-lg whitespace-nowrap opacity-0 group-hover/badge:opacity-100 transition-opacity pointer-events-none z-20 shadow-lg">
+          {t.title}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+        </div>
+      </div>
+    );
+  };
 
-      {/* ── Titel ── */}
-      <div className="flex items-start gap-3 px-5 pt-5 pb-3">
+  return (
+    <div className={`bg-white rounded-2xl border border-slate-200 border-l-4 ${segment.borderL} shadow-sm overflow-hidden`}>
+
+      {/* ── Titel + collapse toggle ── */}
+      <div className="flex items-center gap-2 px-4 pt-4 pb-3">
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className="text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0"
+          title={collapsed ? "Uitklappen" : "Inklappen"}
+        >
+          {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+        </button>
         <input
           value={guideline.title}
           onChange={e => onChangeField("title", e.target.value)}
           placeholder="Principe titel…"
-          className="flex-1 text-lg font-semibold text-slate-800 bg-transparent border-none focus:outline-none placeholder:text-slate-300 leading-snug"
+          className="flex-1 text-[15px] font-semibold text-slate-800 bg-transparent border-none focus:outline-none placeholder:text-slate-300 leading-snug"
         />
+        {/* Thema-badges altijd zichtbaar in de titelbalk */}
+        {themas.length > 0 && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {themas.map((t, i) => <ThemaBadge key={t.id} t={t} i={i} />)}
+          </div>
+        )}
         <button
           onClick={onDelete}
-          className="text-slate-200 hover:text-red-400 transition-colors flex-shrink-0 mt-1"
+          className="text-slate-200 hover:text-red-400 transition-colors flex-shrink-0 ml-1"
           title="Principe verwijderen"
         >
-          <Trash2 size={15} />
+          <Trash2 size={14} />
         </button>
       </div>
 
-      {/* ── Thema-badges (tooltip via title attribuut) ── */}
-      {themas.length > 0 && (
-        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
-          {themas.map((t, i) => {
-            const isActive = linked.includes(t.id);
-            return (
-              <button
-                key={t.id}
-                onClick={() => onToggleTheme(t.id)}
-                title={t.title}   // volledige naam als tooltip
-                className={`text-xs font-black rounded-full w-6 h-6 flex items-center justify-center transition-all ring-0
-                  ${isActive
-                    ? segment.badgeActive + " shadow-sm"
-                    : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
-              >
-                {i + 1}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* ── Uitklapbaar deel ── */}
+      {!collapsed && (
+        <>
+          <div className="mx-4 h-px bg-slate-100 mb-4" />
 
-      <div className="mx-5 h-px bg-slate-100 mb-4" />
+          {/* ── Toelichting & Motivatie ── */}
+          <div className="px-4 pb-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+              Toelichting &amp; Motivatie
+            </p>
+            <textarea
+              value={guideline.description || ""}
+              onChange={e => onChangeField("description", e.target.value)}
+              placeholder="Waarom dit principe? Wat is de strategische motivatie?"
+              rows={4}
+              className={`w-full text-sm text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 resize-y focus:outline-none ${segment.focusRing} placeholder:text-slate-300 leading-relaxed`}
+            />
+          </div>
 
-      {/* ── Toelichting & Motivatie ── */}
-      <div className="px-5 pb-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-          Toelichting &amp; Motivatie
-        </p>
-        <textarea
-          value={guideline.description || ""}
-          onChange={e => onChangeField("description", e.target.value)}
-          placeholder="Waarom dit principe? Wat is de strategische motivatie?"
-          rows={4}
-          className={`w-full text-base text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 resize-y focus:outline-none ${segment.focusRing} placeholder:text-slate-300 leading-relaxed`}
-        />
-      </div>
-
-      {/* ── Stop · Start · Continue ── */}
-      <div className="px-5 pb-5">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Stop · Start · Continue
-          </p>
-          {guideline.title?.trim() && (
-            <button
-              onClick={onGenerateImplications}
-              disabled={implLoading}
-              className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[#1a365d] border border-slate-200 hover:border-[#1a365d]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
-              title="AI Stop/Start/Continue genereren"
-            >
-              <Wand2 size={9} />
-              {implLoading ? "…" : "AI"}
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { key: "stop",     label: "Stop",     cls: "text-red-500",   bg: "bg-red-50",    border: "border-red-100",    focus: "focus:border-red-300"    },
-            { key: "start",    label: "Start",    cls: "text-green-600", bg: "bg-green-50",  border: "border-green-100",  focus: "focus:border-green-300"  },
-            { key: "continue", label: "Continue", cls: "text-blue-600",  bg: "bg-blue-50",   border: "border-blue-100",   focus: "focus:border-blue-300"   },
-          ].map(({ key, label, cls, bg, border, focus }) => (
-            <div key={key}>
-              <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${cls}`}>
-                {label}
+          {/* ── Stop · Start · Continue ── */}
+          <div className="px-4 pb-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                Stop · Start · Continue
               </p>
-              <textarea
-                value={impl[key] || ""}
-                onChange={e => onChangeImplication(key, e.target.value)}
-                placeholder={`${label}…`}
-                className={`w-full text-sm text-slate-700 ${bg} border ${border} rounded-lg px-3 py-2 resize-y focus:outline-none ${focus} placeholder:text-slate-300 leading-relaxed`}
-                style={{ minHeight: "100px" }}
-              />
+              {guideline.title?.trim() && (
+                <button
+                  onClick={onGenerateImplications}
+                  disabled={implLoading}
+                  className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[#1a365d] border border-slate-200 hover:border-[#1a365d]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
+                  title="AI Stop/Start/Continue genereren"
+                >
+                  <Wand2 size={9} />
+                  {implLoading ? "…" : "AI"}
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { key: "stop",     label: "Stop",     cls: "text-red-500",   bg: "bg-red-50",   border: "border-red-100",   focus: "focus:border-red-300"   },
+                { key: "start",    label: "Start",    cls: "text-green-600", bg: "bg-green-50", border: "border-green-100", focus: "focus:border-green-300" },
+                { key: "continue", label: "Continue", cls: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-100",  focus: "focus:border-blue-300"  },
+              ].map(({ key, label, cls, bg, border, focus }) => (
+                <div key={key}>
+                  <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${cls}`}>
+                    {label}
+                  </p>
+                  <textarea
+                    value={impl[key] || ""}
+                    onChange={e => onChangeImplication(key, e.target.value)}
+                    placeholder={`${label}…`}
+                    className={`w-full text-sm text-slate-700 ${bg} border ${border} rounded-lg px-3 py-2 resize-y focus:outline-none ${focus} placeholder:text-slate-300 leading-relaxed`}
+                    style={{ minHeight: "100px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 });
@@ -609,86 +628,69 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
         </div>
       </div>
 
-      {/* ── Context-balk: Ambitie + Thema-badges ── */}
-      <div className="flex-shrink-0 bg-[#1a365d] px-8 py-3 flex items-center gap-4 overflow-x-auto">
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">
-            Stip op de horizon
-          </span>
-          <span
-            className="text-sm font-semibold text-white max-w-sm truncate"
-            title={core.ambitie}
-          >
-            {core.ambitie || <span className="italic text-white/30 font-normal">geen ambitie ingevuld</span>}
-          </span>
-        </div>
-        {themas.length > 0 && (
-          <>
-            <div className="h-5 w-px bg-white/20 flex-shrink-0" />
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {themas.map((t, i) => (
-                <span
-                  key={t.id}
-                  title={t.title}
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold bg-white/10 text-white/80 border border-white/20 rounded-full px-2 py-0.5 whitespace-nowrap"
-                >
-                  <span className="font-black text-[9px] text-[#8dc63f]">{i + 1}</span>
-                  <span className="max-w-[90px] truncate">{t.title}</span>
-                </span>
-              ))}
-            </div>
-          </>
-        )}
-        {themas.length === 0 && (
-          <span className="text-[10px] text-white/30 italic">
-            Geen thema's beschikbaar — voeg ze toe in het Strategie Werkblad
-          </span>
-        )}
+      {/* ── Stip op de horizon — volle breedte ── */}
+      <div className="flex-shrink-0 bg-[#1a365d] px-8 py-4">
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1">
+          Stip op de horizon
+        </p>
+        <p className="text-base font-semibold text-white leading-snug">
+          {core.ambitie || <span className="italic text-white/30 font-normal text-sm">geen ambitie ingevuld — voeg toe in het Strategie Werkblad</span>}
+        </p>
       </div>
 
-      {/* ── Instructie-strip ── */}
+      {/* ── Instructie + Thema's — twee panelen ── */}
       <div className="flex-shrink-0 bg-white border-b border-slate-200 px-8 py-5">
-        <div className="flex items-start justify-between gap-6 max-w-6xl">
-          <p className="text-sm text-slate-600 leading-relaxed max-w-sm">
-            <span className="font-semibold text-[#1a365d]">Leidende Principes</span> vertalen uw
-            strategie naar concreet dagelijks gedrag. Ze sturen keuzes en creëren consistentie
-            tussen Strategie en Operatie.
-          </p>
-          <div className="flex items-start gap-8 flex-shrink-0">
-            {[
-              {
-                Icon: BookOpen,
-                color: "text-[#1a365d]",
-                bg:    "bg-[#1a365d]/8",
-                title: "Formuleer principes",
-                desc:  "Titel en strategische motivatie per segment",
-              },
-              {
-                Icon: Link2,
-                color: "text-[#8dc63f]",
-                bg:    "bg-[#8dc63f]/10",
-                title: "Koppel thema's",
-                desc:  "Klik de nummerbadges om te activeren",
-              },
-              {
-                Icon: RotateCcw,
-                color: "text-orange-500",
-                bg:    "bg-orange-50",
-                title: "Stop · Start · Continue",
-                desc:  "Vertaal principes naar concreet gedrag",
-              },
-            ].map(({ Icon, color, bg, title, desc }) => (
-              <div key={title} className="flex items-start gap-2.5">
-                <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                  <Icon size={15} className={color} />
+        <div className="grid grid-cols-2 gap-5">
+
+          {/* Links: uitleg + 3 stappen */}
+          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <p className="text-sm text-slate-600 leading-relaxed mb-4">
+              <span className="font-semibold text-[#1a365d]">Leidende Principes</span> vertalen uw
+              strategie naar concreet dagelijks gedrag. Ze sturen keuzes en creëren consistentie
+              tussen Strategie en Operatie.
+            </p>
+            <div className="flex items-start gap-6">
+              {[
+                { Icon: BookOpen,  color: "text-[#1a365d]",   bg: "bg-[#1a365d]/8",  title: "Formuleer",      desc: "Titel + motivatie per segment"  },
+                { Icon: Link2,     color: "text-[#8dc63f]",   bg: "bg-[#8dc63f]/10", title: "Koppel thema's", desc: "Klik de nummerbadges"            },
+                { Icon: RotateCcw, color: "text-orange-500",  bg: "bg-orange-50",    title: "Stop · Start · Continue", desc: "Concreet gedrag"       },
+              ].map(({ Icon, color, bg, title, desc }) => (
+                <div key={title} className="flex items-start gap-2">
+                  <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                    <Icon size={13} className={color} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-700">{title}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-700">{title}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{desc}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* Rechts: strategische thema's */}
+          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+              Strategische Thema's
+            </p>
+            {themas.length === 0 ? (
+              <p className="text-sm text-slate-300 italic">
+                Geen thema's — voeg ze toe in het Strategie Werkblad
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {themas.map((th, i) => (
+                  <div key={th.id} className="flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-[#1a365d] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-slate-700 font-medium leading-tight">{th.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
