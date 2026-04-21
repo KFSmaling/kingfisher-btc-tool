@@ -1,15 +1,18 @@
 /**
- * RichtlijnenWerkblad — Swimlane dashboard voor Leidende Principes
+ * RichtlijnenWerkblad — Premium swimlane dashboard voor Leidende Principes
  * Kingfisher & Partners — April 2026
  *
- * Vier verticale swimlanes (Generiek · Klanten · Organisatie · IT)
+ * Vier verticale swimlanes · sticky headers · column-scroll
  * AI generatie per segment · Advies modal · Portrait onepager
  */
 
 import React, {
   useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense,
 } from "react";
-import { ArrowLeft, Plus, Trash2, Wand2, X, Sparkles, FileText, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft, Plus, Trash2, Wand2, X, Sparkles, FileText, RefreshCw,
+  BookOpen, Link2, RotateCcw,
+} from "lucide-react";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
@@ -20,50 +23,47 @@ import {
 import {
   loadStrategyCore, loadStrategicThemes,
 } from "../strategie/services/strategy.service";
+import { loadCanvasById } from "../../shared/services/canvas.service";
 
 const GuidelinesOnePager = lazy(() => import("./GuidelinesOnePager"));
 
 // ── Segment definities ────────────────────────────────────────────────────────
 const SEGMENTS = [
   {
-    key: "generiek",
-    label: "Generiek",
-    sublabel: "Strategie & Governance",
+    key:        "generiek",
+    label:      "Generiek",
+    sublabel:   "Strategie & Governance",
     headerBg:   "bg-[#1a365d]",
     borderL:    "border-l-[#1a365d]",
     badgeActive:"bg-[#1a365d] text-white",
-    colBg:      "bg-blue-50/40",
-    accent:     "#1a365d",
+    focusRing:  "focus:border-[#1a365d]/40",
   },
   {
-    key: "klanten",
-    label: "Klanten",
-    sublabel: "Markt & Dienstverlening",
+    key:        "klanten",
+    label:      "Klanten",
+    sublabel:   "Markt & Dienstverlening",
     headerBg:   "bg-orange-600",
     borderL:    "border-l-orange-500",
     badgeActive:"bg-orange-500 text-white",
-    colBg:      "bg-orange-50/40",
-    accent:     "#c2410c",
+    focusRing:  "focus:border-orange-400/40",
   },
   {
-    key: "organisatie",
-    label: "Organisatie",
-    sublabel: "Mens & Proces",
+    key:        "organisatie",
+    label:      "Organisatie",
+    sublabel:   "Mens & Proces",
     headerBg:   "bg-[#2c7a4b]",
     borderL:    "border-l-[#2c7a4b]",
     badgeActive:"bg-[#2c7a4b] text-white",
-    colBg:      "bg-green-50/40",
-    accent:     "#2c7a4b",
+    focusRing:  "focus:border-[#2c7a4b]/40",
   },
   {
-    key: "it",
-    label: "IT",
-    sublabel: "Technologie & Data",
+    key:        "it",
+    label:      "IT",
+    sublabel:   "Technologie & Data",
     headerBg:   "bg-purple-700",
     borderL:    "border-l-purple-600",
     badgeActive:"bg-purple-600 text-white",
-    colBg:      "bg-purple-50/40",
-    accent:     "#6b21a8",
+    focusRing:  "focus:border-purple-400/40",
   },
 ];
 
@@ -75,7 +75,7 @@ const GENERATE_MSGS = [
   "Richtinggevende kaders opstellen…",
 ];
 
-const EMPTY_IMPLICATIONS = { stop: "", start: "", continue: "" };
+const EMPTY_IMPL = { stop: "", start: "", continue: "" };
 
 // ── GuidelineKaart ─────────────────────────────────────────────────────────────
 const GuidelineKaart = React.memo(function GuidelineKaart({
@@ -84,40 +84,42 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
   implLoading, onGenerateImplications,
 }) {
   const linked = Array.isArray(guideline.linked_themes) ? guideline.linked_themes : [];
-  const impl   = guideline.implications || EMPTY_IMPLICATIONS;
+  const impl   = guideline.implications || EMPTY_IMPL;
 
   return (
-    <div className={`bg-white rounded-xl border border-slate-200 border-l-4 ${segment.borderL} shadow-sm overflow-hidden`}>
+    <div className={`bg-white rounded-2xl border border-slate-200 border-l-4 ${segment.borderL} shadow-sm`}>
 
-      {/* Title row */}
-      <div className="flex items-start gap-2 px-3 pt-3 pb-2">
+      {/* ── Titel ── */}
+      <div className="flex items-start gap-3 px-5 pt-5 pb-3">
         <input
           value={guideline.title}
           onChange={e => onChangeField("title", e.target.value)}
           placeholder="Principe titel…"
-          className="flex-1 text-sm font-semibold text-slate-700 bg-transparent border-none focus:outline-none placeholder:text-slate-300"
+          className="flex-1 text-lg font-semibold text-slate-800 bg-transparent border-none focus:outline-none placeholder:text-slate-300 leading-snug"
         />
         <button
           onClick={onDelete}
-          className="text-slate-200 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+          className="text-slate-200 hover:text-red-400 transition-colors flex-shrink-0 mt-1"
           title="Principe verwijderen"
         >
-          <Trash2 size={13} />
+          <Trash2 size={15} />
         </button>
       </div>
 
-      {/* Theme badge cloud */}
+      {/* ── Thema-badges (tooltip via title attribuut) ── */}
       {themas.length > 0 && (
-        <div className="px-3 pb-2 flex flex-wrap gap-1">
+        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
           {themas.map((t, i) => {
             const isActive = linked.includes(t.id);
             return (
               <button
                 key={t.id}
                 onClick={() => onToggleTheme(t.id)}
-                title={t.title}
-                className={`text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center transition-all
-                  ${isActive ? segment.badgeActive : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
+                title={t.title}   // volledige naam als tooltip
+                className={`text-xs font-black rounded-full w-6 h-6 flex items-center justify-center transition-all ring-0
+                  ${isActive
+                    ? segment.badgeActive + " shadow-sm"
+                    : "bg-slate-100 text-slate-400 hover:bg-slate-200"}`}
               >
                 {i + 1}
               </button>
@@ -126,31 +128,33 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
         </div>
       )}
 
-      <div className="mx-3 h-px bg-slate-100 mb-2" />
+      <div className="mx-5 h-px bg-slate-100 mb-4" />
 
-      {/* Description */}
-      <div className="px-3 pb-2">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+      {/* ── Toelichting & Motivatie ── */}
+      <div className="px-5 pb-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
           Toelichting &amp; Motivatie
         </p>
         <textarea
           value={guideline.description || ""}
           onChange={e => onChangeField("description", e.target.value)}
           placeholder="Waarom dit principe? Wat is de strategische motivatie?"
-          rows={3}
-          className="w-full text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-2 resize-none focus:outline-none focus:border-slate-300 placeholder:text-slate-300 leading-relaxed"
+          rows={4}
+          className={`w-full text-base text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 resize-y focus:outline-none ${segment.focusRing} placeholder:text-slate-300 leading-relaxed`}
         />
       </div>
 
-      {/* Stop / Start / Continue */}
-      <div className="px-3 pb-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Stop · Start · Continue</p>
+      {/* ── Stop · Start · Continue ── */}
+      <div className="px-5 pb-5">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Stop · Start · Continue
+          </p>
           {guideline.title?.trim() && (
             <button
               onClick={onGenerateImplications}
               disabled={implLoading}
-              className="flex items-center gap-1 text-[8px] font-bold text-slate-400 hover:text-[#1a365d] border border-slate-200 hover:border-[#1a365d]/30 rounded px-1.5 py-0.5 transition-colors disabled:opacity-40"
+              className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[#1a365d] border border-slate-200 hover:border-[#1a365d]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
               title="AI Stop/Start/Continue genereren"
             >
               <Wand2 size={9} />
@@ -160,18 +164,20 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
         </div>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { key: "stop",     label: "Stop",     labelCls: "text-red-500",   bg: "bg-red-50",   border: "border-red-100"   },
-            { key: "start",    label: "Start",    labelCls: "text-green-600", bg: "bg-green-50", border: "border-green-100" },
-            { key: "continue", label: "Continue", labelCls: "text-blue-600",  bg: "bg-blue-50",  border: "border-blue-100"  },
-          ].map(({ key, label, labelCls, bg, border }) => (
+            { key: "stop",     label: "Stop",     cls: "text-red-500",   bg: "bg-red-50",    border: "border-red-100",    focus: "focus:border-red-300"    },
+            { key: "start",    label: "Start",    cls: "text-green-600", bg: "bg-green-50",  border: "border-green-100",  focus: "focus:border-green-300"  },
+            { key: "continue", label: "Continue", cls: "text-blue-600",  bg: "bg-blue-50",   border: "border-blue-100",   focus: "focus:border-blue-300"   },
+          ].map(({ key, label, cls, bg, border, focus }) => (
             <div key={key}>
-              <p className={`text-[8px] font-black uppercase tracking-widest mb-1 ${labelCls}`}>{label}</p>
+              <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${cls}`}>
+                {label}
+              </p>
               <textarea
                 value={impl[key] || ""}
                 onChange={e => onChangeImplication(key, e.target.value)}
                 placeholder={`${label}…`}
-                rows={3}
-                className={`w-full text-[10px] text-slate-600 ${bg} border ${border} rounded px-2 py-1.5 resize-none focus:outline-none focus:border-slate-300 placeholder:text-slate-300 leading-relaxed`}
+                className={`w-full text-sm text-slate-700 ${bg} border ${border} rounded-lg px-3 py-2 resize-y focus:outline-none ${focus} placeholder:text-slate-300 leading-relaxed`}
+                style={{ minHeight: "100px" }}
               />
             </div>
           ))}
@@ -182,55 +188,61 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
 });
 
 // ── Generate Draft Panel ───────────────────────────────────────────────────────
-function GenerateDraftPanel({ draft, onAcceptOne, onAcceptAll, onReject, segment }) {
+function GenerateDraftPanel({ draft, onAcceptOne, onAcceptAll, onReject }) {
   if (!draft) return null;
   return (
-    <div className="mx-3 mt-3 border border-amber-300 rounded-xl overflow-hidden flex-shrink-0">
-      <div className="flex items-center justify-between bg-amber-50 px-3 py-2 border-b border-amber-200">
-        <span className="text-[9px] font-black uppercase tracking-widest text-amber-700">
+    <div className="mx-4 mt-4 border border-amber-300 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between bg-amber-50 px-4 py-2.5 border-b border-amber-200">
+        <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">
           {draft.loading
             ? `🪄 ${draft.msg}`
-            : `🪄 ${draft.guidelines.length} principes voorgesteld`}
+            : `🪄 ${(draft.guidelines || []).length} principes voorgesteld`}
         </span>
         {!draft.loading && (
           <div className="flex gap-1.5">
             <button onClick={onAcceptAll}
-              className="text-[9px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5">
+              className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-md px-2.5 py-1 transition-colors">
               Alle toevoegen
             </button>
             <button onClick={onReject}
-              className="text-[9px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5">
+              className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-md px-2.5 py-1 transition-colors">
               Weggooien
             </button>
           </div>
         )}
       </div>
       {draft.loading && (
-        <div className="px-3 py-3 text-[10px] text-amber-700 animate-pulse bg-white">{draft.msg}</div>
+        <div className="px-4 py-3 text-sm text-amber-700 animate-pulse bg-white">{draft.msg}</div>
       )}
-      {!draft.loading && (draft.guidelines || []).map((g, i) => (
-        <div key={i} className="group flex items-start gap-3 px-3 py-2.5 bg-white hover:bg-amber-50/30 border-b border-amber-100 last:border-0 transition-colors">
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-slate-700">{g.title}</p>
-            {g.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">{g.description}</p>}
-          </div>
-          <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
-            <button onClick={() => onAcceptOne(i)}
-              className="text-[9px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded px-2 py-0.5">
-              ✓
-            </button>
-            <button onClick={() => onReject(i)}
-              className="text-[9px] text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-1.5 py-0.5">
-              ×
-            </button>
-          </div>
-        </div>
-      ))}
+      {!draft.loading && (draft.error
+        ? <p className="px-4 py-3 text-sm text-red-500 bg-white">{draft.error}</p>
+        : (draft.guidelines || []).map((g, i) => (
+            <div key={i}
+              className="group flex items-start gap-3 px-4 py-3 bg-white hover:bg-amber-50/40 border-b border-amber-100 last:border-0 transition-colors">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-700 leading-snug">{g.title}</p>
+                {g.description && (
+                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{g.description}</p>
+                )}
+              </div>
+              <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5">
+                <button onClick={() => onAcceptOne(i)}
+                  className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md px-2 py-1 transition-colors">
+                  ✓
+                </button>
+                <button onClick={() => onReject(i)}
+                  className="text-[10px] text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded-md px-1.5 py-1 transition-colors">
+                  ×
+                </button>
+              </div>
+            </div>
+          ))
+      )}
     </div>
   );
 }
 
-// ── SwimLane ──────────────────────────────────────────────────────────────────
+// ── SwimLane — kolom met sticky header en column-scroll ────────────────────────
 function SwimLane({
   segment, guidelines, themas,
   onAdd, onDelete, onChangeField, onChangeImplication, onToggleTheme,
@@ -238,64 +250,69 @@ function SwimLane({
   implLoadings, onGenerateImplications,
 }) {
   return (
-    <div className={`flex flex-col border-r border-slate-200 last:border-r-0 ${segment.colBg} min-h-0`}>
+    <div className="border-r border-slate-200 last:border-r-0 bg-slate-50 overflow-y-auto">
 
-      {/* Column header */}
-      <div className={`flex items-center justify-between px-4 py-3 ${segment.headerBg} flex-shrink-0`}>
-        <div>
-          <h3 className="text-[11px] font-black uppercase tracking-widest text-white">{segment.label}</h3>
-          <p className="text-[9px] text-white/60 font-medium">{segment.sublabel}</p>
+      {/* Sticky kolomheader */}
+      <div className={`sticky top-0 z-10 ${segment.headerBg} shadow-md`}>
+        <div className="flex items-center justify-between px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-white leading-tight">{segment.label}</h3>
+            <p className="text-xs text-white/60 font-medium mt-0.5">{segment.sublabel}</p>
+          </div>
+          <button
+            onClick={onGenerate}
+            disabled={generateDraft?.loading}
+            title={`AI principes genereren voor ${segment.label}`}
+            className="flex items-center gap-1.5 text-[10px] font-bold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+          >
+            <Wand2 size={11} />
+            {generateDraft?.loading ? "…" : "Genereer"}
+          </button>
         </div>
-        <button
-          onClick={onGenerate}
-          disabled={generateDraft?.loading}
-          title={`Genereer principes voor ${segment.label}`}
-          className="flex items-center gap-1.5 text-[9px] font-bold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50"
-        >
-          <Wand2 size={10} />
-          {generateDraft?.loading ? "…" : "Genereer"}
-        </button>
       </div>
 
       {/* Draft panel */}
       <GenerateDraftPanel
         draft={generateDraft}
-        segment={segment}
         onAcceptOne={onAcceptOneDraft}
         onAcceptAll={onAcceptAllDraft}
         onReject={onRejectDraft}
       />
 
-      {/* Cards */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      {/* Kaarten — natural height, geen flex-1 */}
+      <div className="p-4 space-y-4">
         {guidelines.map(g => (
           <GuidelineKaart
             key={g.id}
             guideline={g}
             themas={themas}
             segment={segment}
-            onChangeField={(field, value)  => onChangeField(g.id, field, value)}
+            onChangeField={(field, val)   => onChangeField(g.id, field, val)}
             onChangeImplication={(sk, val) => onChangeImplication(g.id, sk, val)}
-            onToggleTheme={(themaId)       => onToggleTheme(g.id, themaId)}
+            onToggleTheme={themaId         => onToggleTheme(g.id, themaId)}
             onDelete={()                   => onDelete(g.id)}
             implLoading={!!implLoadings[g.id]}
             onGenerateImplications={()     => onGenerateImplications(g.id)}
           />
         ))}
         {guidelines.length === 0 && !generateDraft && (
-          <p className="text-[10px] text-slate-300 italic text-center py-8">
-            Klik 🪄 Genereer voor AI-principes<br/>of voeg er handmatig een toe
-          </p>
+          <div className="py-10 text-center">
+            <div className="text-3xl mb-3 opacity-20">✦</div>
+            <p className="text-sm text-slate-400 font-medium">Nog geen principes</p>
+            <p className="text-xs text-slate-300 mt-1">
+              Klik 🪄 Genereer voor AI-voorstellen<br />of voeg er handmatig een toe
+            </p>
+          </div>
         )}
       </div>
 
-      {/* Add button */}
-      <div className="p-3 border-t border-slate-200/80 flex-shrink-0">
+      {/* Toevoeg-knop — direct onder laatste kaart */}
+      <div className="px-4 pb-6">
         <button
           onClick={onAdd}
-          className="w-full py-2 text-[10px] font-semibold text-slate-400 hover:text-slate-600 border border-dashed border-slate-200 hover:border-slate-300 rounded-lg flex items-center justify-center gap-1.5 transition-colors bg-white/60 hover:bg-white"
+          className="w-full py-3 text-sm font-semibold text-slate-400 hover:text-slate-600 border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-center gap-2 transition-colors bg-white/80 hover:bg-white"
         >
-          <Plus size={11} /> Principe toevoegen
+          <Plus size={14} /> Principe toevoegen
         </button>
       </div>
     </div>
@@ -304,8 +321,8 @@ function SwimLane({
 
 // ── RichtlijnenWerkblad (main export) ─────────────────────────────────────────
 export default function RichtlijnenWerkblad({ canvasId, onClose }) {
-  const { t }              = useLang();
-  const { prompt: appPrompt } = useAppConfig();
+  const { t }                  = useLang();
+  const { prompt: appPrompt }  = useAppConfig();
 
   const [mounted,  setMounted]  = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -323,7 +340,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError,   setAnalysisError]   = useState(null);
 
-  // Per-segment generate drafts: { [segKey]: { loading, msg, guidelines: [] } }
+  // Per-segment generate drafts: { [segKey]: { loading, msg, guidelines[], error? } }
   const [generateDrafts, setGenerateDrafts] = useState({});
 
   // Per-guideline implications loading: { [id]: bool }
@@ -342,7 +359,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Load data
+  // Load all data
   useEffect(() => {
     if (!canvasId) { setIsLoaded(true); return; }
     Promise.all([
@@ -350,35 +367,18 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       loadStrategicThemes(canvasId),
       loadStrategyCore(canvasId),
       loadGuidelineAnalysis(canvasId),
-    ]).then(([{ data: gl }, { data: th }, { data: co }, { data: ga }]) => {
+      loadCanvasById(canvasId),
+    ]).then(([{ data: gl }, { data: th }, { data: co }, { data: ga }, { data: cv }]) => {
       setGuidelines(gl || []);
       setThemas(th || []);
-      if (co) {
-        setCore({
-          missie:      co.missie      || "",
-          visie:       co.visie       || "",
-          ambitie:     co.ambitie     || "",
-          kernwaarden: co.kernwaarden || [],
-        });
-      }
+      if (co) setCore({ missie: co.missie || "", visie: co.visie || "", ambitie: co.ambitie || "", kernwaarden: co.kernwaarden || [] });
       if (ga?.recommendations) setAnalysis(ga.recommendations);
+      if (cv?.name) setCanvasName(cv.name);
       setIsLoaded(true);
     });
   }, [canvasId]);
 
-  // Haal canvas naam op voor onepager
-  useEffect(() => {
-    const stored = localStorage.getItem("btc.lastCanvasId");
-    if (stored) {
-      import("../../shared/services/canvas.service").then(({ loadCanvasById }) => {
-        loadCanvasById(canvasId).then(({ data }) => {
-          if (data?.name) setCanvasName(data.name);
-        });
-      });
-    }
-  }, [canvasId]);
-
-  // ── Debounced save helper ──────────────────────────────────────────────────
+  // ── Debounced save ────────────────────────────────────────────────────────
   const scheduleDbSave = useCallback((id, patch) => {
     pendingUpdates.current[id] = { ...(pendingUpdates.current[id] || {}), ...patch };
     clearTimeout(saveTimers.current[id]);
@@ -389,7 +389,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     }, 800);
   }, []);
 
-  // ── Field change handlers ──────────────────────────────────────────────────
+  // ── Field handlers ────────────────────────────────────────────────────────
   const handleChangeField = useCallback((id, field, value) => {
     setGuidelines(prev => prev.map(g => g.id === id ? { ...g, [field]: value } : g));
     scheduleDbSave(id, { [field]: value });
@@ -398,7 +398,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   const handleChangeImplication = useCallback((id, subKey, value) => {
     setGuidelines(prev => prev.map(g => {
       if (g.id !== id) return g;
-      const newImpl = { ...(g.implications || EMPTY_IMPLICATIONS), [subKey]: value };
+      const newImpl = { ...(g.implications || EMPTY_IMPL), [subKey]: value };
       scheduleDbSave(id, { implications: newImpl });
       return { ...g, implications: newImpl };
     }));
@@ -407,7 +407,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   const handleToggleTheme = useCallback((id, themaId) => {
     setGuidelines(prev => prev.map(g => {
       if (g.id !== id) return g;
-      const current = Array.isArray(g.linked_themes) ? g.linked_themes : [];
+      const current   = Array.isArray(g.linked_themes) ? g.linked_themes : [];
       const newLinked = current.includes(themaId)
         ? current.filter(x => x !== themaId)
         : [...current, themaId];
@@ -416,10 +416,13 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     }));
   }, [scheduleDbSave]);
 
-  // ── Add / Delete ───────────────────────────────────────────────────────────
+  // ── Add / Delete ──────────────────────────────────────────────────────────
   const handleAdd = useCallback(async (segment) => {
-    const { data } = await createGuideline(canvasId, segment);
-    if (data) setGuidelines(prev => [...prev, data]);
+    // Gebruik huidige count als sort_order — NOOIT Date.now() (int overflow)
+    const sortOrder = guidelinesRef.current.filter(g => g.segment === segment).length;
+    const { data, error } = await createGuideline(canvasId, segment, sortOrder);
+    if (error) { console.error("[handleAdd]", error.message || error); return; }
+    if (data)  setGuidelines(prev => [...prev, data]);
   }, [canvasId]);
 
   const handleDelete = useCallback(async (id) => {
@@ -429,19 +432,15 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     setGuidelines(prev => prev.filter(g => g.id !== id));
   }, []);
 
-  // ── AI: Generate per segment ───────────────────────────────────────────────
+  // ── AI: Generate per segment ──────────────────────────────────────────────
   const handleGenerate = useCallback(async (segKey) => {
     const msg = GENERATE_MSGS[Math.floor(Math.random() * GENERATE_MSGS.length)];
     setGenerateDrafts(prev => ({ ...prev, [segKey]: { loading: true, msg, guidelines: [] } }));
     try {
-      const res = await apiFetch("/api/guidelines", {
+      const res  = await apiFetch("/api/guidelines", {
         method: "POST",
         body: JSON.stringify({
-          mode: "generate",
-          segment: segKey,
-          core,
-          items: [],   // SWOT items niet geladen hier (licht houden); API werkt ook zonder
-          themas,
+          mode: "generate", segment: segKey, core, themas,
           systemPromptGenerate: appPrompt("guideline.generate") || undefined,
           languageInstruction: t("ai.language"),
         }),
@@ -457,12 +456,14 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   const handleAcceptOneDraft = useCallback(async (segKey, idx) => {
     const draft = generateDrafts[segKey];
     if (!draft) return;
-    const g = draft.guidelines[idx];
-    const { data } = await createGuideline(canvasId, segKey);
+    const g         = draft.guidelines[idx];
+    const sortOrder = guidelinesRef.current.filter(x => x.segment === segKey).length;
+    const { data, error } = await createGuideline(canvasId, segKey, sortOrder);
+    if (error) { console.error("[acceptOne]", error.message || error); return; }
     if (data) {
-      const updated = { ...data, title: g.title || "", description: g.description || "", implications: g.implications || EMPTY_IMPLICATIONS };
-      await updateGuideline(data.id, { title: updated.title, description: updated.description, implications: updated.implications });
-      setGuidelines(prev => [...prev, updated]);
+      const patch = { title: g.title || "", description: g.description || "", implications: g.implications || EMPTY_IMPL };
+      await updateGuideline(data.id, patch);
+      setGuidelines(prev => [...prev, { ...data, ...patch }]);
     }
     setGenerateDrafts(prev => ({
       ...prev,
@@ -473,12 +474,15 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   const handleAcceptAllDraft = useCallback(async (segKey) => {
     const draft = generateDrafts[segKey];
     if (!draft) return;
+    let count = guidelinesRef.current.filter(x => x.segment === segKey).length;
     for (const g of draft.guidelines) {
-      const { data } = await createGuideline(canvasId, segKey);
+      const { data, error } = await createGuideline(canvasId, segKey, count);
+      if (error) { console.error("[acceptAll]", error.message || error); continue; }
       if (data) {
-        const updated = { ...data, title: g.title || "", description: g.description || "", implications: g.implications || EMPTY_IMPLICATIONS };
-        await updateGuideline(data.id, { title: updated.title, description: updated.description, implications: updated.implications });
-        setGuidelines(prev => [...prev, updated]);
+        const patch = { title: g.title || "", description: g.description || "", implications: g.implications || EMPTY_IMPL };
+        await updateGuideline(data.id, patch);
+        setGuidelines(prev => [...prev, { ...data, ...patch }]);
+        count++;
       }
     }
     setGenerateDrafts(prev => { const n = { ...prev }; delete n[segKey]; return n; });
@@ -488,52 +492,45 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     setGenerateDrafts(prev => { const n = { ...prev }; delete n[segKey]; return n; });
   }, []);
 
-  // ── AI: Implications per kaart ─────────────────────────────────────────────
+  // ── AI: Implications per kaart ────────────────────────────────────────────
   const handleGenerateImplications = useCallback(async (id) => {
     const g = guidelinesRef.current.find(x => x.id === id);
     if (!g?.title?.trim()) return;
     setImplLoadings(prev => ({ ...prev, [id]: true }));
     try {
-      const res = await apiFetch("/api/guidelines", {
+      const res  = await apiFetch("/api/guidelines", {
         method: "POST",
         body: JSON.stringify({
-          mode: "implications",
-          title: g.title,
-          description: g.description,
-          context: core.ambitie,
+          mode: "implications", title: g.title, description: g.description, context: core.ambitie,
           systemPromptImplications: appPrompt("guideline.implications") || undefined,
           languageInstruction: t("ai.language"),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
-      const newImpl = {
-        stop:     data.stop     || "",
-        start:    data.start    || "",
-        continue: data.continue || "",
-      };
-      handleChangeImplication(id, "stop",     newImpl.stop);
-      handleChangeImplication(id, "start",    newImpl.start);
-      handleChangeImplication(id, "continue", newImpl.continue);
+      const newImpl = { stop: data.stop || "", start: data.start || "", continue: data.continue || "" };
+      // Gebruik handleChangeImplication per subKey zodat debounce correct accumuleert
+      setGuidelines(prev => prev.map(x => {
+        if (x.id !== id) return x;
+        scheduleDbSave(id, { implications: newImpl });
+        return { ...x, implications: newImpl };
+      }));
     } catch (err) {
       console.error("[impl AI]", err.message);
     } finally {
       setImplLoadings(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
-  }, [core.ambitie, appPrompt, t, handleChangeImplication]);
+  }, [core.ambitie, appPrompt, t, scheduleDbSave]);
 
-  // ── AI: Advies modal ───────────────────────────────────────────────────────
+  // ── AI: Advies modal ──────────────────────────────────────────────────────
   const handleAnalyze = useCallback(async () => {
     setAnalysisLoading(true);
     setAnalysisError(null);
     try {
-      const res = await apiFetch("/api/guidelines", {
+      const res  = await apiFetch("/api/guidelines", {
         method: "POST",
         body: JSON.stringify({
-          mode: "advies",
-          guidelines,
-          themas,
-          core,
+          mode: "advies", guidelines, themas, core,
           systemPromptAdvies: appPrompt("guideline.advies") || undefined,
           languageInstruction: t("ai.language"),
         }),
@@ -550,21 +547,21 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     }
   }, [guidelines, themas, core, canvasId, appPrompt, t]);
 
-  // ── Per-segment memoized handlers ──────────────────────────────────────────
+  // ── Per-segment memoized handlers ─────────────────────────────────────────
   const segmentHandlers = useMemo(() =>
     SEGMENTS.reduce((acc, seg) => ({
       ...acc,
       [seg.key]: {
-        onAdd:             ()          => handleAdd(seg.key),
-        onGenerate:        ()          => handleGenerate(seg.key),
-        onAcceptOneDraft:  (idx)       => handleAcceptOneDraft(seg.key, idx),
-        onAcceptAllDraft:  ()          => handleAcceptAllDraft(seg.key),
-        onRejectDraft:     ()          => handleRejectDraft(seg.key),
+        onAdd:            ()    => handleAdd(seg.key),
+        onGenerate:       ()    => handleGenerate(seg.key),
+        onAcceptOneDraft: (idx) => handleAcceptOneDraft(seg.key, idx),
+        onAcceptAllDraft: ()    => handleAcceptAllDraft(seg.key),
+        onRejectDraft:    ()    => handleRejectDraft(seg.key),
       },
     }), {}),
   [handleAdd, handleGenerate, handleAcceptOneDraft, handleAcceptAllDraft, handleRejectDraft]);
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (!isLoaded) {
     return (
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50 items-center justify-center">
@@ -586,7 +583,9 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
           </button>
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">De Werkkamer</p>
-            <h2 className="text-lg font-bold text-[#1a365d] leading-tight">Richtlijnen &amp; Leidende Principes</h2>
+            <h2 className="text-lg font-bold text-[#1a365d] leading-tight">
+              Richtlijnen &amp; Leidende Principes
+            </h2>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -611,34 +610,90 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       </div>
 
       {/* ── Context-balk: Ambitie + Thema-badges ── */}
-      <div className="flex-shrink-0 bg-[#1a365d]/5 border-b border-[#1a365d]/10 px-8 py-2.5 flex items-center gap-4 overflow-x-auto">
+      <div className="flex-shrink-0 bg-[#1a365d] px-8 py-3 flex items-center gap-4 overflow-x-auto">
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Stip op de horizon</span>
-          <span className="text-[11px] font-semibold text-[#1a365d] max-w-xs truncate" title={core.ambitie}>
-            {core.ambitie || <span className="italic text-slate-400 font-normal">geen ambitie ingevuld</span>}
+          <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">
+            Stip op de horizon
+          </span>
+          <span
+            className="text-sm font-semibold text-white max-w-sm truncate"
+            title={core.ambitie}
+          >
+            {core.ambitie || <span className="italic text-white/30 font-normal">geen ambitie ingevuld</span>}
           </span>
         </div>
         {themas.length > 0 && (
           <>
-            <div className="h-5 w-px bg-slate-300 flex-shrink-0" />
+            <div className="h-5 w-px bg-white/20 flex-shrink-0" />
             <div className="flex items-center gap-1.5 flex-shrink-0">
               {themas.map((t, i) => (
-                <span key={t.id} title={t.title}
-                  className="inline-flex items-center gap-1 text-[9px] font-semibold bg-[#8dc63f]/10 text-[#2c7a4b] border border-[#8dc63f]/30 rounded-full px-2 py-0.5 whitespace-nowrap">
-                  <span className="font-black text-[8px]">{i + 1}</span>
-                  <span className="max-w-[80px] truncate">{t.title}</span>
+                <span
+                  key={t.id}
+                  title={t.title}
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold bg-white/10 text-white/80 border border-white/20 rounded-full px-2 py-0.5 whitespace-nowrap"
+                >
+                  <span className="font-black text-[9px] text-[#8dc63f]">{i + 1}</span>
+                  <span className="max-w-[90px] truncate">{t.title}</span>
                 </span>
               ))}
             </div>
           </>
         )}
         {themas.length === 0 && (
-          <span className="text-[9px] text-slate-400 italic">Geen thema's — voeg ze toe in het Strategie Werkblad</span>
+          <span className="text-[10px] text-white/30 italic">
+            Geen thema's beschikbaar — voeg ze toe in het Strategie Werkblad
+          </span>
         )}
       </div>
 
-      {/* ── Swimlane grid ── */}
-      <div className="flex-1 grid grid-cols-4 min-h-0 overflow-hidden">
+      {/* ── Instructie-strip ── */}
+      <div className="flex-shrink-0 bg-white border-b border-slate-200 px-8 py-5">
+        <div className="flex items-start justify-between gap-6 max-w-6xl">
+          <p className="text-sm text-slate-600 leading-relaxed max-w-sm">
+            <span className="font-semibold text-[#1a365d]">Leidende Principes</span> vertalen uw
+            strategie naar concreet dagelijks gedrag. Ze sturen keuzes en creëren consistentie
+            tussen Strategie en Operatie.
+          </p>
+          <div className="flex items-start gap-8 flex-shrink-0">
+            {[
+              {
+                Icon: BookOpen,
+                color: "text-[#1a365d]",
+                bg:    "bg-[#1a365d]/8",
+                title: "Formuleer principes",
+                desc:  "Titel en strategische motivatie per segment",
+              },
+              {
+                Icon: Link2,
+                color: "text-[#8dc63f]",
+                bg:    "bg-[#8dc63f]/10",
+                title: "Koppel thema's",
+                desc:  "Klik de nummerbadges om te activeren",
+              },
+              {
+                Icon: RotateCcw,
+                color: "text-orange-500",
+                bg:    "bg-orange-50",
+                title: "Stop · Start · Continue",
+                desc:  "Vertaal principes naar concreet gedrag",
+              },
+            ].map(({ Icon, color, bg, title, desc }) => (
+              <div key={title} className="flex items-start gap-2.5">
+                <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                  <Icon size={15} className={color} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-700">{title}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Swimlane grid — elke kolom scrollt zelfstandig ── */}
+      <div className="flex-1 grid grid-cols-4 overflow-hidden">
         {SEGMENTS.map(seg => {
           const segGuidelines = guidelines.filter(g => g.segment === seg.key);
           const handlers      = segmentHandlers[seg.key];
@@ -665,13 +720,15 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
         })}
       </div>
 
-      {/* ── Advies overlay ── */}
+      {/* ── ✨ Advies overlay ── */}
       {showAdvies && (
         <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] flex-shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles size={12} className="text-[#8dc63f]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white">Richtlijnen Advies</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white">
+                Richtlijnen Advies
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -693,21 +750,23 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               {analysisError && <p className="text-red-500 text-sm italic mb-4">{analysisError}</p>}
               {analysisLoading && (
                 <p className="text-slate-400 text-sm italic animate-pulse pt-8 text-center">
-                  AI analyseert uw richtlijnen op coherentie, segment-balans en strategische dekking…
+                  AI analyseert coherentie, segment-balans en strategische dekking…
                 </p>
               )}
               {!analysisLoading && analysis && analysis.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {analysis.map((rec, i) => {
                     const cm = {
-                      warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
-                      info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
-                      success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
+                      warning: { border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
+                      info:    { border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
+                      success: { border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
                     };
                     const c = cm[rec.type] || cm.info;
                     return (
                       <div key={i} className={`rounded-xl border ${c.border} border-l-4 p-5 bg-white shadow-sm`}>
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>{rec.title}</p>
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>
+                          {rec.title}
+                        </p>
                         <p className={`text-sm leading-relaxed ${c.text}`}>{rec.text}</p>
                       </div>
                     );
@@ -717,20 +776,21 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               {!analysisLoading && !analysis && !analysisError && (
                 <div className="flex items-center justify-center h-64">
                   <p className="text-slate-400 text-sm italic text-center max-w-sm">
-                    Klik "Analyseer richtlijnen" voor AI-inzichten over coherentie, segment-balans en strategische dekking.
+                    Klik "Analyseer richtlijnen" voor AI-inzichten over coherentie,
+                    segment-balans en strategische dekking van uw thema's.
                   </p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="text-center py-2 text-[9px] text-slate-400 uppercase tracking-widest flex-shrink-0 bg-slate-100">
+          <div className="text-center py-2 text-[9px] text-slate-400 uppercase tracking-widest flex-shrink-0">
             AI-analyse op basis van alle leidende principes · opgeslagen per canvas
           </div>
         </div>
       )}
 
-      {/* ── OnePager overlay ── */}
+      {/* ── 📄 OnePager overlay ── */}
       {showOnePager && (
         <Suspense fallback={null}>
           <GuidelinesOnePager

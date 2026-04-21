@@ -12,18 +12,23 @@ export async function loadGuidelines(canvasId) {
     .order("sort_order");
 }
 
-export async function createGuideline(canvasId, segment) {
+/**
+ * Maak een nieuw leeg principe aan.
+ * sort_order wordt door de aanroeper meegegeven als kleine integer (bijv. huidige count in segment).
+ * NOOIT Date.now() gebruiken — PostgreSQL int max is ~2.1 mrd, Date.now() is ~1.7 biljoen → overflow.
+ */
+export async function createGuideline(canvasId, segment, sortOrder = 0) {
   if (!supabase) return { data: null, error: "Supabase niet geconfigureerd" };
   const { data, error } = await supabase
     .from("guidelines")
     .insert({
-      canvas_id:    canvasId,
+      canvas_id:     canvasId,
       segment,
-      title:        "",
-      description:  "",
-      implications: { stop: "", start: "", continue: "" },
+      title:         "",
+      description:   "",
+      implications:  { stop: "", start: "", continue: "" },
       linked_themes: [],
-      sort_order:   Date.now(), // unix ms als sort_order → behoud volgorde van aanmaken
+      sort_order:    sortOrder,
     })
     .select()
     .single();
