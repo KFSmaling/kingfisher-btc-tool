@@ -1,4 +1,4 @@
-import { supabase } from "../../services/supabaseClient";
+import { supabase } from "./supabase.client";
 
 /**
  * Sla een geüpload document op in canvas_uploads.

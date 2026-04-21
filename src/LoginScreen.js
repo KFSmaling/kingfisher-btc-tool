@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuth } from "./services/authContext";
+import { useAuth } from "./shared/services/auth.service";
 
 export default function LoginScreen() {
   const { signIn, signUp, resetPassword } = useAuth();

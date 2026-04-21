@@ -11,7 +11,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { supabase } from "../../services/supabaseClient";
+import { supabase } from "../services/supabase.client";
 
 // ── Hardcoded fallbacks (veiligheidsnet als DB onbereikbaar is) ──────────────
 const LABEL_FALLBACKS = {

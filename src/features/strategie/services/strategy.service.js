@@ -1,4 +1,4 @@
-import { supabase } from "../../../services/supabaseClient";
+import { supabase } from "../../../shared/services/supabase.client";
 
 // ── Strategy Core ─────────────────────────────────────────────────────────────
 export async function loadStrategyCore(canvasId) {

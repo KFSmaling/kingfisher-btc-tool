@@ -18,7 +18,7 @@
  * Voor toekomstige API-endpoints: gebruik ALTIJD apiFetch, nooit bare fetch().
  */
 
-import { supabase } from "../../services/supabaseClient";
+import { supabase } from "./supabase.client";
 
 export async function apiFetch(url, options = {}) {
   let token = null;

@@ -1,12 +1,2 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl  = process.env.REACT_APP_SUPABASE_URL;
-const supabaseKey  = process.env.REACT_APP_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.warn("Supabase env vars ontbreken — database opslag uitgeschakeld.");
-}
-
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+// Backwards-compat barrel — verplaatst naar src/shared/services/supabase.client.js (Sprint 7, #37)
+export { supabase } from "../shared/services/supabase.client";

@@ -4,7 +4,7 @@ import {
   Zap, X, LogOut, Save, AlertOctagon,
   SlidersHorizontal, Database, ShieldCheck, Maximize2,
 } from "lucide-react";
-import { AuthProvider, useAuth } from "./services/authContext";
+import { AuthProvider, useAuth } from "./shared/services/auth.service";
 import LoginScreen from "./LoginScreen";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
 import { AppConfigProvider } from "./shared/context/AppConfigContext";

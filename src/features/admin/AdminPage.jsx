@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Save, RefreshCw, LogOut, ChevronDown, ChevronUp, Check, AlertOctagon } from "lucide-react";
-import { supabase } from "../../services/supabaseClient";
+import { supabase } from "../../shared/services/supabase.client";
 
 const CATEGORIES  = ["prompt", "label", "setting", "blocks"];
 const CATEGORY_LABELS = { label: "UI Labels", prompt: "AI Prompts", setting: "Instellingen", blocks: "Blok Titels" };

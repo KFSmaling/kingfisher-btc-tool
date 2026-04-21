@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Printer, LayoutGrid, Target, TrendingUp, Sparkles } from "lucide-react";
-import { supabase } from "../../services/supabaseClient";
+import { supabase } from "../../shared/services/supabase.client";
 
 // ── Kleurendefinities ────────────────────────────────────────────────────────
 const C = {
