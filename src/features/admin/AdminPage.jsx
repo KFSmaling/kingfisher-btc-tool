@@ -154,8 +154,10 @@ function ConfigRow({ row, onSave }) {
     setStatus("saving");
     const { error } = await supabase
       .from("app_config")
-      .update({ value, updated_at: new Date().toISOString() })
-      .eq("key", row.key);
+      .upsert(
+        { key: row.key, category: row.category, description: row.description, value, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
 
     if (error) {
       setStatus("error");
@@ -352,20 +354,16 @@ export default function AdminPage({ user, onSignOut }) {
       supabase.from("block_definitions").select("key, label_nl, label_en").order("key"),
     ]);
 
-    // Seed ontbrekende labels automatisch — onafhankelijk van migraties
     if (configData) {
-      const existingKeys = new Set(configData.map(r => r.key));
-      const missing = DEFAULT_LABELS.filter(l => !existingKeys.has(l.key));
-      if (missing.length > 0) {
-        const toInsert = missing.map(l => ({ key: l.key, category: "label", description: l.description, value: l.value }));
-        const { error } = await supabase.from("app_config").insert(toInsert);
-        if (!error) {
-          // Herlaad na seed zodat admin de nieuwe rijen ziet
-          const { data: fresh } = await supabase.from("app_config").select("key, value, category, description, updated_at").order("key");
-          if (fresh) { setRows(fresh); setLoading(false); if (defsData) setBlockDefs(defsData); return; }
-        }
-      }
-      setRows(configData);
+      // Merge: DB-rijen + DEFAULT_LABELS die nog niet in DB staan.
+      // DB-waarde wint altijd; ontbrekende labels worden als lokale rij getoond
+      // zodat de admin ze kan zien en opslaan (vereist INSERT-policy in Supabase).
+      const dbMap = new Map(configData.map(r => [r.key, r]));
+      const syntheticLabels = DEFAULT_LABELS
+        .filter(l => !dbMap.has(l.key))
+        .map(l => ({ key: l.key, category: "label", description: l.description, value: l.value, _notInDb: true }));
+      const merged = [...configData, ...syntheticLabels].sort((a, b) => a.key.localeCompare(b.key));
+      setRows(merged);
     }
 
     if (defsData) setBlockDefs(defsData);
