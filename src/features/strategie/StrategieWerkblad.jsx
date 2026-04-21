@@ -717,7 +717,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     }
   }, [core, items, themas, canvasId, appPrompt]);
 
-  // ── Samenvatting genereren ───────────────────────────────────────────────────
+  // ── Samenvatting genereren — direct toepassen (geen draft-stap) ─────────────
   const handleGenerateSamenvatting = async () => {
     setMagicFor("samenvatting", { loading: true, suggestion: null, error: null });
     try {
@@ -727,16 +727,25 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         body: JSON.stringify({
           mode: "samenvatting", core, themas,
           languageInstruction: t("ai.language"),
+          systemPromptSamenvatting: appPrompt("strategy.samenvatting") || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
-      setDraftFor("samenvatting", data.samenvatting || "");
+      // Direct toepassen zodat het direct opgeslagen wordt via de debounce
+      updateCore("samenvatting", data.samenvatting || "");
       setMagicFor("samenvatting", { loading: false });
     } catch (err) {
       setMagicFor("samenvatting", { loading: false, error: err.message });
     }
   };
+
+  // ── Flush-save bij sluiten: wacht niet op debounce ──────────────────────────
+  const handleClose = useCallback(async () => {
+    clearTimeout(coreDebounceRef.current);
+    if (isLoaded && canvasId) await upsertStrategyCore(canvasId, core);
+    onClose();
+  }, [canvasId, core, isLoaded, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Full Draft ───────────────────────────────────────────────────────────────
   const handleFullDraft = async () => {
@@ -982,7 +991,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
+          <button onClick={handleClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>
