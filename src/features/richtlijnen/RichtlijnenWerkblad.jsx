@@ -630,45 +630,38 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
 
       {/* ── Context strip — drie panelen ── */}
       <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-5">
-        <div className="grid grid-cols-3 gap-4 h-full">
+        <div className="grid grid-cols-3 gap-4" style={{ height: "11rem" }}>
 
           {/* Paneel 1: Stip op de Horizon */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
               Stip op de Horizon
             </p>
-            {core.missie && (
-              <div className="mb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Missie · </span>
-                <span className="text-[11px] text-slate-600 leading-snug line-clamp-1">{core.missie}</span>
-              </div>
-            )}
-            {core.visie && (
-              <div className="mb-1.5">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Visie · </span>
-                <span className="text-[11px] text-slate-600 leading-snug line-clamp-1">{core.visie}</span>
-              </div>
-            )}
-            <p className={`text-sm font-semibold text-[#1a365d] leading-snug line-clamp-3 ${!core.missie && !core.visie ? "mt-0" : "mt-1"}`}>
-              {core.ambitie || <span className="italic text-slate-300 font-normal text-xs">Geen ambitie ingevuld</span>}
+            <p className="text-sm font-semibold text-[#1a365d] leading-snug line-clamp-4 flex-1">
+              {core.ambitie || <span className="italic text-slate-300 font-normal text-xs">Geen ambitie ingevuld — voeg toe in het Strategie Werkblad</span>}
             </p>
+            {core.kernwaarden?.length > 0 && (
+              <p className="text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100 flex-shrink-0 truncate">
+                {core.kernwaarden.slice(0, 4).join(" · ")}
+              </p>
+            )}
           </div>
 
           {/* Paneel 2: Strategische Thema's */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
               Strategische Thema's
             </p>
             {themas.length === 0 ? (
               <p className="text-xs text-slate-300 italic">Geen thema's — voeg ze toe in het Strategie Werkblad</p>
             ) : (
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
                 {themas.map((th, i) => (
                   <div key={th.id} className="flex items-center gap-2 min-w-0">
                     <span className="w-5 h-5 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
                       {i + 1}
                     </span>
-                    <span className="text-xs text-slate-700 font-medium leading-tight truncate">{th.title}</span>
+                    <span className="text-xs text-slate-700 font-medium leading-tight">{th.title}</span>
                   </div>
                 ))}
               </div>
@@ -676,16 +669,15 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
           </div>
 
           {/* Paneel 3: Uitleg werkwijze */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
               Werkwijze
             </p>
-            <p className="text-xs text-slate-500 leading-relaxed mb-3">
+            <p className="text-xs text-slate-500 leading-relaxed mb-2.5 flex-shrink-0">
               Leidende principes vertalen de strategie naar concreet dagelijks gedrag. Ze sturen keuzes
-              en creëren consistentie tussen Strategie en Operatie. Schrijf ze in de onderstaande blokken
-              in de volgende volgorde:
+              en creëren consistentie. Schrijf ze in de volgende volgorde:
             </p>
-            <div className="space-y-2">
+            <div className="space-y-1.5 flex-1">
               {[
                 { Icon: BookOpen,  color: "text-[#1a365d]",  bg: "bg-[#1a365d]/8",  title: "Formuleer principes",    desc: "Titel en strategische motivatie" },
                 { Icon: Link2,     color: "text-[#8dc63f]",  bg: "bg-[#8dc63f]/10", title: "Koppel thema's",         desc: "Klik de nummerbadges"            },

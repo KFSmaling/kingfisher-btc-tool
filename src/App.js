@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { LangProvider, useLang } from "./i18n";
 import {
   Zap, X, LogOut, Save, AlertOctagon,
@@ -18,6 +18,7 @@ import ConsistencyModal from "./features/canvas/components/ConsistencyModal";
 import CanvasMenu from "./features/canvas/components/CanvasMenu";
 import ProjectInfoSidebar from "./features/canvas/components/ProjectInfoSidebar";
 import StrategyStatusBlock from "./features/canvas/components/StrategyStatusBlock";
+import PrinciplesStatusBlock from "./features/canvas/components/PrinciplesStatusBlock";
 import DeepDiveOverlay from "./features/canvas/components/DeepDiveOverlay";
 import { useCanvasState } from "./features/canvas/hooks/useCanvasState";
 
@@ -42,8 +43,8 @@ function AppInner() {
   // ── Canvas state + handlers (business logic in hook) ──────────────────────
   const {
     activeCanvasId, canvases, scope, meta, docs, insights, bullets,
-    strategyManual, saveStatus, multiTabWarning,
-    setMeta, setMultiTabWarning, setStrategyManual,
+    strategyManual, guidelineCounts, saveStatus, multiTabWarning,
+    setMeta, setMultiTabWarning, setStrategyManual, refreshGuidelineCounts,
     handleNewCanvas, handleSelectCanvas, handleRenameCanvas, handleDeleteCanvas,
     handleLoadExample, handleDocsChange, handleInsightAccept, handleInsightReject,
     handleMoveToBullets, handleDeleteBullet, handleAddBullet,
@@ -58,6 +59,15 @@ function AppInner() {
 
   const activeBlock = BLOCKS.find(b => b.id === activeBlockId);
   const allDone     = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
+
+  // ── Herlaad guideline counts als gebruiker het richtlijnen werkblad sluit ────
+  const prevDeepDiveRef = useRef(null);
+  useEffect(() => {
+    if (prevDeepDiveRef.current === "principles" && deepDiveBlockId === null) {
+      refreshGuidelineCounts(activeCanvasId);
+    }
+    prevDeepDiveRef.current = deepDiveBlockId;
+  }, [deepDiveBlockId, activeCanvasId, refreshGuidelineCounts]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1a365d] font-sans flex flex-col">
@@ -213,14 +223,14 @@ function AppInner() {
               />
             ))}
 
-            {/* Row 2: Guiding Principles — full width */}
+            {/* Row 2: Guiding Principles — full width status block */}
             {BLOCKS.filter(b => b.id === "principles").map(block => (
-              <BlockCard
+              <PrinciplesStatusBlock
                 key={block.id}
                 block={block}
                 status={getBlockStatus(block.id, docs, insights, bullets)}
                 bullets={bullets[block.id]}
-                insightCount={(insights[block.id] || []).filter(i => i.status === "pending").length}
+                guidelineCounts={guidelineCounts}
                 onClick={() => setDeepDiveBlockId(block.id)}
               />
             ))}

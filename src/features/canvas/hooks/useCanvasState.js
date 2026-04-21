@@ -21,6 +21,7 @@ import {
 } from "../../../services/canvasStorage";
 import { BLOCKS, EXAMPLE_BULLETS } from "../components/BlockCard";
 import { log, err } from "../../../shared/utils/logger";
+import { loadGuidelineCounts } from "../../richtlijnen/services/guidelines.service";
 
 /**
  * @param {object} options
@@ -45,6 +46,9 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
   // ── Deep Dive manual data (strategie executive summary) ─────────────────────
   const [strategyManual, setStrategyManual] = useState(null);
 
+  // ── Guideline counts per segment (voor Principles canvas block) ──────────────
+  const [guidelineCounts, setGuidelineCounts] = useState({});
+
   // ── Autosave indicator ──────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | saving | saved | error
 
@@ -54,6 +58,13 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
   // ── Interne refs ────────────────────────────────────────────────────────────
   const suppressSaveRef  = useRef(false); // onderdruk autosave tijdens canvas-laden
   const autosaveTimerRef = useRef(null);
+
+  // ── Helper: herlaad guideline counts voor actief canvas ─────────────────────
+  const refreshGuidelineCounts = useCallback(async (canvasId) => {
+    if (!canvasId) return;
+    const { data } = await loadGuidelineCounts(canvasId);
+    setGuidelineCounts(data || {});
+  }, []);
 
   // ── Helper: laad een canvas-record in state ─────────────────────────────────
   const applyCanvasData = useCallback((full) => {
@@ -75,6 +86,10 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
     });
     const sm = full.data?.strategy?.details?.manual;
     setStrategyManual(sm || null);
+    // Laad guideline counts asynchroon (geen blokkerende state)
+    loadGuidelineCounts(full.id).then(({ data }) => {
+      setGuidelineCounts(data || {});
+    });
     setTimeout(() => { suppressSaveRef.current = false; }, 100);
   }, []);
 
@@ -299,6 +314,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
     insights,
     bullets,
     strategyManual,
+    guidelineCounts,
     saveStatus,
     multiTabWarning,
 
@@ -306,6 +322,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
     setMeta,
     setMultiTabWarning,
     setStrategyManual,
+    refreshGuidelineCounts,
 
     // canvas handlers
     handleNewCanvas,

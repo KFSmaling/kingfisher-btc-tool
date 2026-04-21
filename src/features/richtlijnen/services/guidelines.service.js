@@ -50,6 +50,25 @@ export async function deleteGuideline(id) {
   return { error };
 }
 
+/**
+ * Laad alleen het aantal richtlijnen per segment voor een canvas.
+ * Teruggeeft: { data: { generiek: 3, klanten: 2, ... }, error }
+ * Lightweight — haalt alleen de segment-kolom op.
+ */
+export async function loadGuidelineCounts(canvasId) {
+  if (!supabase || !canvasId) return { data: {}, error: null };
+  const { data, error } = await supabase
+    .from("guidelines")
+    .select("segment")
+    .eq("canvas_id", canvasId);
+  if (error) { console.error("[guidelines] counts laden mislukt:", error.message); return { data: {}, error }; }
+  const counts = {};
+  (data || []).forEach(row => {
+    counts[row.segment] = (counts[row.segment] || 0) + 1;
+  });
+  return { data: counts, error: null };
+}
+
 // ── Guideline Analysis ────────────────────────────────────────────────────────
 
 export async function loadGuidelineAnalysis(canvasId) {
