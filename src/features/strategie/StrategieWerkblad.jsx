@@ -548,8 +548,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     setSaveStatus("saving");
     coreDebounceRef.current = setTimeout(async () => {
       const { error } = await upsertStrategyCore(canvasId, core);
-      setSaveStatus(error ? "error" : "saved");
-      if (!error) setTimeout(() => setSaveStatus("idle"), 2500);
+      if (error) {
+        console.error("[StrategieWerkblad] autosave mislukt:", error?.message || error);
+        setSaveStatus("error");
+      } else {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2500);
+      }
     }, 800);
     return () => clearTimeout(coreDebounceRef.current);
   }, [core, isLoaded, canvasId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -740,10 +745,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     }
   };
 
-  // ── Flush-save bij sluiten: wacht niet op debounce ──────────────────────────
-  const handleClose = useCallback(async () => {
+  // ── Flush-save bij sluiten: debounce direct uitvoeren ───────────────────────
+  const handleClose = useCallback(() => {
+    // Annuleer de debounce en sla direct op zodat samenvatting zeker in DB staat
+    // voordat RichtlijnenWerkblad laadt
     clearTimeout(coreDebounceRef.current);
-    if (isLoaded && canvasId) await upsertStrategyCore(canvasId, core);
+    if (isLoaded && canvasId) {
+      upsertStrategyCore(canvasId, core).catch(() => {}); // fire-and-forget, fout al gelogd
+    }
     onClose();
   }, [canvasId, core, isLoaded, onClose]); // eslint-disable-line react-hooks/exhaustive-deps
 
