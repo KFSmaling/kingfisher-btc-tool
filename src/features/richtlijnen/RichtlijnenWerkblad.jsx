@@ -269,10 +269,10 @@ function SwimLane({
   implLoadings, onGenerateImplications,
 }) {
   return (
-    <div className="border-r border-slate-200 last:border-r-0 bg-slate-50 overflow-y-auto">
+    <div className="rounded-2xl bg-white overflow-y-auto shadow-sm border border-slate-200/80">
 
       {/* Sticky kolomheader */}
-      <div className={`sticky top-0 z-10 ${segment.headerBg} shadow-md`}>
+      <div className={`sticky top-0 z-10 ${segment.headerBg} shadow-sm rounded-t-2xl`}>
         <div className="flex items-center justify-between px-5 py-4">
           <div>
             <h3 className="text-xl font-bold text-white leading-tight">{segment.label}</h3>
@@ -595,13 +595,13 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-b-2 border-[#1a365d]/20 flex-shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={onClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">De Werkkamer</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">Werkblad</p>
             <h2 className="text-lg font-bold text-[#1a365d] leading-tight">
               Richtlijnen &amp; Leidende Principes
             </h2>
@@ -628,74 +628,87 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
         </div>
       </div>
 
-      {/* ── Stip op de horizon — volle breedte ── */}
-      <div className="flex-shrink-0 bg-[#1a365d] px-8 py-4">
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/40 mb-1">
-          Stip op de horizon
-        </p>
-        <p className="text-base font-semibold text-white leading-snug">
-          {core.ambitie || <span className="italic text-white/30 font-normal text-sm">geen ambitie ingevuld — voeg toe in het Strategie Werkblad</span>}
-        </p>
-      </div>
+      {/* ── Context strip — drie panelen ── */}
+      <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-5">
+        <div className="grid grid-cols-3 gap-4 h-full">
 
-      {/* ── Instructie + Thema's — twee panelen ── */}
-      <div className="flex-shrink-0 bg-white border-b border-slate-200 px-8 py-5">
-        <div className="grid grid-cols-2 gap-5">
-
-          {/* Links: uitleg + 3 stappen */}
-          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-            <p className="text-sm text-slate-600 leading-relaxed mb-4">
-              <span className="font-semibold text-[#1a365d]">Leidende Principes</span> vertalen uw
-              strategie naar concreet dagelijks gedrag. Ze sturen keuzes en creëren consistentie
-              tussen Strategie en Operatie.
+          {/* Paneel 1: Stip op de Horizon */}
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
+              Stip op de Horizon
             </p>
-            <div className="flex items-start gap-6">
-              {[
-                { Icon: BookOpen,  color: "text-[#1a365d]",   bg: "bg-[#1a365d]/8",  title: "Formuleer",      desc: "Titel + motivatie per segment"  },
-                { Icon: Link2,     color: "text-[#8dc63f]",   bg: "bg-[#8dc63f]/10", title: "Koppel thema's", desc: "Klik de nummerbadges"            },
-                { Icon: RotateCcw, color: "text-orange-500",  bg: "bg-orange-50",    title: "Stop · Start · Continue", desc: "Concreet gedrag"       },
-              ].map(({ Icon, color, bg, title, desc }) => (
-                <div key={title} className="flex items-start gap-2">
-                  <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                    <Icon size={13} className={color} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-700">{title}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {core.missie && (
+              <div className="mb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Missie · </span>
+                <span className="text-[11px] text-slate-600 leading-snug line-clamp-1">{core.missie}</span>
+              </div>
+            )}
+            {core.visie && (
+              <div className="mb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Visie · </span>
+                <span className="text-[11px] text-slate-600 leading-snug line-clamp-1">{core.visie}</span>
+              </div>
+            )}
+            <p className={`text-sm font-semibold text-[#1a365d] leading-snug line-clamp-3 ${!core.missie && !core.visie ? "mt-0" : "mt-1"}`}>
+              {core.ambitie || <span className="italic text-slate-300 font-normal text-xs">Geen ambitie ingevuld</span>}
+            </p>
           </div>
 
-          {/* Rechts: strategische thema's */}
-          <div className="border border-slate-100 rounded-xl p-4 bg-slate-50/50">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+          {/* Paneel 2: Strategische Thema's */}
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
               Strategische Thema's
             </p>
             {themas.length === 0 ? (
-              <p className="text-sm text-slate-300 italic">
-                Geen thema's — voeg ze toe in het Strategie Werkblad
-              </p>
+              <p className="text-xs text-slate-300 italic">Geen thema's — voeg ze toe in het Strategie Werkblad</p>
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                 {themas.map((th, i) => (
-                  <div key={th.id} className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-full bg-[#1a365d] text-white text-[11px] font-black flex items-center justify-center flex-shrink-0">
+                  <div key={th.id} className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
                       {i + 1}
                     </span>
-                    <span className="text-sm text-slate-700 font-medium leading-tight">{th.title}</span>
+                    <span className="text-xs text-slate-700 font-medium leading-tight truncate">{th.title}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
+          {/* Paneel 3: Uitleg werkwijze */}
+          <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#1a365d]/60 mb-2.5">
+              Werkwijze
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed mb-3">
+              Leidende principes vertalen de strategie naar concreet dagelijks gedrag. Ze sturen keuzes
+              en creëren consistentie tussen Strategie en Operatie. Schrijf ze in de onderstaande blokken
+              in de volgende volgorde:
+            </p>
+            <div className="space-y-2">
+              {[
+                { Icon: BookOpen,  color: "text-[#1a365d]",  bg: "bg-[#1a365d]/8",  title: "Formuleer principes",    desc: "Titel en strategische motivatie" },
+                { Icon: Link2,     color: "text-[#8dc63f]",  bg: "bg-[#8dc63f]/10", title: "Koppel thema's",         desc: "Klik de nummerbadges"            },
+                { Icon: RotateCcw, color: "text-orange-500", bg: "bg-orange-50",    title: "Stop · Start · Continue", desc: "Vertaal naar concreet gedrag"    },
+              ].map(({ Icon, color, bg, title, desc }) => (
+                <div key={title} className="flex items-center gap-2.5">
+                  <div className={`w-6 h-6 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
+                    <Icon size={12} className={color} />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-700">{title}</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 
       {/* ── Swimlane grid — elke kolom scrollt zelfstandig ── */}
-      <div className="flex-1 grid grid-cols-4 overflow-hidden">
+      <div className="flex-1 grid grid-cols-4 gap-3 p-3 overflow-hidden bg-slate-100">
         {SEGMENTS.map(seg => {
           const resolvedSeg = {
             ...seg,
