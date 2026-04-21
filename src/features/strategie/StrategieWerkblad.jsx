@@ -486,7 +486,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 
 export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
   const { t } = useLang();
-  const { prompt: appPrompt } = useAppConfig();
+  const { prompt: appPrompt, label: appLabel } = useAppConfig();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -1021,12 +1021,12 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <section className="space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">1</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#1a365d]">Identiteit</h3>
+            <h3 className="text-base font-black uppercase tracking-widest text-[#1a365d]">{appLabel("strat.section.identiteit", "Identiteit")}</h3>
             <div className="flex-1 h-px bg-[#1a365d]/15" />
           </div>
           <div className="grid grid-cols-2 gap-6">
             <WerkbladTextField
-              label="Missie"
+              label={appLabel("strat.field.missie", "Missie")}
               fieldKey="missie"
               value={core.missie}
               draft={drafts.missie}
@@ -1040,7 +1040,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               placeholder="Waarom bestaan wij?"
             />
             <WerkbladTextField
-              label="Visie"
+              label={appLabel("strat.field.visie", "Visie")}
               fieldKey="visie"
               value={core.visie}
               draft={drafts.visie}
@@ -1054,7 +1054,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               placeholder="Waar staan wij over 5 jaar?"
             />
             <WerkbladTextField
-              label="Ambitie (BHAG)"
+              label={appLabel("strat.field.ambitie", "Ambitie (BHAG)")}
               fieldKey="ambitie"
               value={core.ambitie}
               draft={drafts.ambitie}
@@ -1069,7 +1069,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[13px] font-semibold text-slate-600">Kernwaarden</label>
+                <label className="text-[13px] font-semibold text-slate-600">{appLabel("strat.field.kernwaarden", "Kernwaarden")}</label>
                 <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} disabled={!!drafts.kernwaarden} />
               </div>
               <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
@@ -1116,13 +1116,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <section className="space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-[#00AEEF] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">2</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#00AEEF]">Analyse</h3>
+            <h3 className="text-base font-black uppercase tracking-widest text-[#00AEEF]">{appLabel("strat.section.analyse", "Analyse")}</h3>
             <div className="flex-1 h-px bg-[#00AEEF]/20" />
             <p className="text-[9px] text-slate-400 flex-shrink-0">Tag elk item voor de SWOT-rapportage</p>
           </div>
           <div className="grid grid-cols-2 gap-6">
             <AnalyseSection
-              title="Externe Ontwikkelingen"
+              title={appLabel("strat.field.extern", "Externe Ontwikkelingen")}
               type="extern"
               items={externItems}
               onAdd={content => addAnalysisItem("extern", content)}
@@ -1133,7 +1133,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onRejectMagic={() => setMagicFor("extern", null)}
             />
             <AnalyseSection
-              title="Interne Ontwikkelingen"
+              title={appLabel("strat.field.intern", "Interne Ontwikkelingen")}
               type="intern"
               items={internItems}
               onAdd={content => addAnalysisItem("intern", content)}
@@ -1150,7 +1150,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <section className="space-y-5 pb-8">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 rounded-full bg-[#8dc63f] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">3</div>
-            <h3 className="text-base font-black uppercase tracking-widest text-[#2c7a4b]">Executie — 7·3·3 Regel</h3>
+            <h3 className="text-base font-black uppercase tracking-widest text-[#2c7a4b]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
             <div className="flex-1 h-px bg-[#8dc63f]/30" />
             <p className="text-[9px] text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
             {themas.length < 7 && (

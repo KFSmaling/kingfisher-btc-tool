@@ -15,14 +15,39 @@ import { supabase } from "../services/supabase.client";
 
 // ── Hardcoded fallbacks (veiligheidsnet als DB onbereikbaar is) ──────────────
 const LABEL_FALLBACKS = {
-  "app.title":              "Business Transformation Canvas",
-  "app.subtitle":           "From strategy to execution",
-  "werkblad.strategie":     "Strategie Werkblad",
-  "section.extern":         "Externe Marktontwikkelingen",
-  "section.intern":         "Interne Ontwikkelingen",
-  "section.identiteit":     "Identiteit & Positionering",
-  "section.executie":       "Executie",
-  "section.strategie":      "Strategische Koers",
+  // Applicatie
+  "app.title":                      "Business Transformation Canvas",
+  "app.subtitle":                   "From strategy to execution",
+  "footer.tagline":                 "Kingfisher & Partners · From strategy to execution",
+  // Werkblad namen
+  "werkblad.strategie":             "Strategie Werkblad",
+  "werkblad.richtlijnen":           "Richtlijnen & Leidende Principes",
+  // Strategie Werkblad — secties (bestaand, voor backwards-compat)
+  "section.extern":                 "Externe Marktontwikkelingen",
+  "section.intern":                 "Interne Ontwikkelingen",
+  "section.identiteit":             "Identiteit & Positionering",
+  "section.executie":               "Executie",
+  "section.strategie":              "Strategische Koers",
+  // Strategie Werkblad — sectiekoppen
+  "strat.section.identiteit":       "Identiteit",
+  "strat.section.analyse":          "Analyse",
+  "strat.section.executie":         "Executie — 7·3·3 Regel",
+  // Strategie Werkblad — veldnamen
+  "strat.field.missie":             "Missie",
+  "strat.field.visie":              "Visie",
+  "strat.field.ambitie":            "Ambitie (BHAG)",
+  "strat.field.kernwaarden":        "Kernwaarden",
+  "strat.field.extern":             "Externe Ontwikkelingen",
+  "strat.field.intern":             "Interne Ontwikkelingen",
+  // Richtlijnen Werkblad — segmenten
+  "richtl.segment.generiek":        "Generiek",
+  "richtl.segment.generiek.sub":    "Strategie & Governance",
+  "richtl.segment.klanten":         "Klanten",
+  "richtl.segment.klanten.sub":     "Markt & Dienstverlening",
+  "richtl.segment.organisatie":     "Organisatie",
+  "richtl.segment.organisatie.sub": "Mens & Proces",
+  "richtl.segment.it":              "IT",
+  "richtl.segment.it.sub":          "Technologie & Data",
 };
 
 const AppConfigContext = createContext(null);

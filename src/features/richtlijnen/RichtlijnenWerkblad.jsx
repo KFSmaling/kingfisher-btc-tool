@@ -321,8 +321,8 @@ function SwimLane({
 
 // ── RichtlijnenWerkblad (main export) ─────────────────────────────────────────
 export default function RichtlijnenWerkblad({ canvasId, onClose }) {
-  const { t }                  = useLang();
-  const { prompt: appPrompt }  = useAppConfig();
+  const { t }                                  = useLang();
+  const { prompt: appPrompt, label: appLabel } = useAppConfig();
 
   const [mounted,  setMounted]  = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -695,12 +695,17 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       {/* ── Swimlane grid — elke kolom scrollt zelfstandig ── */}
       <div className="flex-1 grid grid-cols-4 overflow-hidden">
         {SEGMENTS.map(seg => {
+          const resolvedSeg = {
+            ...seg,
+            label:    appLabel(`richtl.segment.${seg.key}`,     seg.label),
+            sublabel: appLabel(`richtl.segment.${seg.key}.sub`, seg.sublabel),
+          };
           const segGuidelines = guidelines.filter(g => g.segment === seg.key);
           const handlers      = segmentHandlers[seg.key];
           return (
             <SwimLane
               key={seg.key}
-              segment={seg}
+              segment={resolvedSeg}
               guidelines={segGuidelines}
               themas={themas}
               generateDraft={generateDrafts[seg.key]}

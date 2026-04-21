@@ -1,21 +1,150 @@
 /**
  * AdminPage — beheer prompts + UI labels zonder deploy
  *
+ * Tabs: AI Prompts | Labels | Instellingen | Blok Titels
+ * Binnen elke tab: collapsible groepen per werkblad / functie
+ *
  * Toegankelijk via /admin — alleen voor REACT_APP_ADMIN_EMAIL
- * Directe schrijftoegang via Supabase RLS (email-check in policy)
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Save, RefreshCw, LogOut, ChevronDown, ChevronUp, Check, AlertOctagon } from "lucide-react";
+import {
+  Save, RefreshCw, LogOut, ChevronDown, ChevronUp,
+  Check, AlertOctagon, Wand2, Tag, Settings2, Layers,
+} from "lucide-react";
 import { supabase } from "../../shared/services/supabase.client";
 
-const CATEGORIES  = ["prompt", "label", "setting", "blocks"];
-const CATEGORY_LABELS = { label: "UI Labels", prompt: "AI Prompts", setting: "Instellingen", blocks: "Blok Titels" };
+// ── Groep-definities per tab ─────────────────────────────────────────────────
+
+const PROMPT_GROUPS = [
+  {
+    id: "magic",
+    label: "Magic Staff",
+    icon: Wand2,
+    desc: "RAG-gebaseerde AI-suggesties in het Canvas dashboard",
+    headerCls: "bg-blue-50 border-blue-200 text-blue-800",
+    match: k => k.startsWith("prompt.magic.") || k === "prompt.validate",
+  },
+  {
+    id: "improve",
+    label: "Verbeteren",
+    icon: Wand2,
+    desc: "Herschrijf-presets (McKinsey, beknopter, financieel…)",
+    headerCls: "bg-slate-100 border-slate-300 text-slate-600",
+    match: k => k.startsWith("prompt.improve."),
+  },
+  {
+    id: "strategy",
+    label: "Strategie Werkblad",
+    icon: Layers,
+    desc: "Thema's, KSF/KPI en strategisch advies",
+    headerCls: "bg-[#1a365d]/8 border-[#1a365d]/25 text-[#1a365d]",
+    match: k => k.startsWith("prompt.strategy."),
+  },
+  {
+    id: "guideline",
+    label: "Richtlijnen Werkblad",
+    icon: Layers,
+    desc: "Genereren, advies en Stop/Start/Continue per principe",
+    headerCls: "bg-purple-50 border-purple-200 text-purple-800",
+    match: k => k.startsWith("prompt.guideline."),
+  },
+];
+
+const LABEL_GROUPS = [
+  {
+    id: "app",
+    label: "Applicatie",
+    icon: Tag,
+    desc: "App-titel, subtitel en voettekst",
+    headerCls: "bg-green-50 border-green-200 text-green-800",
+    match: k => k.startsWith("label.app.") || k.startsWith("label.footer."),
+  },
+  {
+    id: "strategy",
+    label: "Strategie Werkblad",
+    icon: Layers,
+    desc: "Sectiekoppen, veldnamen en werkbladnaam",
+    headerCls: "bg-[#1a365d]/8 border-[#1a365d]/25 text-[#1a365d]",
+    match: k =>
+      k === "label.werkblad.strategie" ||
+      k.startsWith("label.strat.") ||
+      k.startsWith("label.section."),
+  },
+  {
+    id: "guideline",
+    label: "Richtlijnen Werkblad",
+    icon: Layers,
+    desc: "Segment namen, subtitels en werkbladnaam",
+    headerCls: "bg-purple-50 border-purple-200 text-purple-800",
+    match: k =>
+      k === "label.werkblad.richtlijnen" ||
+      k.startsWith("label.richtl."),
+  },
+  {
+    id: "other",
+    label: "Overig",
+    icon: Tag,
+    desc: "Overige labels",
+    headerCls: "bg-slate-50 border-slate-200 text-slate-600",
+    match: () => true, // catch-all
+  },
+];
+
+const SETTING_GROUPS = [
+  {
+    id: "all",
+    label: "Instellingen",
+    icon: Settings2,
+    desc: "Technische instellingen",
+    headerCls: "bg-slate-50 border-slate-200 text-slate-600",
+    match: () => true,
+  },
+];
+
+// ── Groepeer rijen op volgorde van de group-definities ───────────────────────
+function groupRows(rows, groups) {
+  const used = new Set();
+  return groups.map(g => {
+    const matched = rows.filter(r => !used.has(r.key) && g.match(r.key));
+    matched.forEach(r => used.add(r.key));
+    return { ...g, rows: matched };
+  }).filter(g => g.rows.length > 0);
+}
+
+// ── Collapsible groep-sectie ─────────────────────────────────────────────────
+function GroupSection({ group, children }) {
+  const [open, setOpen] = useState(true);
+  const Icon = group.icon;
+  return (
+    <div className="border border-slate-200 rounded-sm overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 px-4 py-3 border-b ${group.headerCls} transition-colors`}
+      >
+        <Icon size={13} />
+        <span className="text-[11px] font-black uppercase tracking-widest flex-1 text-left">{group.label}</span>
+        {group.desc && (
+          <span className="text-[10px] font-normal opacity-70 hidden sm:block">{group.desc}</span>
+        )}
+        <span className="text-[10px] font-bold bg-white/50 rounded-full px-2 py-0.5 ml-2">
+          {React.Children.count(children)}
+        </span>
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+      {open && (
+        <div className="divide-y divide-slate-100">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Één bewerkbaar config-rij ────────────────────────────────────────────────
 function ConfigRow({ row, onSave }) {
   const [value, setValue]   = useState(row.value);
-  const [status, setStatus] = useState("idle"); // idle | saving | saved | error
+  const [status, setStatus] = useState("idle");
   const [open, setOpen]     = useState(false);
 
   const isLong  = row.category === "prompt";
@@ -39,7 +168,7 @@ function ConfigRow({ row, onSave }) {
   };
 
   return (
-    <div className={`border rounded-sm overflow-hidden ${isDirty ? "border-amber-300 bg-amber-50/30" : "border-slate-200 bg-white"}`}>
+    <div className={`${isDirty ? "bg-amber-50/50" : "bg-white"} transition-colors`}>
       {/* Header rij */}
       <div
         className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors"
@@ -48,12 +177,15 @@ function ConfigRow({ row, onSave }) {
         <div className="flex-1 min-w-0">
           <code className="text-xs font-mono text-[#1a365d] font-semibold">{row.key}</code>
           {row.description && (
-            <p className="text-[11px] text-slate-400 mt-0.5 truncate">{row.description}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{row.description}</p>
           )}
         </div>
         {!open && (
-          <p className="text-xs text-slate-500 truncate max-w-xs shrink-0 mt-0.5">{value}</p>
+          <p className="text-xs text-slate-500 truncate max-w-xs shrink-0 mt-0.5 italic">
+            {value || <span className="text-slate-300">leeg</span>}
+          </p>
         )}
+        {isDirty && <span className="text-[9px] text-amber-600 font-bold uppercase shrink-0 mt-1">●</span>}
         <button className="text-slate-400 shrink-0 mt-0.5">
           {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
@@ -61,18 +193,18 @@ function ConfigRow({ row, onSave }) {
 
       {/* Edit gebied */}
       {open && (
-        <div className="px-4 pb-4 space-y-2">
+        <div className="px-4 pb-4 space-y-2 bg-slate-50/50">
           <textarea
             value={value}
             onChange={e => setValue(e.target.value)}
             rows={isLong ? 12 : 2}
             className="w-full text-sm border border-slate-200 rounded-sm px-3 py-2 font-mono
-                       focus:outline-none focus:border-[#8dc63f] resize-y leading-relaxed"
+                       focus:outline-none focus:border-[#8dc63f] resize-y leading-relaxed bg-white"
             spellCheck={false}
           />
           <div className="flex items-center justify-between">
             <p className="text-[10px] text-slate-400">
-              {isDirty ? "⚠ Niet opgeslagen wijziging" : "Geen wijzigingen"}
+              {isDirty ? "⚠ Niet opgeslagen" : "Geen wijzigingen"}
             </p>
             <button
               onClick={handleSave}
@@ -80,17 +212,14 @@ function ConfigRow({ row, onSave }) {
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-all
                 ${isDirty && status === "idle"
                   ? "bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] shadow-sm"
-                  : status === "saved"
-                    ? "bg-green-100 text-green-700"
-                    : status === "error"
-                      ? "bg-red-100 text-red-600"
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                }`}
+                  : status === "saved"  ? "bg-green-100 text-green-700"
+                  : status === "error"  ? "bg-red-100 text-red-600"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
             >
               {status === "saving" && <RefreshCw size={11} className="animate-spin" />}
               {status === "saved"  && <Check size={11} />}
               {status === "error"  && <AlertOctagon size={11} />}
-              {status === "idle" || status === "saving" ? <Save size={11} /> : null}
+              {(status === "idle" || status === "saving") && <Save size={11} />}
               {status === "saving" ? "Opslaan…"
                : status === "saved"  ? "Opgeslagen"
                : status === "error"  ? "Fout"
@@ -128,29 +257,25 @@ function BlockDefRow({ row, onSave }) {
   };
 
   return (
-    <div className={`border rounded-sm overflow-hidden ${isDirty ? "border-amber-300 bg-amber-50/30" : "border-slate-200 bg-white"}`}>
+    <div className={`border-b border-slate-100 last:border-0 ${isDirty ? "bg-amber-50/50" : "bg-white"}`}>
       <div className="grid grid-cols-[180px_1fr_1fr_auto] gap-3 items-center px-4 py-3">
-        {/* Key */}
         <code className="text-xs font-mono text-[#1a365d] font-semibold">{row.key}</code>
-        {/* NL */}
         <div className="flex flex-col gap-1">
           <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">NL</span>
           <input
             value={nlVal}
             onChange={e => setNlVal(e.target.value)}
-            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700"
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700 bg-white"
           />
         </div>
-        {/* EN */}
         <div className="flex flex-col gap-1">
           <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">EN</span>
           <input
             value={enVal}
             onChange={e => setEnVal(e.target.value)}
-            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700"
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700 bg-white"
           />
         </div>
-        {/* Opslaan */}
         <button
           onClick={handleSave}
           disabled={!isDirty || status === "saving"}
@@ -172,6 +297,14 @@ function BlockDefRow({ row, onSave }) {
   );
 }
 
+// ── Tab config ───────────────────────────────────────────────────────────────
+const TABS = [
+  { id: "prompt",  label: "AI Prompts",    groups: PROMPT_GROUPS  },
+  { id: "label",   label: "Labels",        groups: LABEL_GROUPS   },
+  { id: "setting", label: "Instellingen",  groups: SETTING_GROUPS },
+  { id: "blocks",  label: "Blok Titels",   groups: null           },
+];
+
 // ── Hoofd AdminPage ──────────────────────────────────────────────────────────
 export default function AdminPage({ user, onSignOut }) {
   const [rows, setRows]           = useState([]);
@@ -192,15 +325,20 @@ export default function AdminPage({ user, onSignOut }) {
 
   useEffect(() => { loadConfig(); }, [loadConfig]);
 
-  const handleSave = (key, newValue) => {
-    setRows(prev => prev.map(r => r.key === key ? { ...r, value: newValue } : r));
-  };
+  const handleSave        = (key, newValue)  => setRows(prev => prev.map(r => r.key === key ? { ...r, value: newValue } : r));
+  const handleBlockDefSave = (key, patch)    => setBlockDefs(prev => prev.map(r => r.key === key ? { ...r, ...patch } : r));
 
-  const handleBlockDefSave = (key, patch) => {
-    setBlockDefs(prev => prev.map(r => r.key === key ? { ...r, ...patch } : r));
-  };
+  const tab = TABS.find(t => t.id === activeTab);
 
-  const filtered = rows.filter(r => r.category === activeTab);
+  // Groepeer rijen voor huidige tab
+  const grouped = tab?.groups
+    ? groupRows(rows.filter(r => r.category === activeTab), tab.groups)
+    : [];
+
+  const tabCount = (t) => {
+    if (t.id === "blocks") return blockDefs.length;
+    return rows.filter(r => r.category === t.id).length;
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1a365d] font-sans">
@@ -220,7 +358,8 @@ export default function AdminPage({ user, onSignOut }) {
             className="flex items-center gap-1.5 text-white/60 hover:text-white border border-white/20 hover:border-white/40 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all">
             <RefreshCw size={11} /> Vernieuwen
           </button>
-          <a href="/" className="text-white/60 hover:text-white border border-white/20 hover:border-white/40 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all">
+          <a href="/"
+            className="text-white/60 hover:text-white border border-white/20 hover:border-white/40 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all">
             ← Naar App
           </a>
           <button onClick={onSignOut}
@@ -232,7 +371,7 @@ export default function AdminPage({ user, onSignOut }) {
 
       <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
 
-        {/* Uitleg */}
+        {/* Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-sm px-5 py-3 text-sm text-blue-800">
           <strong>Wijzigingen zijn direct actief</strong> — prompts gelden bij de volgende API-aanroep,
           labels bij de volgende pagina-refresh. Geen deploy nodig.
@@ -240,48 +379,59 @@ export default function AdminPage({ user, onSignOut }) {
 
         {/* Tabs */}
         <div className="flex gap-0 border-b border-slate-200">
-          {CATEGORIES.map(cat => (
+          {TABS.map(t => (
             <button
-              key={cat}
-              onClick={() => setActiveTab(cat)}
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
               className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all -mb-px
-                ${activeTab === cat
+                ${activeTab === t.id
                   ? "border-[#8dc63f] text-[#1a365d]"
                   : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
-              {CATEGORY_LABELS[cat]}
+              {t.label}
               <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
-                {cat === "blocks" ? blockDefs.length : rows.filter(r => r.category === cat).length}
+                {loading ? "…" : tabCount(t)}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Rijen */}
+        {/* Content */}
         {loading ? (
           <div className="flex items-center gap-3 text-slate-400 py-12 justify-center">
             <RefreshCw size={16} className="animate-spin" />
             <span className="text-sm">Config laden…</span>
           </div>
+
         ) : activeTab === "blocks" ? (
-          blockDefs.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-12">Geen blok definities gevonden</p>
-          ) : (
-            <div className="space-y-2">
-              <div className="bg-blue-50 border border-blue-200 rounded-sm px-5 py-3 text-sm text-blue-800">
-                Wijzigingen zijn direct actief na de volgende pagina-refresh in de app. De sleutel (key) is niet aanpasbaar.
-              </div>
-              {blockDefs.map(row => (
-                <BlockDefRow key={row.key} row={row} onSave={handleBlockDefSave} />
-              ))}
-            </div>
-          )
-        ) : filtered.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-12">Geen rijen gevonden</p>
-        ) : (
+          /* ── Blok Titels ── */
           <div className="space-y-2">
-            {filtered.map(row => (
-              <ConfigRow key={row.key} row={row} onSave={handleSave} />
+            <div className="bg-blue-50 border border-blue-200 rounded-sm px-5 py-3 text-sm text-blue-800">
+              Wijzigingen zijn direct actief na de volgende pagina-refresh in de app.
+              De sleutel (key) is niet aanpasbaar.
+            </div>
+            <div className="border border-slate-200 rounded-sm overflow-hidden">
+              {blockDefs.length === 0
+                ? <p className="text-slate-400 text-sm text-center py-12">Geen blok definities gevonden</p>
+                : blockDefs.map(row => (
+                    <BlockDefRow key={row.key} row={row} onSave={handleBlockDefSave} />
+                  ))
+              }
+            </div>
+          </div>
+
+        ) : grouped.length === 0 ? (
+          <p className="text-slate-400 text-sm text-center py-12">Geen rijen gevonden</p>
+
+        ) : (
+          /* ── Gegroepeerde rijen ── */
+          <div className="space-y-4">
+            {grouped.map(group => (
+              <GroupSection key={group.id} group={group}>
+                {group.rows.map(row => (
+                  <ConfigRow key={row.key} row={row} onSave={handleSave} />
+                ))}
+              </GroupSection>
             ))}
           </div>
         )}

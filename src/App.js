@@ -7,7 +7,7 @@ import {
 import { AuthProvider, useAuth } from "./shared/services/auth.service";
 import LoginScreen from "./LoginScreen";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
-import { AppConfigProvider } from "./shared/context/AppConfigContext";
+import { AppConfigProvider, useAppConfig } from "./shared/context/AppConfigContext";
 import AdminPage from "./features/admin/AdminPage";
 
 // Canvas feature
@@ -26,8 +26,9 @@ import MasterImporterPanel from "./features/dossier/components/MasterImporterPan
 
 // ── Main App ─────────────────────────────────────────────────────────────────
 function AppInner() {
-  const { t, lang, setLang } = useLang();
-  const { user, signOut }    = useAuth();
+  const { t, lang, setLang }   = useLang();
+  const { user, signOut }      = useAuth();
+  const { label: appLabel }    = useAppConfig();
 
   // ── UI-only state (panels, modals — geen business logic) ──────────────────
   const [activeBlockId,   setActiveBlockId]   = useState(null);
@@ -76,10 +77,10 @@ function AppInner() {
           </div>
           <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
             <h1 className="text-[15px] font-bold tracking-[0.14em] uppercase text-white leading-none">
-              Business Transformation Canvas
+              {appLabel("app.title", "Business Transformation Canvas")}
             </h1>
             <p className="text-[10px] tracking-[0.12em] text-[#8dc63f] mt-1.5 uppercase font-semibold">
-              From strategy to execution
+              {appLabel("app.subtitle", "From strategy to execution")}
             </p>
           </div>
         </div>
@@ -273,7 +274,7 @@ function AppInner() {
               </button>
             )}
             <p className="text-[9px] text-slate-300 uppercase tracking-widest">
-              Kingfisher & Partners · From strategy to execution
+              {appLabel("footer.tagline", "Kingfisher & Partners · From strategy to execution")}
             </p>
           </div>
         </main>
