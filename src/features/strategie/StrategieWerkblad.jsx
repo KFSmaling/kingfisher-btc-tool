@@ -492,7 +492,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [saveStatus, setSaveStatus] = useState("idle");
 
   // Data state
-  const [core, setCore]         = useState({ missie: "", visie: "", ambitie: "", kernwaarden: [] });
+  const [core, setCore]         = useState({ missie: "", visie: "", ambitie: "", kernwaarden: [], samenvatting: "" });
   const [items, setItems]       = useState([]);   // analysis_items
   const [themas, setThemas]     = useState([]);   // strategic_themes incl. ksf_kpi
 
@@ -532,7 +532,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       loadStrategicThemes(canvasId),
     ]).then(([{ data: coreData }, { data: itemsData }, { data: themasData }]) => {
       if (coreData) {
-        setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [] });
+        setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [], samenvatting: coreData.samenvatting || "" });
         setAnalysis(coreData.analysis || null);
       }
       if (itemsData) setItems(itemsData);
@@ -558,7 +558,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   useEffect(() => {
     if (!isLoaded) return;
     const swotCount = items.filter(i => i.tag && i.tag !== "niet_relevant").length;
-    onManualSaved?.({ ...core, themaCount: themas.length, swotCount });
+    onManualSaved?.({ ...core, themaCount: themas.length, swotCount, samenvatting: core.samenvatting || "" });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [core, themas.length, items, isLoaded]);
 
@@ -1109,6 +1109,23 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 </div>
               )}
             </div>
+          </div>
+
+          {/* ── Strategische Samenvatting — 2 zinnen, zichtbaar op canvas + richtlijnen ── */}
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[13px] font-semibold text-slate-600">
+                {appLabel("strat.field.samenvatting", "Strategische Samenvatting")}
+              </label>
+              <span className="text-[10px] text-slate-400">Verschijnt op het canvas en in het Richtlijnen werkblad</span>
+            </div>
+            <textarea
+              value={core.samenvatting || ""}
+              onChange={e => setCore(prev => ({ ...prev, samenvatting: e.target.value }))}
+              placeholder="Schrijf in max. 2 zinnen waar de organisatie over 3 jaar staat en wat de belangrijkste richting is…"
+              rows={3}
+              className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-none focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+            />
           </div>
         </section>
 

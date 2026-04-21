@@ -83,7 +83,7 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
   onChangeField, onChangeImplication, onToggleTheme, onDelete,
   implLoading, onGenerateImplications,
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const linked = Array.isArray(guideline.linked_themes) ? guideline.linked_themes : [];
   const impl   = guideline.implications || EMPTY_IMPL;
 
@@ -349,7 +349,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   // Data state
   const [guidelines, setGuidelines] = useState([]);
   const [themas,     setThemas]     = useState([]);
-  const [core,       setCore]       = useState({ missie: "", visie: "", ambitie: "", kernwaarden: [] });
+  const [core,       setCore]       = useState({ missie: "", visie: "", ambitie: "", kernwaarden: [], samenvatting: "" });
   const [canvasName, setCanvasName] = useState("");
 
   // AI overlay state
@@ -390,7 +390,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     ]).then(([{ data: gl }, { data: th }, { data: co }, { data: ga }, { data: cv }]) => {
       setGuidelines(gl || []);
       setThemas(th || []);
-      if (co) setCore({ missie: co.missie || "", visie: co.visie || "", ambitie: co.ambitie || "", kernwaarden: co.kernwaarden || [] });
+      if (co) setCore({ missie: co.missie || "", visie: co.visie || "", ambitie: co.ambitie || "", kernwaarden: co.kernwaarden || [], samenvatting: co.samenvatting || "" });
       if (ga?.recommendations) setAnalysis(ga.recommendations);
       if (cv?.name) setCanvasName(cv.name);
       setIsLoaded(true);
@@ -595,7 +595,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-b-2 border-[#1a365d]/20 flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[#8dc63f] border-b border-b-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={onClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
             <ArrowLeft size={18} />
@@ -630,16 +630,22 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
 
       {/* ── Context strip — drie panelen ── */}
       <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-5">
-        <div className="grid grid-cols-3 gap-4" style={{ height: "11rem" }}>
+        <div className="grid grid-cols-3 gap-4" style={{ height: "16rem" }}>
 
-          {/* Paneel 1: Stip op de Horizon */}
+          {/* Paneel 1: Stip op de Horizon — toont strategische samenvatting (max 2 zinnen) */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
               Stip op de Horizon
             </p>
-            <p className="text-sm font-semibold text-[#1a365d] leading-snug line-clamp-4 flex-1">
-              {core.ambitie || <span className="italic text-slate-300 font-normal text-xs">Geen ambitie ingevuld — voeg toe in het Strategie Werkblad</span>}
-            </p>
+            {(core.samenvatting || core.ambitie) ? (
+              <p className="text-sm font-semibold text-[#1a365d] leading-snug flex-1 overflow-y-auto pr-1">
+                {core.samenvatting || core.ambitie}
+              </p>
+            ) : (
+              <p className="text-xs italic text-slate-300 flex-1">
+                Vul de Strategische Samenvatting in het Strategie Werkblad in — max. 2 zinnen over waar de organisatie over 3 jaar staat.
+              </p>
+            )}
             {core.kernwaarden?.length > 0 && (
               <p className="text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100 flex-shrink-0 truncate">
                 {core.kernwaarden.slice(0, 4).join(" · ")}

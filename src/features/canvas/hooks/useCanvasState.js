@@ -22,6 +22,7 @@ import {
 import { BLOCKS, EXAMPLE_BULLETS } from "../components/BlockCard";
 import { log, err } from "../../../shared/utils/logger";
 import { loadGuidelineCounts } from "../../richtlijnen/services/guidelines.service";
+import { loadStrategyCore, loadStrategicThemes, loadAnalysisItems } from "../../strategie/services/strategy.service";
 
 /**
  * @param {object} options
@@ -86,9 +87,26 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
     });
     const sm = full.data?.strategy?.details?.manual;
     setStrategyManual(sm || null);
-    // Laad guideline counts asynchroon (geen blokkerende state)
-    loadGuidelineCounts(full.id).then(({ data }) => {
-      setGuidelineCounts(data || {});
+    // Laad guideline counts + strategy_core asynchroon (niet-blokkerend)
+    Promise.all([
+      loadGuidelineCounts(full.id),
+      loadStrategyCore(full.id),
+      loadStrategicThemes(full.id),
+      loadAnalysisItems(full.id),
+    ]).then(([{ data: counts }, { data: co }, { data: themes }, { data: analysisItems }]) => {
+      setGuidelineCounts(counts || {});
+      if (co || themes) {
+        const swotCount = (analysisItems || []).filter(i => i.tag && i.tag !== "niet_relevant").length;
+        setStrategyManual({
+          missie:       co?.missie       || null,
+          visie:        co?.visie        || null,
+          ambitie:      co?.ambitie      || null,
+          kernwaarden:  co?.kernwaarden  || [],
+          samenvatting: co?.samenvatting || null,
+          themaCount:   (themes || []).length,
+          swotCount,
+        });
+      }
     });
     setTimeout(() => { suppressSaveRef.current = false; }, 100);
   }, []);

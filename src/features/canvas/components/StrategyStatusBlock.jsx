@@ -45,10 +45,14 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
         </div>
       </div>
 
-      {/* Missie-preview als ingevuld, anders subtiele klik-hint */}
-      {filled(strategyManual?.missie) ? (
-        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic">
-          {String(strategyManual.missie).slice(0, 220)}{strategyManual.missie.length > 220 ? "…" : ""}
+      {/* Strategische samenvatting (max 2 zinnen) — geen bronvermelding */}
+      {filled(strategyManual?.samenvatting) ? (
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic line-clamp-2">
+          {strategyManual.samenvatting}
+        </p>
+      ) : filled(strategyManual?.missie) ? (
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic line-clamp-2">
+          {strategyManual.missie}
         </p>
       ) : (
         <p className="text-[11px] text-slate-300 italic">Klik om het strategie werkblad te openen →</p>

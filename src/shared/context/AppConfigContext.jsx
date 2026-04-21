@@ -15,14 +15,14 @@ import { supabase } from "../services/supabase.client";
 
 // ── Hardcoded fallbacks (veiligheidsnet als DB onbereikbaar is) ──────────────
 const LABEL_FALLBACKS = {
-  // Applicatie
+  // Applicatie (header + footer)
   "app.title":                      "Business Transformation Canvas",
   "app.subtitle":                   "From strategy to execution",
   "footer.tagline":                 "Kingfisher & Partners · From strategy to execution",
   // Werkblad namen
   "werkblad.strategie":             "Strategie Werkblad",
   "werkblad.richtlijnen":           "Richtlijnen & Leidende Principes",
-  // Strategie Werkblad — secties (bestaand, voor backwards-compat)
+  // Strategie Werkblad — secties (legacy, voor backwards-compat)
   "section.extern":                 "Externe Marktontwikkelingen",
   "section.intern":                 "Interne Ontwikkelingen",
   "section.identiteit":             "Identiteit & Positionering",
@@ -37,6 +37,7 @@ const LABEL_FALLBACKS = {
   "strat.field.visie":              "Visie",
   "strat.field.ambitie":            "Ambitie (BHAG)",
   "strat.field.kernwaarden":        "Kernwaarden",
+  "strat.field.samenvatting":       "Strategische Samenvatting",
   "strat.field.extern":             "Externe Ontwikkelingen",
   "strat.field.intern":             "Interne Ontwikkelingen",
   // Richtlijnen Werkblad — segmenten
