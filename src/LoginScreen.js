@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useAuth } from "./services/authContext";
 
 export default function LoginScreen() {
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode]       = useState("login");   // "login" | "register"
+  const { signIn, signUp, resetPassword } = useAuth();
+  const [mode, setMode]       = useState("login");   // "login" | "register" | "reset"
   const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]     = useState(null);
@@ -28,12 +28,20 @@ export default function LoginScreen() {
             setError(error.message);
           }
         }
-      } else {
+      } else if (mode === "register") {
         const { error } = await signUp({ email, password });
         if (error) {
           setError(error.message);
         } else {
           setInfo("Account aangemaakt! Je kunt nu direct inloggen.");
+          setMode("login");
+        }
+      } else if (mode === "reset") {
+        const { error } = await resetPassword(email);
+        if (error) {
+          setError(error.message);
+        } else {
+          setInfo("Reset-link verzonden. Controleer je inbox (ook je spamfolder).");
           setMode("login");
         }
       }
@@ -45,10 +53,22 @@ export default function LoginScreen() {
     }
   };
 
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setError(null);
+    setInfo(null);
+  };
+
+  const titles = {
+    login:    "Inloggen",
+    register: "Account aanmaken",
+    reset:    "Wachtwoord vergeten",
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F7F9] flex flex-col">
 
-      {/* Header — blauw, consistent met canvas */}
+      {/* Header */}
       <header className="h-20 bg-[#1a365d] flex items-center shadow-md">
         <div className="px-6 flex items-center justify-center h-full border-r border-white/10">
           <div className="bg-white rounded px-2 py-1">
@@ -69,15 +89,14 @@ export default function LoginScreen() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
 
-          {/* Card */}
           <div className="bg-white rounded-sm shadow-lg border-t-4 border-[#1a365d] overflow-hidden">
 
             {/* Card header */}
             <div className="px-8 py-7 bg-[#1a365d]">
               <h2 className="text-white font-black text-base uppercase tracking-widest">
-                {mode === "login" ? "Inloggen" : "Account aanmaken"}
+                {titles[mode]}
               </h2>
-              <p className="text-white/40 text-[10px] mt-1 uppercase tracking-wider">
+              <p className="text-white/40 text-[11px] mt-1 uppercase tracking-wider">
                 Kingfisher &amp; Partners — intern gebruik
               </p>
             </div>
@@ -87,18 +106,18 @@ export default function LoginScreen() {
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-sm px-4 py-3">
-                  <p className="text-red-600 text-xs">{error}</p>
+                  <p className="text-red-600 text-sm">{error}</p>
                 </div>
               )}
 
               {info && (
                 <div className="bg-green-50 border border-green-200 rounded-sm px-4 py-3">
-                  <p className="text-green-700 text-xs">{info}</p>
+                  <p className="text-green-700 text-sm">{info}</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   E-mailadres
                 </label>
                 <input
@@ -112,69 +131,78 @@ export default function LoginScreen() {
                 />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                    Wachtwoord
-                  </label>
-                  {mode === "login" && (
-                    <button
-                      type="button"
-                      onClick={() => setInfo("Neem contact op met de beheerder om je wachtwoord te resetten.")}
-                      className="text-[10px] text-[#1a365d] hover:text-[#2c7a4b] font-semibold transition-colors"
-                    >
-                      Wachtwoord vergeten?
-                    </button>
-                  )}
+              {mode !== "reset" && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Wachtwoord
+                    </label>
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => switchMode("reset")}
+                        className="text-xs text-[#1a365d] hover:text-[#2c7a4b] font-semibold transition-colors"
+                      >
+                        Wachtwoord vergeten?
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    placeholder="Minimaal 6 tekens"
+                    className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[#00AEEF] transition-colors bg-slate-50"
+                  />
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  placeholder="Minimaal 6 tekens"
-                  className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[#00AEEF] transition-colors bg-slate-50"
-                />
-              </div>
+              )}
+
+              {mode === "reset" && (
+                <p className="text-sm text-slate-500">
+                  Vul je e-mailadres in. Je ontvangt een link om je wachtwoord opnieuw in te stellen.
+                </p>
+              )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
               >
-                {loading ? "Bezig…" : mode === "login" ? "Inloggen" : "Account aanmaken"}
+                {loading
+                  ? "Bezig…"
+                  : mode === "login"
+                    ? "Inloggen"
+                    : mode === "register"
+                      ? "Account aanmaken"
+                      : "Reset-link versturen"}
               </button>
 
             </form>
 
             {/* Mode toggle */}
-            <div className="px-8 pb-7 border-t border-slate-100 pt-5">
-              {mode === "login" ? (
-                <p className="text-sm text-slate-500 text-center">
-                  Nog geen account?{" "}
-                  <button
-                    onClick={() => { setMode("register"); setError(null); setInfo(null); }}
-                    className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors"
-                  >
-                    Aanmaken
-                  </button>
-                </p>
-              ) : (
+            <div className="px-8 pb-7 border-t border-slate-100 pt-5 space-y-2">
+              {mode !== "login" && (
                 <p className="text-sm text-slate-500 text-center">
                   Al een account?{" "}
-                  <button
-                    onClick={() => { setMode("login"); setError(null); setInfo(null); }}
-                    className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors"
-                  >
+                  <button onClick={() => switchMode("login")} className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors">
                     Inloggen
+                  </button>
+                </p>
+              )}
+              {mode !== "register" && (
+                <p className="text-sm text-slate-500 text-center">
+                  Nog geen account?{" "}
+                  <button onClick={() => switchMode("register")} className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors">
+                    Aanmaken
                   </button>
                 </p>
               )}
             </div>
           </div>
 
-          <p className="text-center text-[9px] text-slate-400 mt-6 uppercase tracking-widest">
+          <p className="text-center text-[10px] text-slate-400 mt-6 uppercase tracking-widest">
             Kingfisher &amp; Partners · Vertrouwelijk
           </p>
         </div>

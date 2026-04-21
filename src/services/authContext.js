@@ -41,8 +41,15 @@ export function AuthProvider({ children }) {
     return supabase.auth.signOut();
   };
 
+  const resetPassword = (email) => {
+    if (!supabase) return Promise.resolve({ error: { message: "Supabase is niet geconfigureerd." } });
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
