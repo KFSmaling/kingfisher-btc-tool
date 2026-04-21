@@ -205,7 +205,16 @@ export async function deleteCanvas(id) {
     .from("analysis_items").delete().eq("canvas_id", id);
   if (itemsErr) console.error("[deleteCanvas] items:", itemsErr.message);
 
-  // 5. strategy_core
+  // 5. guidelines + guideline_analysis (Sprint 8)
+  const { error: glErr } = await supabase
+    .from("guidelines").delete().eq("canvas_id", id);
+  if (glErr) console.error("[deleteCanvas] guidelines:", glErr.message);
+
+  const { error: gaErr } = await supabase
+    .from("guideline_analysis").delete().eq("canvas_id", id);
+  if (gaErr) console.error("[deleteCanvas] guideline_analysis:", gaErr.message);
+
+  // 6. strategy_core
   const { error: coreErr } = await supabase
     .from("strategy_core").delete().eq("canvas_id", id);
   if (coreErr) console.error("[deleteCanvas] core:", coreErr.message);

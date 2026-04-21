@@ -14,8 +14,8 @@ import { X } from "lucide-react";
 // ── Werkblad Registry ────────────────────────────────────────────────────────
 // Voeg hier nieuwe verdiepingen toe — App.js hoeft nooit te wijzigen.
 const WERKBLAD_REGISTRY = {
-  strategy: React.lazy(() => import("../../strategie/StrategieWerkblad")),
-  // principles: React.lazy(() => import("../../principles/PrinciplesWerkblad")),
+  strategy:   React.lazy(() => import("../../strategie/StrategieWerkblad")),
+  principles: React.lazy(() => import("../../richtlijnen/RichtlijnenWerkblad")),
   // customers:  React.lazy(() => import("../../customers/CustomersWerkblad")),
   // people:     React.lazy(() => import("../../people/PeopleWerkblad")),
 };
