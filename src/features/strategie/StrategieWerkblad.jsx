@@ -390,7 +390,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
 }
 
 /** Tekstveld met Draft-modus, Magic Staff en Improve-menu */
-function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, onImprove, onAcceptDraft, onEditDraft, onRejectDraft, placeholder, multiline = true, magicResult }) {
+function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, onImprove, onAcceptDraft, onEditDraft, onRejectDraft, placeholder, multiline = true, rows = 5, magicResult }) {
   const hasDraft = draft !== null && draft !== undefined;
   const [improveOpen, setImproveOpen] = useState(false);
   const IMPROVE_PRESETS = [
@@ -440,7 +440,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           value={value || ""}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
-          rows={5}
+          rows={rows}
           className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2.5 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
         />
       ) : (
@@ -716,6 +716,27 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       setAnalysisLoading(false);
     }
   }, [core, items, themas, canvasId, appPrompt]);
+
+  // ── Samenvatting genereren ───────────────────────────────────────────────────
+  const handleGenerateSamenvatting = async () => {
+    setMagicFor("samenvatting", { loading: true, suggestion: null, error: null });
+    try {
+      const res = await apiFetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "samenvatting", core, themas,
+          languageInstruction: t("ai.language"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      setDraftFor("samenvatting", data.samenvatting || "");
+      setMagicFor("samenvatting", { loading: false });
+    } catch (err) {
+      setMagicFor("samenvatting", { loading: false, error: err.message });
+    }
+  };
 
   // ── Full Draft ───────────────────────────────────────────────────────────────
   const handleFullDraft = async () => {
@@ -1112,19 +1133,21 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           </div>
 
           {/* ── Strategische Samenvatting — 2 zinnen, zichtbaar op canvas + richtlijnen ── */}
-          <div className="space-y-1.5 pt-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[13px] font-semibold text-slate-600">
-                {appLabel("strat.field.samenvatting", "Strategische Samenvatting")}
-              </label>
-              <span className="text-[10px] text-slate-400">Verschijnt op het canvas en in het Richtlijnen werkblad</span>
-            </div>
-            <textarea
-              value={core.samenvatting || ""}
-              onChange={e => setCore(prev => ({ ...prev, samenvatting: e.target.value }))}
-              placeholder="Schrijf in max. 2 zinnen waar de organisatie over 3 jaar staat en wat de belangrijkste richting is…"
+          <div className="pt-2">
+            <WerkbladTextField
+              label={appLabel("strat.field.samenvatting", "Strategische Samenvatting")}
+              fieldKey="samenvatting"
+              value={core.samenvatting}
+              draft={drafts.samenvatting}
+              onChange={v => updateCore("samenvatting", v)}
+              onMagic={handleGenerateSamenvatting}
+              onImprove={(preset) => callImprove("samenvatting", core.samenvatting, preset)}
+              onAcceptDraft={() => acceptDraft("samenvatting")}
+              onEditDraft={() => editDraft("samenvatting")}
+              onRejectDraft={() => clearDraft("samenvatting")}
+              magicResult={magic.samenvatting}
               rows={3}
-              className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-none focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+              placeholder="Schrijf in max. 2 zinnen waar de organisatie over 3 jaar staat en wat de belangrijkste richting is…"
             />
           </div>
         </section>

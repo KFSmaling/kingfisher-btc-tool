@@ -212,6 +212,48 @@ ${themasContext}`;
   return JSON.parse(jsonMatch[0]);
 }
 
+// ── MODE: SAMENVATTING ────────────────────────────────────────────────────────
+async function generateSamenvatting(core, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+  const themasCtx = themas.length > 0
+    ? themas.map(t => t.title).filter(Boolean).join(", ")
+    : "(geen thema's)";
+
+  const rawSystem = systemOverride || `Je schrijft een strategische samenvatting van maximaal 2 zinnen.
+
+REGELS:
+- Maximaal 2 zinnen, totaal max 60 woorden
+- Beschrijf concreet waar de organisatie over 3 jaar staat
+- Combineer: de transformatierichting + marktpositie of maatschappelijke impact
+- Specifiek en inspirerend — geen algemeenheden of managementjargon
+- Geen bullets, lijsten of kopjes — alleen vloeiende tekst
+- {taal_instructie}
+
+Antwoord met ALLEEN de samenvatting — geen uitleg, geen aanhalingstekens.`;
+
+  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const user = `Missie: ${core.missie || "(niet ingevuld)"}
+Visie: ${core.visie || "(niet ingevuld)"}
+Ambitie: ${core.ambitie || "(niet ingevuld)"}
+Kernwaarden: ${(core.kernwaarden || []).join(", ") || "(niet ingevuld)"}
+Strategische thema's: ${themasCtx}
+
+Schrijf een strategische samenvatting van maximaal 2 zinnen.`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: HEADERS(apiKey),
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 150,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "AI fout (samenvatting)");
+  return (data.content || []).map(c => c.text || "").join("").trim();
+}
+
 // ── HANDLER ───────────────────────────────────────────────────────────────────
 const { requireAuth } = require("./_auth");
 
@@ -222,7 +264,7 @@ module.exports = async function handler(req, res) {
 
   const {
     mode, core = {}, items = [], themas = [], thema,
-    systemPromptThemes, systemPromptKsfKpi, systemPromptAnalysis,
+    systemPromptThemes, systemPromptKsfKpi, systemPromptAnalysis, systemPromptSamenvatting,
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
   } = req.body || {};
   if (!mode) return res.status(400).json({ error: "Missing mode" });
@@ -243,6 +285,10 @@ module.exports = async function handler(req, res) {
     if (mode === "analysis") {
       const result = await generateAnalysis(core, items, themas, apiKey, systemPromptAnalysis, languageInstruction);
       return res.status(200).json(result);
+    }
+    if (mode === "samenvatting") {
+      const samenvatting = await generateSamenvatting(core, themas, apiKey, systemPromptSamenvatting, languageInstruction);
+      return res.status(200).json({ samenvatting });
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });
   } catch (err) {
