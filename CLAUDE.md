@@ -267,6 +267,7 @@ Doorloop dit vóór je code schrijft:
 - [ ] Staat de feature-root met `key={canvasId}`? Is async state-handling volgens sectie 4?
 - [ ] Kan ik deployen via `./deploy-prod.sh`?
 - [ ] Worden bestaande docs (`CLAUDE.md` compliance status, `TECH_DEBT.md`) geraakt door deze change? → in dezelfde commit meenemen
+- [ ] Is dit een Issue, Jam-opname, of TECH_DEBT-item volgens `WORKFLOW.md`?
 
 ---
 
