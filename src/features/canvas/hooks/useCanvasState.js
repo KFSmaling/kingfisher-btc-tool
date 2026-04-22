@@ -208,12 +208,20 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
       setActiveCanvasId(data.id);
       setScope(data.name);
       setDocs({}); setInsights({}); setBullets({});
+      setStrategyManual(null);
+      setGuidelineCounts({});
       onCanvasSwitch?.();
       setTimeout(() => { suppressSaveRef.current = false; }, 100);
     }
   }, [user, lang, onCanvasSwitch]);
 
   const handleSelectCanvas = useCallback(async (canvasRecord) => {
+    // Reset state METEEN zodat de gebruiker geen verouderd canvas ziet tijdens de DB-fetch
+    suppressSaveRef.current = true;
+    setDocs({}); setInsights({}); setBullets({});
+    setStrategyManual(null);
+    setGuidelineCounts({});
+
     const { data: full } = await loadCanvasById(canvasRecord.id);
     if (full) {
       applyCanvasData(full);

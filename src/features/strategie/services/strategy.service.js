@@ -34,11 +34,16 @@ export async function loadAnalysisItems(canvasId) {
 
 export async function upsertAnalysisItem(item) {
   if (!supabase) return { data: null, error: "Supabase niet geconfigureerd" };
-  const { data, error } = await supabase
-    .from("analysis_items")
-    .upsert(item, { onConflict: "id" })
-    .select()
-    .maybeSingle();
+  // Gebruik insert voor nieuwe items (geen id) en update voor bestaande.
+  // .upsert met onConflict:"id" en id=undefined geeft een Supabase-js interne fout.
+  let query;
+  if (item.id) {
+    const { id, ...fields } = item;
+    query = supabase.from("analysis_items").update(fields).eq("id", id).select().maybeSingle();
+  } else {
+    query = supabase.from("analysis_items").insert(item).select().maybeSingle();
+  }
+  const { data, error } = await query;
   if (error) console.error("[analysis_items] upsert mislukt:", error.message);
   return { data, error };
 }

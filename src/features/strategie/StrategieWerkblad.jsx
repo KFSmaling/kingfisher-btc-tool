@@ -634,13 +634,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
       const hasChunks = chunks && chunks.length > 0;
 
-      // Geen documenten: voor analyse-velden fallback op algemene kennis, anders stoppen
+      // Geen documenten: voor analyse-velden en kernwaarden fallback op algemene kennis, anders stoppen
       if (!hasChunks) {
-        if (!isAnalysisField) {
+        if (!isAnalysisField && fieldKey !== "kernwaarden") {
           setMagicFor(fieldKey, { loading: false, noChunks: true, suggestion: null });
           return;
         }
-        // Extern/intern zonder dossier → general knowledge
+        // Extern/intern/kernwaarden zonder dossier → general knowledge
         const suggestion = await callGeneralKnowledgeMagic(fieldKey, isArray);
         setMagicFor(fieldKey, { loading: false, suggestion, citations: [], isGeneralKnowledge: true });
         if (suggestion) setDraftFor(fieldKey, suggestion);
