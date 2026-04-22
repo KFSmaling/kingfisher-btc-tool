@@ -32,3 +32,9 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Supabase CLI cache
+supabase/.temp/
+
+# Local schema exports (schema is documented in DATABASE.md)
+schema.sql

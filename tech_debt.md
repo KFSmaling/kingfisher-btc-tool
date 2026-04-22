@@ -123,7 +123,9 @@ komende week voor nieuwe demo).
   elastic-hellman bewust behouden als parser/RAG-infrastructuur (sprint 3B/4B).
 - 2026-04-22 — Governance — BTC Tool Project ingericht in Claude.ai met CLAUDE.md, 
   TECH_DEBT.md, DATABASE.md als Project Knowledge. Instructions afgestemd op werkstijl. 
-  Testcase (canvas notes feature) bevestigd dat compliance-check automatisch werkt.---
+  Testcase (canvas notes feature) bevestigde dat compliance-check automatisch werkt.
+
+---
 
 ## Bekende functionele technische schuld
 
