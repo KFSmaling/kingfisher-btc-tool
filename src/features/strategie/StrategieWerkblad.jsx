@@ -523,22 +523,46 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Load data from DB
+  // Load data from DB — canoniek patroon (CLAUDE.md 4.3)
   useEffect(() => {
-    if (!canvasId) { setIsLoaded(true); return; }
+    const activeCanvasId = canvasId;   // capture vóór de async sprong
+    let cancelled = false;             // race-guard 1: unmount / effect re-run
+
+    // Reset vóór fetch — geen ghost data van vorig canvas
+    setIsLoaded(false);
+    setCore({ missie: "", visie: "", ambitie: "", kernwaarden: [], samenvatting: "" });
+    setItems([]);
+    setThemas([]);
+    setAnalysis(null);
+
+    if (!activeCanvasId) { setIsLoaded(true); return; }
+
     Promise.all([
-      loadStrategyCore(canvasId),
-      loadAnalysisItems(canvasId),
-      loadStrategicThemes(canvasId),
-    ]).then(([{ data: coreData }, { data: itemsData }, { data: themasData }]) => {
+      loadStrategyCore(activeCanvasId),
+      loadAnalysisItems(activeCanvasId),
+      loadStrategicThemes(activeCanvasId),
+    ]).then(([
+      { data: coreData,   error: coreErr   },
+      { data: itemsData,  error: itemsErr  },
+      { data: themasData, error: themasErr },
+    ]) => {
+      if (cancelled) return;                      // race-guard 1
+      if (activeCanvasId !== canvasId) return;    // race-guard 2: canvas gewisseld tijdens fetch
+
+      if (coreErr)   console.error("[StrategieWerkblad] core laden:",   coreErr.message);
+      if (itemsErr)  console.error("[StrategieWerkblad] items laden:",  itemsErr.message);
+      if (themasErr) console.error("[StrategieWerkblad] themas laden:", themasErr.message);
+
       if (coreData) {
         setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [], samenvatting: coreData.samenvatting || "" });
         setAnalysis(coreData.analysis || null);
       }
-      if (itemsData) setItems(itemsData);
+      if (itemsData)  setItems(itemsData);
       if (themasData) setThemas(themasData);
       setIsLoaded(true);
     });
+
+    return () => { cancelled = true; };           // cleanup: markeer als afgebroken
   }, [canvasId]);
 
   // Debounced autosave van strategy_core

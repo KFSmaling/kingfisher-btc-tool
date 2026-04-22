@@ -381,16 +381,41 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Load all data
+  // Load all data — canoniek patroon (CLAUDE.md 4.3)
   useEffect(() => {
-    if (!canvasId) { setIsLoaded(true); return; }
+    const activeCanvasId = canvasId;   // capture vóór de async sprong
+    let cancelled = false;             // race-guard 1: unmount / effect re-run
+
+    // Reset vóór fetch — geen ghost data van vorig canvas
+    setIsLoaded(false);
+    setGuidelines([]);
+    setThemas([]);
+    setCore({ missie: "", visie: "", ambitie: "", kernwaarden: [], samenvatting: "" });
+    setAnalysis(null);
+    setCanvasName("");
+
+    if (!activeCanvasId) { setIsLoaded(true); return; }
+
     Promise.all([
-      loadGuidelines(canvasId),
-      loadStrategicThemes(canvasId),
-      loadStrategyCore(canvasId),
-      loadGuidelineAnalysis(canvasId),
-      loadCanvasById(canvasId),
-    ]).then(([{ data: gl }, { data: th }, { data: co }, { data: ga }, { data: cv }]) => {
+      loadGuidelines(activeCanvasId),
+      loadStrategicThemes(activeCanvasId),
+      loadStrategyCore(activeCanvasId),
+      loadGuidelineAnalysis(activeCanvasId),
+      loadCanvasById(activeCanvasId),
+    ]).then(([
+      { data: gl, error: glErr },
+      { data: th, error: thErr },
+      { data: co, error: coErr },
+      { data: ga },
+      { data: cv },
+    ]) => {
+      if (cancelled) return;                      // race-guard 1
+      if (activeCanvasId !== canvasId) return;    // race-guard 2: canvas gewisseld tijdens fetch
+
+      if (glErr) console.error("[RichtlijnenWerkblad] guidelines laden:", glErr.message);
+      if (thErr) console.error("[RichtlijnenWerkblad] themas laden:",     thErr.message);
+      if (coErr) console.error("[RichtlijnenWerkblad] core laden:",       coErr.message);
+
       setGuidelines(gl || []);
       setThemas(th || []);
       if (co) setCore({ missie: co.missie || "", visie: co.visie || "", ambitie: co.ambitie || "", kernwaarden: co.kernwaarden || [], samenvatting: co.samenvatting || "" });
@@ -398,6 +423,8 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       if (cv?.name) setCanvasName(cv.name);
       setIsLoaded(true);
     });
+
+    return () => { cancelled = true; };           // cleanup: markeer als afgebroken
   }, [canvasId]);
 
   // ── Debounced save ────────────────────────────────────────────────────────

@@ -21,8 +21,8 @@
 
 | Item | Locatie | Status |
 |------|---------|--------|
-| `key={canvasId}` ontbreekt op `<Werkblad>` | `DeepDiveOverlay.jsx` L79 | Open |
-| `key={canvasId}` ontbreekt op `<MasterImporterPanel>` | `App.js` L329 | Open |
+| `key={canvasId}` ontbreekt op `<Werkblad>` | `DeepDiveOverlay.jsx` L79 | ✅ Done 2026-04-22 |
+| `key={canvasId}` ontbreekt op `<MasterImporterPanel>` | `App.js` L329 | ✅ Done 2026-04-22 |
 
 **Risico**: ghost data van vorig canvas zichtbaar in overlay/importer bij snel wisselen.  
 **Effort**: 5 min.
@@ -33,8 +33,8 @@
 
 | Item | Locatie | Status |
 |------|---------|--------|
-| Geen `cancelled` flag + captured canvasId | `StrategieWerkblad` useEffect L527 | Open |
-| Geen `cancelled` flag + captured canvasId | `RichtlijnenWerkblad` useEffect L385 | Open |
+| Geen `cancelled` flag + captured canvasId | `StrategieWerkblad` useEffect L527 | ✅ Done 2026-04-22 |
+| Geen `cancelled` flag + captured canvasId | `RichtlijnenWerkblad` useEffect L385 | ✅ Done 2026-04-22 |
 | `handleSelectCanvas` mist `cancelled`-guard | `useCanvasState` | Open |
 
 **Risico**: verouderde data overschrijft nieuwe data als user snel wisselt tijdens fetch.  
@@ -88,9 +88,8 @@ Alle async callbacks in `StrategieWerkblad` en `RichtlijnenWerkblad` gebruiken `
 
 ## Done log
 
-_Zet items die je afgerond hebt hier met datum en commit-hash, zodat je voortgang zichtbaar is._
-
-- [ ] (leeg)
+- 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
+- 2026-04-22 — P1 Load race-guards — `cancelled` flag + `canvasId`-guard in `StrategieWerkblad` en `RichtlijnenWerkblad` load-useEffects. Commit: `<HASH>`
 
 ---
 

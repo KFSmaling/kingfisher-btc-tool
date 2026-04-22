@@ -206,9 +206,9 @@ const handleSave = async (data) => {
 
 ### 4.6 Compliance status (per 2026-04-22)
 
-- **4.1** ⚠️ Grotendeels compliant; `DeepDiveOverlay` + `MasterImporterPanel` nog fixen (hoge prio)
+- **4.1** ✅ Compliant per 2026-04-22
 - **4.2** ❌ Systematisch non-compliant; zie `TECH_DEBT.md`
-- **4.3** ⚠️ `useCanvasState` reset is actueel; `StrategieWerkblad` + `RichtlijnenWerkblad` load-effects in fix
+- **4.3** ⚠️ Werkblad load-effects compliant per 2026-04-22; `useCanvasState.handleSelectCanvas` nog open (zie `TECH_DEBT.md`)
 - **4.4** ❌ Geen enkele callback gebruikt `canvasIdRef`; zie `TECH_DEBT.md`
 - **4.5** ✅ Contract is `{ data, error }` — zie sectie 3
 
@@ -258,6 +258,7 @@ Doorloop dit vóór je code schrijft:
 - [ ] Als ik data toevoeg aan `useCanvasState`: ook toevoegen aan de public API return
 - [ ] Staat de feature-root met `key={canvasId}`? Is async state-handling volgens sectie 4?
 - [ ] Kan ik deployen via `./deploy-prod.sh`?
+- [ ] Worden bestaande docs (`CLAUDE.md` compliance status, `TECH_DEBT.md`) geraakt door deze change? → in dezelfde commit meenemen
 
 ---
 
