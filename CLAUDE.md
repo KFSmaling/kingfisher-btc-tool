@@ -56,9 +56,167 @@ Alles wat per klant anders kan: **in de database**, niet hardcoded in React-comp
 
 **Services pattern**: alle Supabase-aanroepen gaan via `src/features/[feature]/services/[feature].service.js`. Nooit direct Supabase aanroepen in een component.
 
+### Service contract (actueel)
+
+Services retourneren `{ data, error }` objecten — ze gooien niet. De UI-laag checkt `error` expliciet en handelt af volgens sectie 4.2.
+
+```js
+// ✅ Correct — huidig contract
+export async function upsertGuideline(canvasId, data) {
+  if (!canvasId) return { data: null, error: new Error("canvasId is required") };
+  const { data: result, error } = await supabase
+    .from("guidelines")
+    .upsert({ canvas_id: canvasId, ...data })
+    .select()
+    .single();
+  return { data: result, error };
+}
+
+// Call-site
+const { data, error } = await guidelinesService.upsertGuideline(canvasId, payload);
+if (error) { /* zie sectie 4.2 */ }
+```
+
 ---
 
-## 4. COMPONENTEN — Loosely coupled, één verantwoordelijkheid
+## 4. STATE MANAGEMENT & DATA INTEGRITEIT
+
+State-problemen in deze app komen bijna altijd uit drie bronnen: ghost data bij canvas-wissel, silent save failures, en race conditions bij snel wisselen. Deze regels zijn **verplicht** — niet optioneel, niet "meestal".
+
+### 4.1 Lifecycle — forceer remount bij canvas-wissel
+
+Elk feature-component dat canvas-specifieke state bevat (strategy, guidelines, themes, canvas dashboard, overlays die op één canvas werken) krijgt `key={canvasId}` op de root van die feature. Dit dwingt React om de component-tree volledig te vernietigen en schoon op te bouwen — geen resten van het vorige canvas.
+
+```jsx
+// ✅ Correct — op feature-root / overlay-root
+<StrategyWerkblad key={canvasId} canvasId={canvasId} />
+<RichtlijnenWerkblad key={canvasId} canvasId={canvasId} />
+<DeepDiveOverlay key={canvasId} canvasId={canvasId} />
+<MasterImporterPanel key={canvasId} canvasId={canvasId} />
+
+// ❌ Fout — op individuele input (breekt focus tijdens typen)
+<input key={canvasId} value={value} />
+
+// ❌ Fout — geen key (ghost data van vorig canvas blijft)
+<StrategyWerkblad canvasId={canvasId} />
+```
+
+**Scope**: op feature-niveau of overlay-niveau, niet op pagina-niveau (te grof) en niet op input-niveau (te fijn).
+
+### 4.2 Async integriteit — geen silent fails
+
+Elke database-mutatie geeft een `Promise` terug met `{ data, error }`. De UI-laag gebruikt `await`, toont een loading state tot de server bevestigt, checkt `error` expliciet, en handelt elke error af met een duidelijke melding plus retry-optie.
+
+```jsx
+// ✅ Correct
+const handleSave = async () => {
+  setSaving(true);
+  const { error } = await guidelinesService.upsert(canvasId, data);
+  setSaving(false);
+  if (error) {
+    showError(
+      appLabel("error.save.failed", "Opslaan mislukt"),
+      { retry: handleSave }
+    );
+    return;
+  }
+};
+
+// ❌ Fout — fire-and-forget, error gesmoord
+upsertStrategyCore(canvasId, data).catch(() => {});
+
+// ❌ Fout — await maar geen error-check, UI verwijdert item ook als DB-delete faalt
+const removeItem = async (id) => {
+  await deleteService(id);
+  setItems(items.filter(i => i.id !== id));
+};
+
+// ❌ Fout — setTimeout om save "te verbergen", geen error-handling
+setTimeout(() => upsertStrategicTheme(canvasId, theme), 0);
+
+// ❌ Fout — optimistic update, UI wijzigt vóór server-bevestiging
+setItems(newItems);
+await saveItems(newItems); // als dit faalt: state en DB lopen uiteen
+```
+
+**Regels**:
+- Loading/saving indicator verdwijnt pas na server-bevestiging.
+- Elke error toont een duidelijke melding **mét** retry-optie.
+- Nooit code schrijven die aanneemt dat een save "altijd wel lukt".
+- Geen fire-and-forget. Geen ingeslikte catches. Geen `setTimeout` om saves te "verbergen".
+- Geen optimistic updates. UI wacht op server-bevestiging voordat de nieuwe waarde zichtbaar wordt. De "saving..." indicator overbrugt de latency.
+
+### 4.3 Data isolatie — reset en race-guards
+
+Bij canvas-wissel: reset lokale state naar `null` of `initialState` **voordat** de nieuwe fetch begint, en bescherm tegen race conditions als de gebruiker snel wisselt.
+
+```jsx
+// ✅ Correct — canoniek patroon
+useEffect(() => {
+  const activeCanvasId = canvasId;
+  let cancelled = false;
+  setData(null); // reset eerst, voorkomt ghost data
+
+  (async () => {
+    const { data: result, error } = await service.load(activeCanvasId);
+    if (cancelled) return;                       // race-guard 1: unmount / effect re-run
+    if (activeCanvasId !== canvasId) return;     // race-guard 2: canvas veranderd tijdens fetch
+    if (error) { setError(error); return; }
+    setData(result);
+  })();
+
+  return () => { cancelled = true; };
+}, [canvasId]);
+
+// ❌ Fout — geen reset, geen guard, Promise.all().then() zonder bescherming
+useEffect(() => {
+  Promise.all([loadA(canvasId), loadB(canvasId)]).then(([a, b]) => {
+    setA(a); setB(b); // kan verouderde data zijn als user inmiddels is gewisseld
+  });
+}, [canvasId]);
+```
+
+### 4.4 Stale closures in callbacks
+
+Callbacks die async werk doen (save, delete, AI-generate, accept-draft) mogen niet leunen op een `canvasId` uit een oudere render. Gebruik een ref, of geef `canvasId` expliciet mee op het moment dat de callback wordt aangeroepen.
+
+```jsx
+// ✅ Correct — ref blijft actueel
+const canvasIdRef = useRef(canvasId);
+useEffect(() => { canvasIdRef.current = canvasId; }, [canvasId]);
+
+const handleSave = async (data) => {
+  const { error } = await service.upsert(canvasIdRef.current, data);
+  if (error) { /* ... */ }
+};
+
+// ❌ Fout — stale closure, slaat op in vórig canvas als user snel wisselt
+const handleSave = async (data) => {
+  await service.upsert(canvasId, data); // canvasId uit render-moment, niet uit clickmoment
+};
+```
+
+### 4.5 Checklist bij state-werk
+
+- [ ] Heeft dit component canvas-specifieke state? → `key={canvasId}` op feature- of overlay-root
+- [ ] Is er een save/update/delete? → `await`, `{ data, error }` check, loading state tot server bevestigt, retry bij error
+- [ ] Is er een load bij `canvasId` change? → reset vooraf + captured `activeCanvasId` + `cancelled` flag + cleanup
+- [ ] Gebruikt een callback `canvasId` asynchroon? → `canvasIdRef.current` of parameter, geen closure
+- [ ] Retourneert de service `{ data, error }` en checkt de call-site `error`?
+
+### 4.6 Compliance status (per 2026-04-22)
+
+- **4.1** ⚠️ Grotendeels compliant; `DeepDiveOverlay` + `MasterImporterPanel` nog fixen (hoge prio)
+- **4.2** ❌ Systematisch non-compliant; zie `TECH_DEBT.md`
+- **4.3** ⚠️ `useCanvasState` reset is actueel; `StrategieWerkblad` + `RichtlijnenWerkblad` load-effects in fix
+- **4.4** ❌ Geen enkele callback gebruikt `canvasIdRef`; zie `TECH_DEBT.md`
+- **4.5** ✅ Contract is `{ data, error }` — zie sectie 3
+
+Werk deze regel bij na elke compliance-verbetering.
+
+---
+
+## 5. COMPONENTEN — Loosely coupled, één verantwoordelijkheid
 
 - Elk werkblad = eigen directory: `src/features/[naam]/`
 - Elk groot component = eigen bestand
@@ -72,7 +230,7 @@ Alles wat per klant anders kan: **in de database**, niet hardcoded in React-comp
 
 ---
 
-## 5. MIGRATIES — Veiligheidsregels
+## 6. MIGRATIES — Veiligheidsregels
 
 **Altijd** bij `app_config` INSERTs de `category` kolom meegeven (NOT NULL!):
 
@@ -90,7 +248,7 @@ Controleer altijd voor commit: zijn alle NOT NULL kolommen aanwezig in elke INSE
 
 ---
 
-## 6. CHECKLIST — Bij elke nieuwe feature
+## 7. CHECKLIST — Bij elke nieuwe feature
 
 Doorloop dit vóór je code schrijft:
 
@@ -98,11 +256,12 @@ Doorloop dit vóór je code schrijft:
 - [ ] Welke data laad ik? → service aanmaken of uitbreiden, nooit direct in component
 - [ ] Past dit in een bestaand component of maak ik een nieuw bestand?
 - [ ] Als ik data toevoeg aan `useCanvasState`: ook toevoegen aan de public API return
+- [ ] Staat de feature-root met `key={canvasId}`? Is async state-handling volgens sectie 4?
 - [ ] Kan ik deployen via `./deploy-prod.sh`?
 
 ---
 
-## 7. TECHNISCHE STACK (referentie)
+## 8. TECHNISCHE STACK (referentie)
 
 - **Frontend**: React CRA + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + RLS + Auth)
@@ -114,7 +273,20 @@ Doorloop dit vóór je code schrijft:
 
 ---
 
-## 8. WAT NOG MOET (bekende technische schuld)
+## 9. DO-NOT-TOUCH zonder overleg
 
-- `strategyManual` wordt geladen uit `full.data?.strategy?.details?.manual` (oud JSONB-systeem) — nog niet gemigreerd naar `strategy_core` tabel. Dit verklaart waarom canvas strategy preview soms leeg is bij herstart.
+- Migraties die al gedeployed zijn (nooit editen, altijd nieuwe migratie)
+- `deploy-prod.sh` zelf
+- RLS policies op bestaande tabellen (breekt productie-data)
+- Bestaande labels in `LABEL_FALLBACKS` verwijderen (alleen toevoegen)
+- Het service-contract (`{ data, error }`) in één keer omgooien — incrementeel, bij features die je toch aanraakt
+
+---
+
+## 10. OPEN PUNTEN / TECHNISCHE SCHULD
+
+Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
+
+- `strategyManual` wordt geladen uit `full.data?.strategy?.details?.manual` (oud JSONB-systeem) — nog niet gemigreerd naar `strategy_core` tabel. Verklaart waarom canvas strategy preview soms leeg is bij herstart. Bij migratie: ook sectie 4 toepassen (race-guards + reset).
 - AI-gegenereerde samenvatting ("Stip op de Horizon") is nog toekomstig werk — nu wordt `ambitie` getoond.
+- Compliance-gaps uit sectie 4.6 (prioriteit 4.2 en 4.4).
