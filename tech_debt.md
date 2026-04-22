@@ -85,12 +85,42 @@ Alle async callbacks in `StrategieWerkblad` en `RichtlijnenWerkblad` gebruiken `
 **Beslissing**: services blijven `{ data, error }` retourneren. Throw-style zou alle services + alle call-sites raken zonder duidelijke winst. Call-sites moeten `error` wel expliciet checken (zie 4.2).
 
 ---
+## P5 — Deploy-architectuur & demo-omgeving
 
+**Huidige state (per 2026-04-22):**
+- `./deploy-prod.sh` gebruikt `vercel alias set` om `kingfisher-btcprod.vercel.app` 
+  te her-assignen per deploy. Fragile: als het script de alias-stap mist, loopt 
+  de alias achter terwijl nieuwe deploys wel live staan.
+- Vercel deployt óók automatisch bij elke push naar master (GitHub-integratie 
+  staat aan). Gevolg: dubbele deploys per push mogelijk, incl. bij docs-commits.
+- Geen actieve demo-omgeving sinds 2026-04-22 (oude `kingfisher-btcdemo.vercel.app` 
+  wees naar 11 dagen oude deployment, inmiddels opgeruimd).
+- Productie en demo zouden dezelfde Supabase delen → risico voor prod-data bij 
+  externe testers (zie Playwright-incident 2026-04-22).
+
+**Doel-architectuur:**
+- Git-based Vercel-deployments: `master` → prod, `demo` branch → demo
+- Aliassen vast in Vercel Dashboard (geen CLI-scripting meer)
+- Aparte Supabase-project voor demo (isoleer testdata)
+- `./deploy-prod.sh` kan dan weg, wordt vervangen door `git push`
+
+**Fasering:**
+1. Opruimen huidige situatie — ✅ klaar per 2026-04-22 (aliassen + projecten)
+2. Branch-setup voor prod verifiëren (master → auto-deploy werkt, script kan weg)
+3. Demo-branch + tweede Supabase-project inrichten
+4. CLAUDE.md sectie 1 herschrijven naar Git-based flow
+
+**Urgentie:** medium. Blocker vóór externe demo-testers weer meedoen (gepland 
+komende week voor nieuwe demo).
+
+**Effort:** ~4 uur, verdeeld over fases 2-4.
 ## Done log
 
 - 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
 - 2026-04-22 — P1 Load race-guards — `cancelled` flag + `canvasId`-guard in `StrategieWerkblad` en `RichtlijnenWerkblad` load-useEffects. Commit: `aed8e7e`
-
+- 2026-04-22 — Vercel-opruiming — ongebruikte projecten verwijderd (website-ui, 
+  demo), weesaliassen opgeruimd (btcprod.vercel.app, kingfisher-btcdemo.vercel.app), 
+  elastic-hellman bewust behouden als parser/RAG-infrastructuur (sprint 3B/4B).
 ---
 
 ## Bekende functionele technische schuld
