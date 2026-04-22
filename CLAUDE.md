@@ -5,19 +5,27 @@
 
 ---
 
-## 1. DEPLOY — Altijd via het script
+## 1. DEPLOY — via het script, en verificatie
 
-**Nooit** `vercel --prod` direct uitvoeren. Altijd:
-
-```bash
 ./deploy-prod.sh "feat: beschrijving van wijziging"
-```
 
-Het script doet automatisch: git commit + push → vercel --prod → alias bijwerken naar `kingfisher-btcprod.vercel.app`.
+Dit script doet: git commit + push → vercel --prod → alias opnieuw pinnen 
+naar `kingfisher-btcprod.vercel.app`.
 
-**Waarom**: `vercel --prod` zet de `kingfisher-btcprod.vercel.app` alias NIET automatisch. Zonder het script ziet de gebruiker niets in productie.
+**Naast het script** deploy Vercel ook automatisch bij elke push naar master 
+(GitHub-integratie). Dit betekent dat docs-commits en triviale pushes óók 
+een productie-deployment opleveren. Geen probleem, wel iets om te weten.
 
----
+**Verificatie na elke belangrijke deploy:**
+Check in Vercel Dashboard dat `kingfisher-btcprod.vercel.app` onder "Assigned 
+Domains" staat van de nieuwste deployment. Zo niet: het script heeft de 
+alias-her-assignment gemist, handmatig:
+
+vercel alias set <deployment-url> kingfisher-btcprod.vercel.app
+
+**Prod URL (leidend):** https://kingfisher-btcprod.vercel.app
+**Demo-omgeving:** op dit moment geen actieve demo. Nieuwe demo-setup gepland 
+— zie TECH_DEBT.md P3.
 
 ## 2. LABELS — Alle UI-tekst is dynamisch
 
@@ -291,3 +299,6 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
 - `strategyManual` wordt geladen uit `full.data?.strategy?.details?.manual` (oud JSONB-systeem) — nog niet gemigreerd naar `strategy_core` tabel. Verklaart waarom canvas strategy preview soms leeg is bij herstart. Bij migratie: ook sectie 4 toepassen (race-guards + reset).
 - AI-gegenereerde samenvatting ("Stip op de Horizon") is nog toekomstig werk — nu wordt `ambitie` getoond.
 - Compliance-gaps uit sectie 4.6 (prioriteit 4.2 en 4.4).
+- Demo-omgeving niet beschikbaar per 2026-04-22. Eerdere demo-alias 
+  (`kingfisher-btcdemo.vercel.app`) verwijderd omdat hij naar oude 
+  deployment wees. Nieuwe demo-architectuur gepland — zie TECH_DEBT.md P3.
