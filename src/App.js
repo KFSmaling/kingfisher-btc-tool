@@ -328,6 +328,7 @@ function AppInner() {
       {/* Master Importer (Het Dossier) */}
       {showImporter && (
         <MasterImporterPanel
+          key={activeCanvasId}
           canvasId={activeCanvasId}
           userId={user?.id}
           onClose={() => setShowImporter(false)}

@@ -77,6 +77,7 @@ export default function DeepDiveOverlay({ blockId, canvasId, onClose, onManualSa
       <div className="fixed inset-0 z-50 bg-black/20 flex flex-col">
         <Suspense fallback={<WerkbladSpinner />}>
           <Werkblad
+            key={canvasId}
             canvasId={canvasId}
             onClose={onClose}
             onManualSaved={onManualSaved}
