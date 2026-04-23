@@ -16,6 +16,17 @@ const HEADERS = (key) => ({
   "anthropic-version": "2023-06-01",
 });
 
+function safeParseJSON(raw, context) {
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error(`Onverwacht AI-formaat — geen JSON gevonden (${context})`);
+  try {
+    return JSON.parse(m[0]);
+  } catch (e) {
+    console.error(`[guidelines/${context}] JSON parse failed:`, e.message, "raw length:", raw.length);
+    throw new Error(`AI-antwoord was onvolledig of ongeldig (${context}). Probeer opnieuw.`);
+  }
+}
+
 const SEGMENT_CONTEXT = {
   generiek:    "Strategie & Governance — principes die strategische kaders, besluitvorming en organisatierichtlijnen bepalen",
   klanten:     "Klanten & Markt — principes die dienstverlening, klantrelaties en marktbenadering sturen",
@@ -84,14 +95,12 @@ Genereer 3-5 principes voor het segment ${segment.toUpperCase()}.`;
 
   const res  = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST", headers: HEADERS(apiKey),
-    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages: [{ role: "user", content: user }] }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, messages: [{ role: "user", content: user }] }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (generate)");
   const raw  = (data.content || []).map(c => c.text || "").join("").trim();
-  const m    = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
-  const parsed = JSON.parse(m[0]);
+  const parsed = safeParseJSON(raw, "generate");
   return parsed.guidelines || [];
 }
 
@@ -142,14 +151,12 @@ ${guidelinesCtx}`;
 
   const res  = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST", headers: HEADERS(apiKey),
-    body: JSON.stringify({ model: MODEL, max_tokens: 1000, system, messages: [{ role: "user", content: user }] }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages: [{ role: "user", content: user }] }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (advies)");
   const raw  = (data.content || []).map(c => c.text || "").join("").trim();
-  const m    = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
-  return JSON.parse(m[0]);
+  return safeParseJSON(raw, "advies");
 }
 
 // ── MODE: IMPLICATIONS ────────────────────────────────────────────────────────
@@ -175,9 +182,7 @@ OUTPUT FORMAT: Exact JSON:
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (implications)");
   const raw  = (data.content || []).map(c => c.text || "").join("").trim();
-  const m    = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
-  return JSON.parse(m[0]);
+  return safeParseJSON(raw, "implications");
 }
 
 // ── MODE: LINK_THEMES ─────────────────────────────────────────────────────────
@@ -213,9 +218,7 @@ OUTPUT: Exact JSON — één entry per principe (ook als de array leeg is):
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (link_themes)");
   const raw  = (data.content || []).map(c => c.text || "").join("").trim();
-  const m    = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
-  const parsed = JSON.parse(m[0]);
+  const parsed = safeParseJSON(raw, "link_themes");
 
   // Vertaal indices → IDs
   const result = {};
