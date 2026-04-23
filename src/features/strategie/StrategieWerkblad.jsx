@@ -30,7 +30,7 @@ const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete
     <div className={`grid ${isKsf ? "grid-cols-[1fr_20px]" : "grid-cols-[1fr_90px_90px_20px]"} gap-1.5 items-center group`}>
       <input value={item.description} onChange={e => onChange({ ...item, description: e.target.value })}
         placeholder="Omschrijving…"
-        className="text-base bg-white border border-slate-200 rounded px-3 py-2 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
+        className="text-sm bg-white border border-slate-200 rounded px-3 py-2 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
       {!isKsf && (
         <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
           placeholder="Huidig"
@@ -359,7 +359,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
         {items.map(item => (
           <div key={item.id}
             className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-4 py-3 bg-white shadow-sm ${tagColors[item.tag] || tagColors.niet_relevant}`}>
-            <p className="flex-1 text-xs text-slate-700 leading-relaxed">{item.content}</p>
+            <p className="flex-1 text-sm text-slate-700 leading-relaxed">{item.content}</p>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} allowedKeys={allowedTagKeys} />
               <button onClick={() => onDelete(item.id)}
@@ -378,7 +378,7 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
           placeholder={`+ Nieuwe ${title.toLowerCase()}…`}
-          className="flex-1 text-xs bg-white border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+          className="flex-1 text-sm bg-white border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
         />
         <button onClick={commit}
           className="text-xs font-bold text-white bg-[#1a365d] hover:bg-[#1a365d]/80 rounded-lg px-3 py-2 transition-colors">
@@ -441,14 +441,14 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
           rows={rows}
-          className="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
         />
       ) : (
         <input
           value={value || ""}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
-          className="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
         />
       )}
 
@@ -512,6 +512,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   // Executie Magic state
   const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
   const [ksfKpiDrafts, setKsfKpiDrafts] = useState({});   // { [themaId]: { loading, loadingMsg, ksf, kpi } }
+
+  // Kernwaarden input state (controlled)
+  const [newKernwaardeInput, setNewKernwaardeInput] = useState("");
 
   const coreDebounceRef  = useRef(null); // autosave strategy_core
   const titleDebounceRef = useRef(null); // updateThemaTitle
@@ -1144,14 +1147,19 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                   </span>
                 ))}
                 <input
+                  value={newKernwaardeInput}
+                  onChange={e => setNewKernwaardeInput(e.target.value)}
                   placeholder="+ Waarde…"
                   onKeyDown={e => {
-                    if (e.key === "Enter" && e.target.value.trim()) {
-                      setCore(prev => ({ ...prev, kernwaarden: [...prev.kernwaarden, e.target.value.trim()] }));
-                      e.target.value = "";
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const v = newKernwaardeInput.trim();
+                      if (!v) return;
+                      setCore(prev => ({ ...prev, kernwaarden: [...prev.kernwaarden, v] }));
+                      setNewKernwaardeInput("");
                     }
                   }}
-                  className="text-[10px] bg-transparent border-none focus:outline-none placeholder:text-slate-300 text-slate-600 min-w-[80px]"
+                  className="text-sm bg-transparent border-none focus:outline-none placeholder:text-slate-300 text-slate-600 min-w-[80px]"
                 />
               </div>
               {/* Draft voor kernwaarden */}
