@@ -812,6 +812,39 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     await changeAnalysisItemTag(id, tag);
   }, []);
 
+  // ── AI: Auto-tag externe/interne items met SWOT-classificatie ────────────
+  const [autoTagLoading, setAutoTagLoading] = useState(false);
+  const handleAutoTag = useCallback(async () => {
+    const untagged = items.filter(i => !i.tag || i.tag === "niet_relevant");
+    if (untagged.length === 0) return;
+    setAutoTagLoading(true);
+    try {
+      const res = await apiFetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "auto_tag",
+          core,
+          items: untagged,
+          systemPromptAutoTag: appPrompt("strategy.auto_tag") || undefined,
+          languageInstruction: t("ai.language"),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI fout");
+      const tags = data.tags || {};
+      // Pas lokaal toe + persisteer per item
+      const updates = Object.entries(tags);
+      if (updates.length === 0) return;
+      setItems(prev => prev.map(i => tags[i.id] ? { ...i, tag: tags[i.id] } : i));
+      await Promise.all(updates.map(([id, tag]) => changeAnalysisItemTag(id, tag)));
+    } catch (err) {
+      console.error("[autoTag]", err.message);
+    } finally {
+      setAutoTagLoading(false);
+    }
+  }, [items, core, appPrompt, t]);
+
   // ── Thema handlers ────────────────────────────────────────────────────────────
   const addThema = useCallback(async () => {
     if (themas.length >= 7) return;
@@ -1140,7 +1173,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               </div>
               <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
                 {core.kernwaarden.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-[10px] font-bold text-[#1a365d] bg-[#1a365d]/8 border border-[#1a365d]/20 rounded-full px-2.5 py-1">
+                  <span key={i} className="inline-flex items-center gap-1 text-sm text-[#1a365d] bg-[#1a365d]/8 border border-[#1a365d]/20 rounded-full px-2.5 py-1">
                     {kw}
                     <button onClick={() => setCore(prev => ({ ...prev, kernwaarden: prev.kernwaarden.filter((_,j) => j !== i) }))}
                       className="text-[#1a365d]/40 hover:text-red-400 transition-colors"><X size={10} /></button>
@@ -1202,15 +1235,23 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           </div>
         </section>
 
-        {/* ── Green Horizon — scheidingslijn identiteit / werkgebied ── */}
-        <div className="border-t-4 border-[#8dc63f] -mx-8" />
-
         {/* SECTIE 2: ANALYSE */}
         <section className="space-y-6 pb-6">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[#00AEEF] text-white text-xs font-black flex items-center justify-center flex-shrink-0">2</div>
             <h3 className="text-2xl font-bold text-[#00AEEF]">{appLabel("strat.section.analyse", "Analyse")}</h3>
             <div className="flex-1 h-px bg-[#00AEEF]/20" />
+            {items.some(i => !i.tag || i.tag === "niet_relevant") && (
+              <button
+                onClick={handleAutoTag}
+                disabled={autoTagLoading}
+                title="AI classificeert externe items als kans/bedreiging en interne items als sterkte/zwakte — alleen bij zekerheid"
+                className="flex items-center gap-1 text-[10px] font-bold text-[#00AEEF]/60 hover:text-[#00AEEF] border border-[#00AEEF]/30 hover:border-[#00AEEF]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
+              >
+                <Wand2 size={10} />
+                {autoTagLoading ? "Bezig…" : appLabel("strat.autotag.button", "Auto-tag")}
+              </button>
+            )}
             <p className="text-xs text-slate-400 flex-shrink-0">Tag elk item voor de SWOT-rapportage</p>
           </div>
           <div className="grid grid-cols-2 gap-8">

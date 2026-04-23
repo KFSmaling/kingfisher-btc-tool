@@ -254,6 +254,88 @@ Schrijf een strategische samenvatting van maximaal 2 zinnen.`;
   return (data.content || []).map(c => c.text || "").join("").trim();
 }
 
+// ── MODE: AUTO_TAG ────────────────────────────────────────────────────────────
+// Tagt niet-gelabelde externe/interne items op zekere gevallen.
+// Extern → kans | bedreiging | (overslaan)
+// Intern → sterkte | zwakte | (overslaan)
+// Gebruikt indices (niet UUIDs) om hallucination te voorkomen.
+async function autoTag(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+  const untagged = items.filter(i => !i.tag || i.tag === "niet_relevant");
+  if (untagged.length === 0) return {};
+
+  const externList = untagged.filter(i => i.type === "extern").map((i, idx) => ({ ...i, listIndex: idx }));
+  const internList = untagged.filter(i => i.type === "intern").map((i, idx) => ({ ...i, listIndex: idx }));
+
+  const externCtx = externList.length
+    ? externList.map(i => `${i.listIndex}. ${i.content}`).join("\n")
+    : "(geen)";
+  const internCtx = internList.length
+    ? internList.map(i => `${i.listIndex}. ${i.content}`).join("\n")
+    : "(geen)";
+
+  const identityCtx = `Missie:      ${core.missie      || "(niet ingevuld)"}
+Visie:       ${core.visie       || "(niet ingevuld)"}
+Ambitie:     ${core.ambitie     || "(niet ingevuld)"}
+Kernwaarden: ${(core.kernwaarden || []).join(", ") || "(niet ingevuld)"}`;
+
+  const rawSystem = systemOverride || `Je classificeert analyse-items in een SWOT-kader op basis van de organisatie-identiteit.
+
+REGELS:
+- Externe items krijgen: "kans" OF "bedreiging" (nooit sterkte/zwakte)
+- Interne items krijgen: "sterkte" OF "zwakte" (nooit kans/bedreiging)
+- Classificeer ALLEEN bij zekerheid — bij twijfel of dubbelzinnigheid: sla over (laat weg uit output)
+- Een kans is een externe ontwikkeling die deze specifieke organisatie helpt (past bij missie/ambitie)
+- Een bedreiging is een externe ontwikkeling die deze organisatie schaadt of in gevaar brengt
+- Een sterkte is een interne capaciteit die deze organisatie onderscheidend maakt
+- Een zwakte is een intern tekort dat de realisatie van de strategie belemmert
+- {taal_instructie}
+
+OUTPUT: Exact JSON — alleen items waar je zeker van bent. Laat twijfelgevallen weg.
+{
+  "extern": { "<index>": "kans" | "bedreiging", ... },
+  "intern": { "<index>": "sterkte" | "zwakte", ... }
+}`;
+
+  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const user = `ORGANISATIE-IDENTITEIT:
+${identityCtx}
+
+EXTERNE ITEMS (classificeer als kans of bedreiging — alleen bij zekerheid):
+${externCtx}
+
+INTERNE ITEMS (classificeer als sterkte of zwakte — alleen bij zekerheid):
+${internCtx}
+
+Geef alleen classificaties terug waar je zeker van bent. Overige items worden overgeslagen.`;
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: HEADERS(apiKey),
+    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages: [{ role: "user", content: user }] }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || "AI fout (auto_tag)");
+  const raw = (data.content || []).map(c => c.text || "").join("").trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
+  let parsed;
+  try { parsed = JSON.parse(m[0]); } catch { throw new Error("AI-antwoord ongeldig (auto_tag). Probeer opnieuw."); }
+
+  // Vertaal indices → item IDs, valideer tags
+  const VALID_EXTERN = new Set(["kans", "bedreiging"]);
+  const VALID_INTERN = new Set(["sterkte", "zwakte"]);
+  const result = {};
+  Object.entries(parsed.extern || {}).forEach(([idxStr, tag]) => {
+    const item = externList[parseInt(idxStr)];
+    if (item && VALID_EXTERN.has(tag)) result[item.id] = tag;
+  });
+  Object.entries(parsed.intern || {}).forEach(([idxStr, tag]) => {
+    const item = internList[parseInt(idxStr)];
+    if (item && VALID_INTERN.has(tag)) result[item.id] = tag;
+  });
+  return result;
+}
+
 // ── HANDLER ───────────────────────────────────────────────────────────────────
 const { requireAuth } = require("./_auth");
 
@@ -264,7 +346,7 @@ module.exports = async function handler(req, res) {
 
   const {
     mode, core = {}, items = [], themas = [], thema,
-    systemPromptThemes, systemPromptKsfKpi, systemPromptAnalysis, systemPromptSamenvatting,
+    systemPromptThemes, systemPromptKsfKpi, systemPromptAnalysis, systemPromptSamenvatting, systemPromptAutoTag,
     languageInstruction = "Schrijf ALTIJD in het Nederlands.",
   } = req.body || {};
   if (!mode) return res.status(400).json({ error: "Missing mode" });
@@ -289,6 +371,10 @@ module.exports = async function handler(req, res) {
     if (mode === "samenvatting") {
       const samenvatting = await generateSamenvatting(core, themas, apiKey, systemPromptSamenvatting, languageInstruction);
       return res.status(200).json({ samenvatting });
+    }
+    if (mode === "auto_tag") {
+      const tags = await autoTag(core, items, apiKey, systemPromptAutoTag, languageInstruction);
+      return res.status(200).json({ tags });
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });
   } catch (err) {

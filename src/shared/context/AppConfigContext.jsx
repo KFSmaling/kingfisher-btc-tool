@@ -40,6 +40,7 @@ const LABEL_FALLBACKS = {
   "strat.field.samenvatting":       "Strategische Samenvatting",
   "strat.field.extern":             "Externe Ontwikkelingen",
   "strat.field.intern":             "Interne Ontwikkelingen",
+  "strat.autotag.button":           "Auto-tag",
   // Richtlijnen Werkblad — segmenten
   "richtl.segment.generiek":        "Generiek",
   "richtl.segment.generiek.sub":    "Strategie & Governance",
