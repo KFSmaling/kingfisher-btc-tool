@@ -85,6 +85,33 @@ Alle async callbacks in `StrategieWerkblad` en `RichtlijnenWerkblad` gebruiken `
 **Beslissing**: services blijven `{ data, error }` retourneren. Throw-style zou alle services + alle call-sites raken zonder duidelijke winst. Call-sites moeten `error` wel expliciet checken (zie 4.2).
 
 ---
+
+### P4 — Inzichten-patroon (analyse-overlay design)
+
+Ontwerp vastgelegd voor een generiek Inzichten-patroon dat op meerdere 
+schaalniveaus werkt (per werkblad en canvas-breed). Vervangt de huidige 
+"Strategisch Advies" / "Richtlijnen Advies" overlays die niet voldoen aan 
+de consumeer-ervaring die een consultant nodig heeft.
+
+**Design-notitie:** zie `INZICHTEN_DESIGN.md` (root van project).
+
+**Kernprincipes:**
+- Bevindingen gestructureerd als Onderdelen + Dwarsverbanden
+- Document-layout (lees-ervaring), geen dashboard
+- Consumeren (overlay) strikt gescheiden van produceren (werkblad)
+- Drie-knoppen-patroon op werkbladen: Analyse draaien / Inzichten bekijken / Rapportage
+- Cross-werkblad verwijzingen als volwaardige bevindingen, niet als chips
+- Type-indeling met kleur + vorm + label (kleurenblind-safe)
+
+**Implementatie-volgorde:** drie losse sprints, niet combineren.
+1. Data & prompt aanpassing (Strategie)
+2. UI Inzichten-overlay (Strategie)
+3. Drie-knoppen-patroon (alle werkbladen)
+
+**Urgentie:** medium. Geen blocker, wel structurele verbetering van de 
+kern-waardepropositie (analyse-kwaliteit voor consultants).
+
+---
 ## P5 — Deploy-architectuur & demo-omgeving
 
 **Huidige state (per 2026-04-22):**
@@ -135,3 +162,4 @@ Niet state-gerelateerd maar wel open:
 
 - `strategyManual` laadt initieel uit `full.data?.strategy?.details?.manual` (oud JSONB), maar wordt direct daarna overschreven door een async load uit `strategy_core`. Gevolg: korte flash van lege/oude data bij canvas-wissel. Cosmetisch; geen dataverlies. Migratie van de initiële load (L88-89 useCanvasState) naar strategy_core zou de flash elimineren.
 - "Stip op de Horizon" — ✅ opgelost per 2026-04-23. `StrategyStatusBlock` toont `samenvatting` uit `strategy_core` als die gevuld is; anders `missie` als fallback. Samenvatting-generator beschikbaar in StrategieWerkblad.
+- Huidige "Strategisch Advies" en "Richtlijnen Advies" overlays worden vervangen door het Inzichten-patroon. Zie `INZICHTEN_DESIGN.md` en het P4-item hierboven.

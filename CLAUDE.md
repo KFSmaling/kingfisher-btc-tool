@@ -298,8 +298,11 @@ Doorloop dit vóór je code schrijft:
 Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
 
 - `strategyManual` wordt geladen uit `full.data?.strategy?.details?.manual` (oud JSONB-systeem) — nog niet gemigreerd naar `strategy_core` tabel. Verklaart waarom canvas strategy preview soms leeg is bij herstart. Bij migratie: ook sectie 4 toepassen (race-guards + reset).
-- AI-gegenereerde samenvatting ("Stip op de Horizon") is nog toekomstig werk — nu wordt `ambitie` getoond.
+- AI-gegenereerde samenvatting ("Stip op de Horizon") — ✅ opgelost per 2026-04-23. `samenvatting` wordt geladen uit `strategy_core` en getoond in `StrategyStatusBlock`.
 - Compliance-gaps uit sectie 4.6 (prioriteit 4.2 en 4.4).
 - Demo-omgeving niet beschikbaar per 2026-04-22. Eerdere demo-alias 
   (`kingfisher-btcdemo.vercel.app`) verwijderd omdat hij naar oude 
-  deployment wees. Nieuwe demo-architectuur gepland — zie TECH_DEBT.md P3.
+  deployment wees. Nieuwe demo-architectuur gepland — zie TECH_DEBT.md P5.
+- Inzichten-patroon vastgelegd in `INZICHTEN_DESIGN.md` — generiek analyse-
+  component voor alle werkbladen. Vervangt huidige "Strategisch Advies" /
+  "Richtlijnen Advies" overlays. Zie TECH_DEBT.md P4.
