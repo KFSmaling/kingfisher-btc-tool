@@ -106,14 +106,14 @@ Alle async callbacks in `StrategieWerkblad` en `RichtlijnenWerkblad` gebruiken `
 
 **Fasering:**
 1. Opruimen huidige situatie — ✅ klaar per 2026-04-22 (aliassen + projecten)
-2. Branch-setup voor prod verifiëren (master → auto-deploy werkt, script kan weg)
-3. Demo-branch + tweede Supabase-project inrichten
-4. CLAUDE.md sectie 1 herschrijven naar Git-based flow
+2. Branch-setup voor prod verifiëren (master → auto-deploy werkt, script kan weg) — open
+3. Demo-branch + tweede Supabase-project inrichten — open
+4. CLAUDE.md sectie 1 herschrijven naar Git-based flow — open
 
-**Urgentie:** medium. Blocker vóór externe demo-testers weer meedoen (gepland 
-komende week voor nieuwe demo).
+**Urgentie:** medium. Blocker vóór externe demo-testers. Fase 1 (opruiming) volledig klaar; 
+Fases 2-4 relevant zodra demo-sessies gepland worden.
 
-**Effort:** ~4 uur, verdeeld over fases 2-4.
+**Effort:** ~3 uur, verdeeld over fases 2-4.
 ## Done log
 
 - 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
@@ -124,6 +124,8 @@ komende week voor nieuwe demo).
 - 2026-04-22 — Governance — BTC Tool Project ingericht in Claude.ai met CLAUDE.md, 
   TECH_DEBT.md, DATABASE.md als Project Knowledge. Instructions afgestemd op werkstijl. 
   Testcase (canvas notes feature) bevestigde dat compliance-check automatisch werkt.
+- 2026-04-23 — "Stip op de Horizon" — vastgesteld dat samenvatting al correct geladen wordt uit strategy_core en getoond in StrategyStatusBlock. Tech debt item gesloten.
+- 2026-04-23 — P5 Fase 1 — bevestigd compleet; aliassen + Vercel-projecten opgeruimd per 2026-04-22. Fases 2-4 open.
 
 ---
 
@@ -131,5 +133,5 @@ komende week voor nieuwe demo).
 
 Niet state-gerelateerd maar wel open:
 
-- `strategyManual` geladen uit `full.data?.strategy?.details?.manual` (oud JSONB). Migratie naar `strategy_core` tabel nog open. Bij die migratie: sectie 4 toepassen.
-- "Stip op de Horizon" (AI-samenvatting) — nog toekomstig. Momenteel toont UI `ambitie`.
+- `strategyManual` laadt initieel uit `full.data?.strategy?.details?.manual` (oud JSONB), maar wordt direct daarna overschreven door een async load uit `strategy_core`. Gevolg: korte flash van lege/oude data bij canvas-wissel. Cosmetisch; geen dataverlies. Migratie van de initiële load (L88-89 useCanvasState) naar strategy_core zou de flash elimineren.
+- "Stip op de Horizon" — ✅ opgelost per 2026-04-23. `StrategyStatusBlock` toont `samenvatting` uit `strategy_core` als die gevuld is; anders `missie` als fallback. Samenvatting-generator beschikbaar in StrategieWerkblad.
