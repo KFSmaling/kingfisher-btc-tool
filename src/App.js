@@ -260,29 +260,16 @@ function AppInner() {
             />
           </div>
 
-          {/* Progress indicator */}
+          {/* Footer row */}
           <div className="mt-8 flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {[
-                { nl: "Leeg",                en: "Empty",            color: "bg-slate-200"  },
-                { nl: "Documenten geladen",  en: "Docs uploaded",    color: "bg-[#00AEEF]"  },
-                { nl: "Inzichten wachten",   en: "Insights pending", color: "bg-orange-400" },
-                { nl: "Klaar",               en: "Done",             color: "bg-green-500"  },
-              ].map(item => (
-                <div key={item.nl} className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                  <span className="text-[9px] text-slate-400 uppercase tracking-wider">{lang === "en" ? item.en : item.nl}</span>
-                </div>
-              ))}
-            </div>
-            {allDone && (
+            {allDone ? (
               <button
                 onClick={() => setShowConsistency(true)}
                 className="flex items-center gap-2 bg-[#2c7a4b] hover:bg-[#1a365d] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
               >
                 <ShieldCheck size={14} /> {t("progress.all.done")}
               </button>
-            )}
+            ) : <div />}
             <p className="text-[9px] text-slate-300 uppercase tracking-widest">
               {appLabel("footer.tagline", "Kingfisher & Partners · From strategy to execution")}
             </p>
