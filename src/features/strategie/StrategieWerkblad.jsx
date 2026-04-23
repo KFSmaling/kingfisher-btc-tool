@@ -1022,7 +1022,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[#8dc63f] border-b border-b-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
           <button onClick={handleClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
             <ArrowLeft size={18} />
