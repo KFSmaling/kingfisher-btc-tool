@@ -49,6 +49,23 @@ vercel alias set <deployment-url> kingfisher-btcprod.vercel.app
 **Demo-omgeving:** op dit moment geen actieve demo. Nieuwe demo-setup gepland 
 — zie TECH_DEBT.md P3.
 
+### 1.1 Deploy workflow — wanneer het script verplicht is
+
+| Type wijziging | Actie |
+|---|---|
+| Code (React, services, hooks) | `./deploy-prod.sh "..."` — verplicht |
+| Database migraties | Script + handmatig uitvoeren in Supabase SQL Editor |
+| Docs-only (`docs/`, `CLAUDE.md`, `TECH_DEBT.md`) | `git commit + push` is voldoende — Vercel deployt automatisch, alias hoeft niet opnieuw gepind |
+| Seed SQL (`docs/*.sql`) | Alleen `git commit + push` voor versiebeheer; SQL zelf uitvoeren in Supabase SQL Editor |
+
+**Waarom het script verplicht is bij code:** Vercel's GitHub-webhook deployt 
+automatisch maar pint de `btcprod`-alias **niet** naar de nieuwe deployment. 
+Het script doet dat wel via `vercel alias set`. Zonder het script draait 
+`kingfisher-btcprod.vercel.app` altijd op een verouderde build.
+
+**Nooit `--no-verify` of force-push naar master.** Bij een falende pre-commit 
+hook: probleem oplossen, opnieuw stagen, nieuwe commit aanmaken.
+
 ## 2. LABELS — Alle UI-tekst is dynamisch
 
 **Elke** gebruikersgerichte string (titels, knoppen, veldnamen, secties) moet via `appLabel()`:
@@ -106,6 +123,75 @@ export async function upsertGuideline(canvasId, data) {
 const { data, error } = await guidelinesService.upsertGuideline(canvasId, payload);
 if (error) { /* zie sectie 4.2 */ }
 ```
+
+---
+
+## 3A. MULTI-TENANCY (geïmplementeerd 2026-04-24)
+
+### Architectuur
+
+De app is multi-tenant: elke gebruiker hoort bij één tenant, en alle data 
+(canvases, strategy, guidelines) is geïsoleerd per tenant via RLS.
+
+**Database-structuur:**
+- `tenants` tabel — `id`, `name`, `slug`, `theme_config jsonb`
+- `user_profiles` tabel — `id` (FK → `auth.users`), `tenant_id`, `role`
+- RLS helper-functies: `current_tenant_id()` en `current_user_role()` — beide 
+  `SECURITY DEFINER`, lezen `user_profiles` en cachen per transactie
+
+**RLS-patroon op data-tabellen:**
+
+```sql
+-- Lees: eigen data of als admin
+USING (tenant_id = current_tenant_id() AND (user_id = auth.uid() OR current_user_role() = 'tenant_admin'))
+-- Insert/Update: altijd tenant_id meegeven
+WITH CHECK (tenant_id = current_tenant_id())
+```
+
+### Theming
+
+Elke tenant heeft een `theme_config jsonb` kolom met kleur- en logo-waarden. 
+ThemeProvider leest deze bij login en injecteert CSS custom properties op `document.documentElement`.
+
+**CSS variabelen (volledig overzicht):**
+
+| CSS-variabele | `theme_config` key | Gebruik |
+|---|---|---|
+| `--color-primary` | `primary_color` | Achtergrond header, body tekst |
+| `--color-accent` | `accent_color` | CTA-knoppen, highlights |
+| `--color-accent-hover` | `accent_hover_color` | Hover-state van accent |
+| `--color-success` | `success_color` | Voltooiings-indicatoren |
+| `--color-analysis` | `analysis_color` | To-be / analyse-elementen |
+| `--color-overlay` | `overlay_color` | Modal-overlays (donkerder dan primary) |
+| `--color-accent-light` | `accent_light_color` | Zachte achtergrond bij accent |
+
+**Tailwind-gebruik:** altijd `bg-[var(--color-primary)]`, nooit hardcoded hex in 
+componenten. Fallbacks staan als `:root` defaults in `src/index.css`.
+
+### Sleutel-bestanden
+
+| Bestand | Rol |
+|---|---|
+| `src/shared/services/auth.service.js` | Fetcht `user_profiles` + `tenants(theme_config)`; levert `tenantId`, `tenantTheme`, `userRole` via context |
+| `src/shared/context/ThemeProvider.jsx` | Injecteert CSS-variabelen zodra `tenantTheme` geladen is; guard op leeg `{}` object |
+| `src/shared/hooks/useTheme.js` | Typed toegang tot alle theme-waarden met Kingfisher-defaults als fallback |
+| `src/shared/components/LogoBrand.jsx` | Logo-component met `variant="light"\|"dark"`, `imageFailed`-state als fallback op `brandName`-tekst |
+| `src/shared/hooks/useDocumentTitle.js` | Zet `document.title` op `"{brandName} — {productName}"` |
+| `docs/theming-seed-v2.sql` | Idempotente seed voor beide tenants (opnieuw uitvoerbaar) |
+
+### Regels bij nieuwe componenten
+
+- **Nooit** hardcoded hex-kleuren in JSX — altijd `var(--color-*)` of `useTheme()`
+- Logo's: altijd `<LogoBrand variant="light|dark" />`, nooit `<img src="/kf-logo*.png">`
+- Tenant-afhankelijke tekst (merknaam, productnaam): via `useTheme().brandName` / `productName`
+- Nieuwe CSS-variabelen: toevoegen aan `ThemeProvider.jsx`, `useTheme.js`, `src/index.css` (:root), en `theming-seed-v2.sql`
+
+### Tenants in productie
+
+| Tenant | ID | `primary_color` | `accent_color` | Logo |
+|---|---|---|---|---|
+| Kingfisher | `...0002` | `#1a365d` | `#8dc63f` | `kf-logo.png` (donker), wit: null → tekst |
+| Platform | `...0001` | `#0f172a` | `#f97316` | Beide null → toont brandName-tekst |
 
 ---
 
