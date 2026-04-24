@@ -5,6 +5,7 @@ import {
   SlidersHorizontal, Database, ShieldCheck, Maximize2,
 } from "lucide-react";
 import { AuthProvider, useAuth } from "./shared/services/auth.service";
+import ThemeProvider from "./shared/context/ThemeProvider";
 import LoginScreen from "./LoginScreen";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
 import { AppConfigProvider, useAppConfig } from "./shared/context/AppConfigContext";
@@ -404,9 +405,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <LangProvider>
-          <AuthGate />
-        </LangProvider>
+        <ThemeProvider>
+          <LangProvider>
+            <AuthGate />
+          </LangProvider>
+        </ThemeProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

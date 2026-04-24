@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
     if (!supabase) { setUserProfile(null); return; }
     const { data, error } = await supabase
       .from("user_profiles")
-      .select("tenant_id, role")
+      .select("tenant_id, role, tenants(theme_config)")
       .eq("id", userId)
       .maybeSingle();
     if (error) {
@@ -62,8 +62,9 @@ export function AuthProvider({ children }) {
 
   // profileLoading: true zolang sessie nog laadt, of sessie actief maar profiel nog niet binnen
   const profileLoading = session === undefined || (session !== null && userProfile === undefined);
-  const tenantId       = userProfile?.tenant_id ?? null;
-  const userRole       = userProfile?.role       ?? null;
+  const tenantId       = userProfile?.tenant_id                ?? null;
+  const userRole       = userProfile?.role                     ?? null;
+  const tenantTheme    = userProfile?.tenants?.theme_config    ?? null;
 
   const signIn = ({ email, password }) => {
     if (!supabase) return Promise.resolve({ error: { message: "Supabase is niet geconfigureerd." } });
@@ -90,7 +91,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       session, user: session?.user ?? null,
-      tenantId, userRole, profileLoading,
+      tenantId, userRole, tenantTheme, profileLoading,
       signIn, signUp, signOut, resetPassword,
     }}>
       {children}
