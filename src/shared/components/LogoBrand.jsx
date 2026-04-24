@@ -10,13 +10,16 @@
  * Bruikbaar als class component — veilig te importeren in ErrorBoundary.
  */
 
+import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 
 export default function LogoBrand({ variant = "light", imgClassName, textClassName }) {
   const { logoUrl, logoWhiteUrl, brandName } = useTheme();
+  const [imageFailed, setImageFailed] = useState(false);
+
   const src = variant === "light" ? logoWhiteUrl : logoUrl;
 
-  if (!src) {
+  if (!src || imageFailed) {
     return (
       <span className={textClassName ?? "text-white font-bold text-lg tracking-wide"}>
         {brandName}
@@ -29,7 +32,7 @@ export default function LogoBrand({ variant = "light", imgClassName, textClassNa
       src={src}
       alt={brandName}
       className={imgClassName}
-      onError={e => { e.target.style.display = "none"; }}
+      onError={() => setImageFailed(true)}
     />
   );
 }
