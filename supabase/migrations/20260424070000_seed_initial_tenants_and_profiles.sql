@@ -1,144 +1,123 @@
 -- ============================================================
--- Multi-tenant migratie 7/7 — Seed tenants, profielen, data-koppeling
+-- Multi-tenant migratie 7/7 — Seed tenants, profielen, cleanup
 --
 -- Doel:
---   De initiële twee tenants aanmaken, bestaande users koppelen,
---   alle bestaande canvassen toewijzen aan de kingfisher-tenant,
---   orphan canvas_uploads opruimen, en tenant_id NOT NULL zetten.
+--   Alle bestaande testdata verwijderen, twee initiële tenants
+--   aanmaken, gebruikersprofielen koppelen, en tenant_id
+--   direct NOT NULL zetten (geen canvassen meer na cleanup).
 --
 -- Wat het doet (in volgorde):
---   §1  Orphan canvas_uploads verwijderen (canvas_id IS NULL)
+--   §1  Alle canvasdata verwijderen
+--       (guideline_analysis en guidelines eerst: geen CASCADE FK)
+--       (canvases daarna: cascadeert de rest automatisch)
+--       (orphan canvas_uploads: canvas_id IS NULL, niet gevangen door cascade)
 --   §2  Twee tenants seeden met vaste UUIDs
---   §3a User-profiel voor Account 1 (iCloud, kingfisher, tenant_admin)
---   §3b User-profiel voor Account 2 (Gmail placeholder, platform, platform_admin)
---   §4  Bestaande canvassen koppelen aan kingfisher-tenant
---   §5  tenant_id NOT NULL zetten op canvases
---
--- VÓÓR UITVOEREN — controleer deze drie punten:
---
---   1. Voer de COUNT uit §1 handmatig uit in de Supabase SQL Editor.
---      Bevestig het getal voordat je het DELETE laat lopen.
---
---   2. Vervang 'VERVANG_DIT_MET_GMAIL_ADRES@gmail.com' (§3b) met het
---      echte Gmail-adres van Account 2. Zolang het adres niet in
---      auth.users bestaat doet de INSERT niets (veilig — subquery
---      retourneert geen rijen).
---
---   3. Controleer dat 'smaling.kingfisher@icloud.com' (§3a) overeenkomt
---      met het emailadres in Supabase Auth → Users.
+--   §3a User-profiel voor Account 1 (Kees, Platform, platform_admin)
+--   §3b Placeholder voor Account 2 — zie instructies daarin
+--   §4  tenant_id direct NOT NULL zetten
+--       (veilig: §1 heeft alle canvassen verwijderd, tabel is leeg)
 --
 -- Idempotentie:
---   §2 is idempotent (ON CONFLICT DO NOTHING op slug).
---   §3 is idempotent (ON CONFLICT DO NOTHING op id).
---   §4 updatet alleen rijen met tenant_id IS NULL — veilig om opnieuw
---      uit te voeren zolang §5 nog niet is gedraaid.
---   §5 (ALTER ... NOT NULL) faalt als er nog rijen zonder tenant_id
---      zijn — dat is de bedoelde veiligheidsblokkade.
+--   §1 is veilig bij herhaald uitvoeren (DELETE WHERE levert 0 rijen
+--      als tabellen al leeg zijn).
+--   §2 is idempotent via ON CONFLICT (slug) DO NOTHING.
+--   §3 is idempotent via ON CONFLICT (id) DO NOTHING.
+--   §4 (ALTER NOT NULL) faalt als tabel niet leeg is — gewenste
+--      veiligheidsblokkade.
 --
--- Rollback (bewerkelijk na §5 — voer in omgekeerde volgorde uit):
---   ALTER TABLE canvases ALTER COLUMN tenant_id DROP NOT NULL;
---   UPDATE canvases SET tenant_id = NULL WHERE tenant_id =
---     '00000000-0000-0000-0000-000000000002';
---   DELETE FROM user_profiles WHERE tenant_id IN (
---     '00000000-0000-0000-0000-000000000001',
---     '00000000-0000-0000-0000-000000000002');
---   DELETE FROM tenants WHERE slug IN ('platform', 'kingfisher');
+-- Rollback (alleen relevant als je halverwege moet afbreken):
+--   §4: ALTER TABLE canvases ALTER COLUMN tenant_id DROP NOT NULL;
+--   §3: DELETE FROM user_profiles WHERE id IN ('<kees-uuid>', ...);
+--   §2: DELETE FROM tenants WHERE slug IN ('platform', 'kingfisher');
 -- ============================================================
 
--- ── §1: Orphan canvas_uploads opruimen ───────────────────────
+-- ── §1: Alle testdata verwijderen ────────────────────────────
 --
--- Controleer eerst het aantal (voer handmatig uit, bevestig):
---   SELECT COUNT(*) FROM canvas_uploads WHERE canvas_id IS NULL;
+-- Volgorde is verplicht vanwege FK-constraints:
 --
--- Verwacht: 0 of een klein getal. Ga pas verder als je dit getal kent.
--- Deze uploads zijn onbereikbaar na de nieuwe RLS in 005 — beter nu
--- netjes verwijderen.
+--   guideline_analysis → canvases (geen ON DELETE CASCADE → handmatig eerst)
+--   guidelines         → canvases (geen ON DELETE CASCADE → handmatig eerst)
+--   canvases           → cascade naar:
+--                          canvas_uploads (met canvas_id)
+--                          document_chunks
+--                          import_jobs
+--                          strategy_core
+--                          analysis_items
+--                          strategic_themes → ksf_kpi (cascade via theme_id)
+--
+-- Daarna: orphan canvas_uploads (canvas_id IS NULL, niet gevangen door cascade).
 
-DELETE FROM canvas_uploads
-WHERE canvas_id IS NULL;
+DELETE FROM guideline_analysis;
+DELETE FROM guidelines;
+DELETE FROM canvases;   -- cascadeert: uploads, chunks, jobs, strategy_core,
+                        -- analysis_items, strategic_themes, ksf_kpi
+DELETE FROM canvas_uploads WHERE canvas_id IS NULL;  -- orphans
 
 -- ── §2: Initiële tenants seeden met vaste UUIDs ──────────────
 --
--- Vaste UUIDs zodat dit bestand idempotent is en §3/§4 ernaar kunnen
--- verwijzen zonder subquery. Patroon "00...00X" maakt ze herkenbaar
--- als seed-data in een dump of debugsessie.
+-- Beide consultancy: dit is het actieve tenant-type voor beide accounts.
+-- Vaste UUIDs (patroon 00...00X) voor herkenbaarheid in dumps en debug.
 
 INSERT INTO tenants (id, tenant_type, name, slug, theme_config)
 VALUES
   (
     '00000000-0000-0000-0000-000000000001',
-    'individual',
-    'Platform Admin',
+    'consultancy',
+    'Platform',
     'platform',
     '{}'
   ),
   (
     '00000000-0000-0000-0000-000000000002',
     'consultancy',
-    'Kingfisher & Partners',
+    'Kingfisher',
     'kingfisher',
     '{}'
   )
 ON CONFLICT (slug) DO NOTHING;
 
--- ── §3a: User-profiel voor Account 1 (kingfisher, tenant_admin) ──
+-- ── §3a: User-profiel voor Account 1 (Kees) ──────────────────
 --
--- Zoekt de auth.users rij op via email; maakt user_profile aan.
--- Als het emailadres niet bestaat in auth.users, doet de INSERT niets.
+-- Hardcoded user_id uit Supabase Auth.
+-- tenant_id: Platform (00...001)
+-- role: platform_admin — volledige rechten over het platform.
 
 INSERT INTO user_profiles (id, tenant_id, role)
-SELECT
-  au.id,
-  '00000000-0000-0000-0000-000000000002',  -- kingfisher tenant
-  'tenant_admin'
-FROM auth.users au
-WHERE au.email = 'smaling.kingfisher@icloud.com'
-ON CONFLICT (id) DO NOTHING;
-
--- ── §3b: User-profiel voor Account 2 (platform, platform_admin) ──
---
--- !! VERVANG HET EMAILADRES HIERONDER met het echte Gmail-adres !!
--- Account 2 moet eerst aangemaakt zijn in Supabase Auth → Users
--- (via Invite user of signup). Daarna werkt deze INSERT.
--- Zolang het adres niet bestaat doet de INSERT niets — veilig.
-
-INSERT INTO user_profiles (id, tenant_id, role)
-SELECT
-  au.id,
-  '00000000-0000-0000-0000-000000000001',  -- platform tenant
+VALUES (
+  '5d76d65e-e102-4c33-bf45-d13fa4385537',       -- Kees, Auth UUID
+  '00000000-0000-0000-0000-000000000001',         -- Kees Holding tenant
   'platform_admin'
-FROM auth.users au
-WHERE au.email = 'VERVANG_DIT_MET_GMAIL_ADRES@gmail.com'
+)
 ON CONFLICT (id) DO NOTHING;
 
--- ── §4: Bestaande canvassen koppelen aan kingfisher-tenant ───
+-- ── §3b: Placeholder voor Account 2 (Gmail, tenant_admin op Kingfisher) ──
 --
--- Alle canvassen die nog geen tenant_id hebben (= alle canvassen
--- van vóór deze migratie) worden toegewezen aan de kingfisher-tenant.
--- Canvassen van andere users (als die bestaan) krijgen ook deze tenant —
--- als je meerdere users hebt met canvassen die naar een andere tenant
--- moeten, voer dan eerst een handmatige check uit:
+-- HOE IN TE VULLEN:
+--   1. Maak Account 2 aan in Supabase Dashboard → Authentication →
+--      Users → Invite user (gebruik je Gmail-adres).
+--   2. Na aanmaken: kopieer de UUID die Supabase toekent.
+--   3. Vervang 'VERVANG-MET-UUID-VAN-ACCOUNT-2' hieronder.
+--   4. Voer dit INSERT-statement handmatig uit in de SQL Editor.
+--      (Of herrun dit bestand — ON CONFLICT DO NOTHING is veilig.)
 --
---   SELECT u.email, COUNT(c.id) as canvas_count
---   FROM canvases c
---   JOIN auth.users u ON c.user_id = u.id
---   WHERE c.tenant_id IS NULL
---   GROUP BY u.email;
+-- Zolang je dit niet invult: geen schade. Het INSERT doet niets
+-- met een ongeldige UUID (FK naar auth.users zal falen als de
+-- gebruiker niet bestaat — veiligheidsnet).
 
-UPDATE canvases
-SET    tenant_id = '00000000-0000-0000-0000-000000000002'  -- kingfisher
-WHERE  tenant_id IS NULL;
+INSERT INTO user_profiles (id, tenant_id, role)
+VALUES (
+  'VERVANG-MET-UUID-VAN-ACCOUNT-2',              -- !! invullen na aanmaken Gmail-account
+  '00000000-0000-0000-0000-000000000002',         -- Kingfisher tenant
+  'tenant_admin'
+)
+ON CONFLICT (id) DO NOTHING;
 
--- Controleer dat alle canvassen nu een tenant_id hebben
--- (voer handmatig uit voor je §5 draait):
---   SELECT COUNT(*) FROM canvases WHERE tenant_id IS NULL;
---   Verwacht: 0
-
--- ── §5: tenant_id NOT NULL maken ─────────────────────────────
+-- ── §4: tenant_id NOT NULL zetten ────────────────────────────
 --
--- Pas uitvoeren nadat §4 bevestigd is (COUNT = 0).
--- Als er nog rijen zonder tenant_id zijn, faalt deze stap —
--- dat is de bedoelde veiligheidsblokkade.
+-- Veilig omdat §1 de canvases tabel volledig heeft leeggemaakt.
+-- Er zijn geen rijen met tenant_id IS NULL meer mogelijk.
+-- Als §1 om wat voor reden is overgeslagen, faalt dit statement —
+-- dat is de gewenste veiligheidsblokkade.
 
 ALTER TABLE canvases
   ALTER COLUMN tenant_id SET NOT NULL;
