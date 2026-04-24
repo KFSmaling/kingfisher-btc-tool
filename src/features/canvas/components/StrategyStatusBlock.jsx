@@ -68,7 +68,7 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
           return (
             <div key={f.key} className="flex items-center gap-1.5">
               {isOk
-                ? <CheckCircle2 size={13} className="text-[#2c7a4b] flex-shrink-0" />
+                ? <CheckCircle2 size={13} className="text-[var(--color-success)] flex-shrink-0" />
                 : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 flex-shrink-0" />
               }
               <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOk ? "text-slate-600" : "text-slate-300"}`}>{label}</span>

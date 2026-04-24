@@ -71,7 +71,7 @@ function PrinciplesStatusBlock({ block, status, bullets, guidelineCounts = {}, o
           return (
             <div key={seg.key} className="flex items-center gap-1.5">
               {count > 0
-                ? <CheckCircle2 size={13} className="text-[#2c7a4b] flex-shrink-0" />
+                ? <CheckCircle2 size={13} className="text-[var(--color-success)] flex-shrink-0" />
                 : <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 flex-shrink-0" />
               }
               <span className={`text-[10px] font-semibold uppercase tracking-wider ${count > 0 ? "text-slate-600" : "text-slate-300"}`}>

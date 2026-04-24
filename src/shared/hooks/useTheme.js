@@ -15,11 +15,16 @@ export function useTheme() {
   const { tenantTheme } = useAuth();
 
   return {
-    logoUrl:      tenantTheme?.logo_url       ?? "/kf-logo.png",
-    logoWhiteUrl: tenantTheme?.logo_white_url ?? "/kf-logo-white.png",
-    brandName:    tenantTheme?.brand_name     ?? "Kingfisher & Partners",
-    productName:  tenantTheme?.product_name   ?? "Strategy Platform",
-    primaryColor: tenantTheme?.primary_color  ?? "#1a365d",
-    accentColor:  tenantTheme?.accent_color   ?? "#8dc63f",
+    logoUrl:          tenantTheme?.logo_url            ?? "/kf-logo.png",
+    logoWhiteUrl:     tenantTheme?.logo_white_url      ?? "/kf-logo-white.png",
+    brandName:        tenantTheme?.brand_name          ?? "Kingfisher & Partners",
+    productName:      tenantTheme?.product_name        ?? "Strategy Platform",
+    primaryColor:     tenantTheme?.primary_color       ?? "#1a365d",
+    accentColor:      tenantTheme?.accent_color        ?? "#8dc63f",
+    accentHoverColor: tenantTheme?.accent_hover_color  ?? "#7ab52e",
+    successColor:     tenantTheme?.success_color       ?? "#2c7a4b",
+    analysisColor:    tenantTheme?.analysis_color      ?? "#00AEEF",
+    overlayColor:     tenantTheme?.overlay_color       ?? "#001f33",
+    accentLightColor: tenantTheme?.accent_light_color  ?? "#edf7e0",
   };
 }

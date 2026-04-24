@@ -131,7 +131,7 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
         <div className="flex items-center gap-3">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
+            className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
           >
             <Printer size={13} /> PDF Printen
           </button>
@@ -166,7 +166,7 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
             {themas.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {themas.map((t, i) => (
-                  <span key={t.id} className="inline-flex items-center gap-1 text-[7px] font-semibold bg-[var(--color-accent)]/10 text-[#2c7a4b] border border-[var(--color-accent)]/30 rounded-full px-1.5 py-0.5">
+                  <span key={t.id} className="inline-flex items-center gap-1 text-[7px] font-semibold bg-[var(--color-accent)]/10 text-[var(--color-success)] border border-[var(--color-accent)]/30 rounded-full px-1.5 py-0.5">
                     <span className="font-black text-[6px]">{i + 1}</span>
                     {t.title}
                   </span>

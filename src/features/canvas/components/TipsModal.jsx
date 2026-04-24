@@ -176,11 +176,11 @@ function TipsModal({ onClose, initialSection }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-[#001f33]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-[var(--color-overlay)]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
       <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[var(--color-primary)] flex overflow-hidden" style={{ height: "80vh" }}>
 
         {/* Left nav */}
-        <div className="w-52 bg-[#001f33] flex flex-col shrink-0">
+        <div className="w-52 bg-[var(--color-overlay)] flex flex-col shrink-0">
           <div className="px-5 py-5 border-b border-white/10">
             <div className="flex items-center gap-2 mb-0.5">
               <BookOpen size={14} className="text-[var(--color-primary)]" />
@@ -198,7 +198,7 @@ function TipsModal({ onClose, initialSection }) {
                   onClick={() => setActiveSection(item.key)}
                   className={`w-full text-left px-5 py-2.5 text-xs transition-all flex items-center gap-2
                     ${isActive
-                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[var(--color-primary)]"
+                      ? "bg-[var(--color-analysis)]/20 text-white font-bold border-l-2 border-[var(--color-primary)]"
                       : "text-white/50 hover:text-white/80 hover:bg-white/5"}
                     ${isFirst ? "mb-1" : ""}`}
                 >
@@ -219,7 +219,7 @@ function TipsModal({ onClose, initialSection }) {
           {/* Content header */}
           <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between shrink-0">
             <div>
-              <h2 className="text-[#001f33] font-black text-xl uppercase tracking-tight">{section.title}</h2>
+              <h2 className="text-[var(--color-overlay)] font-black text-xl uppercase tracking-tight">{section.title}</h2>
               {section.intro && (
                 <p className="text-slate-500 text-xs mt-2 leading-relaxed max-w-lg">{section.intro}</p>
               )}
@@ -237,7 +237,7 @@ function TipsModal({ onClose, initialSection }) {
                   <div className="w-2 h-2 bg-orange-500 rotate-45" />
                 </div>
                 <div>
-                  <h3 className="text-[#001f33] font-black text-sm mb-1">{tip.kop}</h3>
+                  <h3 className="text-[var(--color-overlay)] font-black text-sm mb-1">{tip.kop}</h3>
                   <p className="text-slate-600 text-sm leading-relaxed">{tip.tekst}</p>
                 </div>
               </div>
@@ -252,7 +252,7 @@ function TipsModal({ onClose, initialSection }) {
                 if (idx > 0) setActiveSection(TIPS_NAV[idx - 1].key);
               }}
               disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === 0}
-              className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
+              className="text-[10px] font-bold text-slate-400 hover:text-[var(--color-overlay)] uppercase tracking-wider disabled:opacity-20 transition-colors"
             >
               {t("tips.prev")}
             </button>
@@ -265,7 +265,7 @@ function TipsModal({ onClose, initialSection }) {
                 if (idx < TIPS_NAV.length - 1) setActiveSection(TIPS_NAV[idx + 1].key);
               }}
               disabled={TIPS_NAV.findIndex(t => t.key === activeSection) === TIPS_NAV.length - 1}
-              className="text-[10px] font-bold text-slate-400 hover:text-[#001f33] uppercase tracking-wider disabled:opacity-20 transition-colors"
+              className="text-[10px] font-bold text-slate-400 hover:text-[var(--color-overlay)] uppercase tracking-wider disabled:opacity-20 transition-colors"
             >
               {t("tips.next")}
             </button>

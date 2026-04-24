@@ -546,7 +546,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
+              className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
             >
               <Printer size={13} /> PDF / Printen
             </button>

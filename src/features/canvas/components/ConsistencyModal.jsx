@@ -11,11 +11,11 @@ function ConsistencyModal({ bullets, onClose }) {
   const barColor  = v => v >= 70 ? "bg-green-500" : v >= 45 ? "bg-orange-400" : "bg-red-400";
 
   return (
-    <div className="fixed inset-0 bg-[#001f33]/95 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+    <div className="fixed inset-0 bg-[var(--color-overlay)]/95 backdrop-blur-sm z-50 flex items-center justify-center p-8">
       <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[var(--color-primary)] max-h-[90vh] overflow-y-auto">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
-            <h2 className="text-[#001f33] font-black text-2xl uppercase tracking-tighter">{t("consistency.title")}</h2>
+            <h2 className="text-[var(--color-overlay)] font-black text-2xl uppercase tracking-tighter">{t("consistency.title")}</h2>
             <p className="text-slate-400 text-xs mt-1">{t("consistency.overall")} <span className={`font-black text-lg ${scoreColor(overall)}`}>{overall}/100</span></p>
           </div>
           <button onClick={onClose} className="text-slate-300 hover:text-red-500 transition-colors"><X size={28} /></button>

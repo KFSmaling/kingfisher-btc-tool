@@ -158,7 +158,7 @@ function AppInner() {
 
           <button
             onClick={() => setShowConsistency(true)}
-            className="flex items-center gap-2 bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
+            className="flex items-center gap-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
           >
             <ShieldCheck size={14} /> {t("header.consistency")}
           </button>
@@ -267,7 +267,7 @@ function AppInner() {
             {allDone ? (
               <button
                 onClick={() => setShowConsistency(true)}
-                className="flex items-center gap-2 bg-[#2c7a4b] hover:bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
+                className="flex items-center gap-2 bg-[var(--color-success)] hover:bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
               >
                 <ShieldCheck size={14} /> {t("progress.all.done")}
               </button>

@@ -27,7 +27,7 @@ export default function MagicResult({ result, onAccept, onReject }) {
     <div className="mt-2 px-3 py-2.5 bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 rounded-lg">
       <div className="flex items-center gap-2">
         <Wand2 size={11} className="text-[var(--color-accent)] animate-pulse flex-shrink-0" />
-        <span className="text-[9px] font-semibold text-[#2c7a4b] uppercase tracking-wider animate-pulse">AI genereert voorstel…</span>
+        <span className="text-[9px] font-semibold text-[var(--color-success)] uppercase tracking-wider animate-pulse">AI genereert voorstel…</span>
       </div>
     </div>
   );
@@ -74,13 +74,13 @@ export default function MagicResult({ result, onAccept, onReject }) {
         )}
       </div>
       {/* Sticky accept/reject balk */}
-      <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[#edf7e0] border-t border-[var(--color-accent)]/30">
+      <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[var(--color-accent-light)] border-t border-[var(--color-accent)]/30">
         <button
           onClick={canAccept ? onAccept : undefined}
           disabled={!canAccept}
           className={`text-[10px] font-black uppercase tracking-widest transition-colors
             ${canAccept
-              ? "text-[#2c7a4b] hover:text-[var(--color-primary)] cursor-pointer"
+              ? "text-[var(--color-success)] hover:text-[var(--color-primary)] cursor-pointer"
               : "text-slate-300 cursor-not-allowed"}`}
         >
           ✓ Overnemen

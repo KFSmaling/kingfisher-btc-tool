@@ -213,7 +213,7 @@ function ConfigRow({ row, onSave }) {
               disabled={!isDirty || status === "saving"}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-all
                 ${isDirty && status === "idle"
-                  ? "bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] shadow-sm"
+                  ? "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] shadow-sm"
                   : status === "saved"  ? "bg-green-100 text-green-700"
                   : status === "error"  ? "bg-red-100 text-red-600"
                   : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
@@ -283,7 +283,7 @@ function BlockDefRow({ row, onSave }) {
           disabled={!isDirty || status === "saving"}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-sm text-xs font-bold uppercase tracking-widest transition-all self-end
             ${isDirty && status === "idle"
-              ? "bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] shadow-sm"
+              ? "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] shadow-sm"
               : status === "saved"  ? "bg-green-100 text-green-700"
               : status === "error"  ? "bg-red-100 text-red-600"
               : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}

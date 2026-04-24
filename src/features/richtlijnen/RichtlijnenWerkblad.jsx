@@ -51,10 +51,10 @@ const SEGMENTS = [
     key:        "organisatie",
     label:      "Organisatie",
     sublabel:   "Mens & Proces",
-    headerBg:   "bg-[#2c7a4b]",
-    borderL:    "border-l-[#2c7a4b]",
-    badgeActive:"bg-[#2c7a4b] text-white",
-    focusRing:  "focus:border-[#2c7a4b]/40",
+    headerBg:   "bg-[var(--color-success)]",
+    borderL:    "border-l-[var(--color-success)]",
+    badgeActive:"bg-[var(--color-success)] text-white",
+    focusRing:  "focus:border-[var(--color-success)]/40",
   },
   {
     key:        "it",
@@ -676,7 +676,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
             onClick={() => setShowAdvies(true)}
             className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
               ${analysis
-                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[#2c7a4b] hover:border-[var(--color-accent)]"
+                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[var(--color-success)] hover:border-[var(--color-accent)]"
                 : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
             <Sparkles size={13} />
@@ -829,7 +829,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               <button
                 onClick={handleAnalyze}
                 disabled={analysisLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
                 {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer richtlijnen"}

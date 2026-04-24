@@ -127,7 +127,7 @@ export default function LoginScreen() {
                   required
                   autoFocus
                   placeholder="naam@kingfisher.nl"
-                  className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[#00AEEF] transition-colors bg-slate-50"
+                  className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[var(--color-analysis)] transition-colors bg-slate-50"
                 />
               </div>
 
@@ -141,7 +141,7 @@ export default function LoginScreen() {
                       <button
                         type="button"
                         onClick={() => switchMode("reset")}
-                        className="text-xs text-[var(--color-primary)] hover:text-[#2c7a4b] font-semibold transition-colors"
+                        className="text-xs text-[var(--color-primary)] hover:text-[var(--color-success)] font-semibold transition-colors"
                       >
                         Wachtwoord vergeten?
                       </button>
@@ -154,7 +154,7 @@ export default function LoginScreen() {
                     required
                     minLength={6}
                     placeholder="Minimaal 6 tekens"
-                    className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[#00AEEF] transition-colors bg-slate-50"
+                    className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[var(--color-analysis)] transition-colors bg-slate-50"
                   />
                 </div>
               )}
@@ -168,7 +168,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[var(--color-primary)] hover:bg-[#2c7a4b] text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-[var(--color-primary)] hover:bg-[var(--color-success)] text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
               >
                 {loading
                   ? "Bezig…"
@@ -186,7 +186,7 @@ export default function LoginScreen() {
               {mode !== "login" && (
                 <p className="text-sm text-slate-500 text-center">
                   Al een account?{" "}
-                  <button onClick={() => switchMode("login")} className="text-[var(--color-primary)] font-bold hover:text-[#2c7a4b] transition-colors">
+                  <button onClick={() => switchMode("login")} className="text-[var(--color-primary)] font-bold hover:text-[var(--color-success)] transition-colors">
                     Inloggen
                   </button>
                 </p>
@@ -194,7 +194,7 @@ export default function LoginScreen() {
               {mode !== "register" && (
                 <p className="text-sm text-slate-500 text-center">
                   Nog geen account?{" "}
-                  <button onClick={() => switchMode("register")} className="text-[var(--color-primary)] font-bold hover:text-[#2c7a4b] transition-colors">
+                  <button onClick={() => switchMode("register")} className="text-[var(--color-primary)] font-bold hover:text-[var(--color-success)] transition-colors">
                     Aanmaken
                   </button>
                 </p>

@@ -59,7 +59,7 @@ class ErrorBoundary extends React.Component {
             {/* Herstel-knop */}
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-2 mx-auto bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] px-6 py-3 rounded-sm font-bold text-sm uppercase tracking-widest transition-colors shadow-sm"
+              className="flex items-center gap-2 mx-auto bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] px-6 py-3 rounded-sm font-bold text-sm uppercase tracking-widest transition-colors shadow-sm"
             >
               <RefreshCw size={14} /> Pagina herladen
             </button>

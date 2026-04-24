@@ -7,13 +7,13 @@ import { useLang } from "../../../i18n";
 // Subtabs en blocks zijn ID-gebaseerd; labels worden via t() opgehaald
 const PILLAR_SUBTABS = [
   { id: "current", labelKey: "subtab.current", dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
-  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[var(--color-primary)]",     color: "border-[var(--color-primary)] text-[var(--color-primary)]"    },
+  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[var(--color-analysis)]",    activeBg: "bg-blue-50 border-[var(--color-primary)]",     color: "border-[var(--color-primary)] text-[var(--color-primary)]"    },
   { id: "change",  labelKey: "subtab.change",  dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
 const PRINCIPLES_SUBTABS = [
   { id: "generic",    labelKey: "subtab.generic",         dot: "bg-[var(--color-primary)]",   activeBg: "bg-[var(--color-primary)]/5 border-[var(--color-primary)]/30", color: "border-[var(--color-primary)] text-[var(--color-primary)]"    },
-  { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",         color: "border-blue-400 text-blue-600"      },
+  { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[var(--color-analysis)]",   activeBg: "bg-blue-50 border-blue-300",         color: "border-blue-400 text-blue-600"      },
   { id: "processes",  labelKey: "block.processes.title",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",     color: "border-violet-500 text-violet-600"  },
   { id: "people",     labelKey: "block.people.title",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",       color: "border-green-500 text-green-600"    },
   { id: "technology", labelKey: "block.technology.title", dot: "bg-slate-500",   activeBg: "bg-slate-100 border-slate-400",      color: "border-slate-500 text-slate-600"    },

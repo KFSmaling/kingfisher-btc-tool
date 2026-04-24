@@ -7,10 +7,10 @@ import { saveCanvasUpload, uploadDocumentToStorage, createImportJob, updateImpor
 // ── Dossier — document import + kennisbank ───────────────────────────────────
 const IMPORT_PHASES = {
   queued:    { label: "In wachtrij", pct: 0,   color: "bg-slate-200"  },
-  uploading: { label: "Uploaden…",   pct: 25,  color: "bg-[#00AEEF]" },
+  uploading: { label: "Uploaden…",   pct: 25,  color: "bg-[var(--color-analysis)]" },
   reading:   { label: "Lezen…",      pct: 55,  color: "bg-amber-400"  },
   indexing:  { label: "Indexeren…",  pct: 80,  color: "bg-[var(--color-accent)]"  },
-  done:      { label: "Klaar",       pct: 100, color: "bg-[#2c7a4b]"  },
+  done:      { label: "Klaar",       pct: 100, color: "bg-[var(--color-success)]"  },
   error:     { label: "Fout",        pct: 100, color: "bg-red-400"    },
 };
 
@@ -208,7 +208,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                       <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded flex-shrink-0">{ext}</span>
                       <span className="text-xs font-semibold text-slate-700 truncate">{job.file.name}</span>
                     </div>
-                    <span className={`text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${job.phase === "done" ? "text-[#2c7a4b]" : job.phase === "error" ? "text-red-500" : "text-slate-400"}`}>
+                    <span className={`text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${job.phase === "done" ? "text-[var(--color-success)]" : job.phase === "error" ? "text-red-500" : "text-slate-400"}`}>
                       {phase.label}
                     </span>
                   </div>
@@ -219,7 +219,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                     {phaseOrder.map((p, i) => (
                       <span key={p} className={`text-[8px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded ${
                         job.phase === p ? "bg-[var(--color-primary)] text-white" :
-                        (job.phase === "done" || (currentIdx > i && job.phase !== "error")) ? "bg-[var(--color-accent)]/20 text-[#2c7a4b]" :
+                        (job.phase === "done" || (currentIdx > i && job.phase !== "error")) ? "bg-[var(--color-accent)]/20 text-[var(--color-success)]" :
                         "text-slate-300"}`}>
                         {IMPORT_PHASES[p]?.label}
                       </span>
@@ -229,7 +229,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                     )}
                   </div>
                   {job.phase === "done" && job.totalChunks > 0 && (
-                    <p className="text-[9px] text-[#2c7a4b] mt-1">{job.totalChunks} fragmenten geïndexeerd</p>
+                    <p className="text-[9px] text-[var(--color-success)] mt-1">{job.totalChunks} fragmenten geïndexeerd</p>
                   )}
                   {job.phase === "error" && <p className="text-[10px] text-red-500 mt-1">{job.error}</p>}
                 </div>
@@ -262,7 +262,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                   {new Date(f.created_at).toLocaleDateString("nl-NL", { day: "2-digit", month: "short", year: "numeric" })}
                 </span>
               </div>
-              <span className="text-[9px] font-semibold text-[#2c7a4b] uppercase tracking-wider flex-shrink-0">Geïndexeerd</span>
+              <span className="text-[9px] font-semibold text-[var(--color-success)] uppercase tracking-wider flex-shrink-0">Geïndexeerd</span>
               <button
                 onClick={() => handleDelete(f.id, f.file_name)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-400 flex-shrink-0"

@@ -8,11 +8,16 @@
    (login-scherm, laden) gelden deze Kingfisher-defaults.
    ────────────────────────────────────────────────────────────────────────── */
 :root {
-  --color-primary:   #1a365d;
-  --color-accent:    #8dc63f;
-  --logo-url:        /kf-logo.png;
-  --logo-white-url:  /kf-logo-white.png;
-  --brand-name:      Kingfisher;
+  --color-primary:       #1a365d;
+  --color-accent:        #8dc63f;
+  --color-accent-hover:  #7ab52e;
+  --color-success:       #2c7a4b;
+  --color-analysis:      #00AEEF;
+  --color-overlay:       #001f33;
+  --color-accent-light:  #edf7e0;
+  --logo-url:            /kf-logo.png;
+  --logo-white-url:      /kf-logo-white.png;
+  --brand-name:          Kingfisher;
 }
 
 body {

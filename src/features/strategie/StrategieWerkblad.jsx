@@ -39,7 +39,7 @@ const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete
       {!isKsf && (
         <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
           placeholder="Target"
-          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-[#2c7a4b] placeholder:text-slate-300 focus:outline-none focus:border-[#2c7a4b]/40 text-center font-semibold" />
+          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-[var(--color-success)] placeholder:text-slate-300 focus:outline-none focus:border-[var(--color-success)]/40 text-center font-semibold" />
       )}
       <button onClick={onDelete}
         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
@@ -81,7 +81,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             onClick={() => { if (!ksfKpiDraft?.loading) { setOpen(true); onGenerateKsfKpi(); } }}
             disabled={ksfKpiDraft?.loading}
             title="KSF & KPI genereren op basis van dit thema"
-            className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-accent)] hover:text-[#2c7a4b] border border-[var(--color-accent)]/40 hover:border-[#2c7a4b]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+            className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-accent)] hover:text-[var(--color-success)] border border-[var(--color-accent)]/40 hover:border-[var(--color-success)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
             <Wand2 size={10} />
             {ksfKpiDraft?.loading ? "…" : "KSF & KPI"}
           </button>
@@ -144,10 +144,10 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                   {/* KPI preview */}
                   {(ksfKpiDraft.kpi || []).map((k, i) => (
                     <div key={`kpi-${i}`} className="group grid grid-cols-[20px_1fr_90px_90px_20px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
-                      <span className="text-[8px] font-black text-[#2c7a4b]/70 uppercase">KPI</span>
+                      <span className="text-[8px] font-black text-[var(--color-success)]/70 uppercase">KPI</span>
                       <span className="text-xs text-slate-700">{k.description}</span>
                       <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
-                      <span className="text-[10px] text-[#2c7a4b] font-semibold text-center">{k.target_value || "—"}</span>
+                      <span className="text-[10px] text-[var(--color-success)] font-semibold text-center">{k.target_value || "—"}</span>
                       <button onClick={() => onRemoveDraftItem?.("kpi", i)}
                         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
                         <X size={11} />
@@ -195,12 +195,12 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             {/* KPI kolom */}
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h5 className="text-sm font-black uppercase tracking-widest text-[#2c7a4b]">
+                <h5 className="text-sm font-black uppercase tracking-widest text-[var(--color-success)]">
                   KPI — Indicatoren <span className="font-normal text-slate-400">({kpis.length}/3)</span>
                 </h5>
                 {kpis.length < 3 && (
                   <button onClick={() => onAddKsfKpi("kpi")}
-                    className="text-[10px] font-bold text-[#2c7a4b] hover:text-[#2c7a4b]/70 flex items-center gap-1">
+                    className="text-[10px] font-bold text-[var(--color-success)] hover:text-[var(--color-success)]/70 flex items-center gap-1">
                     <Plus size={10} /> Toevoegen
                   </button>
                 )}
@@ -208,7 +208,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
               <div className="grid grid-cols-[1fr_90px_90px_20px] gap-1.5 pb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Huidig</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#2c7a4b] text-center">Target</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-success)] text-center">Target</span>
                 <span />
               </div>
               <div className="space-y-1.5 overflow-y-auto max-h-60">
@@ -307,12 +307,12 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
       {/* Voorgestelde items (regel-voor-regel) */}
       {proposedLines.length > 0 && (() => {
         const isGK = magicResult?.isGeneralKnowledge;
-        const borderCls   = isGK ? "border-[#00AEEF]/50"   : "border-amber-300";
-        const headerBg    = isGK ? "bg-[#00AEEF]/8"        : "bg-amber-50";
-        const headerBdr   = isGK ? "border-[#00AEEF]/30"   : "border-amber-200";
-        const labelCls    = isGK ? "text-[#00AEEF]"        : "text-amber-700";
-        const dividerCls  = isGK ? "divide-[#00AEEF]/15"   : "divide-amber-100";
-        const hoverRowCls = isGK ? "hover:bg-[#00AEEF]/5"  : "hover:bg-amber-50/40";
+        const borderCls   = isGK ? "border-[var(--color-analysis)]/50"   : "border-amber-300";
+        const headerBg    = isGK ? "bg-[var(--color-analysis)]/8"        : "bg-amber-50";
+        const headerBdr   = isGK ? "border-[var(--color-analysis)]/30"   : "border-amber-200";
+        const labelCls    = isGK ? "text-[var(--color-analysis)]"        : "text-amber-700";
+        const dividerCls  = isGK ? "divide-[var(--color-analysis)]/15"   : "divide-amber-100";
+        const hoverRowCls = isGK ? "hover:bg-[var(--color-analysis)]/5"  : "hover:bg-amber-50/40";
         return (
           <div className={`border ${borderCls} rounded-xl overflow-hidden`}>
             <div className={`flex items-center justify-between ${headerBg} px-3 py-2 border-b ${headerBdr}`}>
@@ -1042,7 +1042,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const externItems = items.filter(i => i.type === "extern");
   const internItems = items.filter(i => i.type === "intern");
   const saveLabel   = { idle: "", saving: "Opslaan…", saved: "Opgeslagen ✓", error: "Fout" }[saveStatus];
-  const saveColor   = { saving: "text-slate-400", saved: "text-[#2c7a4b]", error: "text-red-500", idle: "" }[saveStatus];
+  const saveColor   = { saving: "text-slate-400", saved: "text-[var(--color-success)]", error: "text-red-500", idle: "" }[saveStatus];
 
   if (!isLoaded) return (
     <div className="flex-1 flex items-center justify-center">
@@ -1075,7 +1075,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             onClick={() => setShowAdvies(true)}
             className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
               ${analysis
-                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[#2c7a4b] hover:border-[var(--color-accent)]"
+                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[var(--color-success)] hover:border-[var(--color-accent)]"
                 : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
             <Sparkles size={13} />
@@ -1092,7 +1092,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           <button
             onClick={() => setAutoDraftOpen(true)}
             disabled={autoDraftRunning}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
             <Zap size={13} />
             {autoDraftRunning ? "Bezig…" : "Creëer Full Draft"}
           </button>
@@ -1238,15 +1238,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         {/* SECTIE 2: ANALYSE */}
         <section className="space-y-6 pb-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#00AEEF] text-white text-xs font-black flex items-center justify-center flex-shrink-0">2</div>
-            <h3 className="text-2xl font-bold text-[#00AEEF]">{appLabel("strat.section.analyse", "Analyse")}</h3>
-            <div className="flex-1 h-px bg-[#00AEEF]/20" />
+            <div className="w-8 h-8 rounded-full bg-[var(--color-analysis)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">2</div>
+            <h3 className="text-2xl font-bold text-[var(--color-analysis)]">{appLabel("strat.section.analyse", "Analyse")}</h3>
+            <div className="flex-1 h-px bg-[var(--color-analysis)]/20" />
             {items.some(i => !i.tag || i.tag === "niet_relevant") && (
               <button
                 onClick={handleAutoTag}
                 disabled={autoTagLoading}
                 title="AI classificeert externe items als kans/bedreiging en interne items als sterkte/zwakte — alleen bij zekerheid"
-                className="flex items-center gap-1 text-[10px] font-bold text-[#00AEEF]/60 hover:text-[#00AEEF] border border-[#00AEEF]/30 hover:border-[#00AEEF]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
+                className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-analysis)]/60 hover:text-[var(--color-analysis)] border border-[var(--color-analysis)]/30 hover:border-[var(--color-analysis)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
               >
                 <Wand2 size={10} />
                 {autoTagLoading ? "Bezig…" : appLabel("strat.autotag.button", "Auto-tag")}
@@ -1284,14 +1284,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <section className="space-y-6 pb-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">3</div>
-            <h3 className="text-2xl font-bold text-[#2c7a4b]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
+            <h3 className="text-2xl font-bold text-[var(--color-success)]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
             <div className="flex-1 h-px bg-[var(--color-accent)]/30" />
             <p className="text-xs text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
             {themas.length < 7 && (
               <button
                 onClick={generateThemas}
                 disabled={themaDraft?.loading}
-                className="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:text-[#2c7a4b] border border-[var(--color-accent)]/40 hover:border-[#2c7a4b]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+                className="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:text-[var(--color-success)] border border-[var(--color-accent)]/40 hover:border-[var(--color-success)]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
                 <Wand2 size={10} />
                 {themaDraft?.loading ? "Genereren…" : "Genereer Thema's"}
               </button>
@@ -1372,7 +1372,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             })}
             {themas.length < 7 && (
               <button onClick={addThema}
-                className="w-full border-2 border-dashed border-slate-200 hover:border-[var(--color-accent)]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[#2c7a4b] transition-colors flex items-center justify-center gap-2">
+                className="w-full border-2 border-dashed border-slate-200 hover:border-[var(--color-accent)]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[var(--color-success)] transition-colors flex items-center justify-center gap-2">
                 <Plus size={14} />
                 Strategisch Thema handmatig toevoegen {themas.length > 0 ? `(${themas.length}/7)` : ""}
               </button>
@@ -1414,7 +1414,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               <button
                 onClick={handleAnalyze}
                 disabled={analysisLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
                 {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}

@@ -40,7 +40,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
           {TIPS_DATA.nl[block.id] && (
             <button
               onClick={() => onShowTips(block.id)}
-              className="flex items-center gap-1.5 text-white/40 hover:text-[#2c7a4b] transition-colors"
+              className="flex items-center gap-1.5 text-white/40 hover:text-[var(--color-success)] transition-colors"
               title={t("tips.panel.button")}
             >
               <BookOpen size={15} />
@@ -58,7 +58,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 py-4 flex flex-col items-center gap-1 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all
-              ${activeTab === tab.id ? "border-orange-500 text-[#001f33] bg-white" : "border-transparent text-slate-500 hover:text-[#001f33]"}`}
+              ${activeTab === tab.id ? "border-orange-500 text-[var(--color-overlay)] bg-white" : "border-transparent text-slate-500 hover:text-[var(--color-overlay)]"}`}
           >
             <tab.icon size={16} />
             {t(tab.labelKey)}
@@ -90,7 +90,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
 
             {/* Pending insights — accept or reject only */}
             {pendingInsights.map(ins => (
-              <div key={ins.id} className="p-5 bg-slate-50 border border-slate-200 border-l-4 border-l-[#00AEEF] rounded-sm">
+              <div key={ins.id} className="p-5 bg-slate-50 border border-slate-200 border-l-4 border-l-[var(--color-analysis)] rounded-sm">
                 <p className="text-sm text-slate-800 leading-relaxed mb-4">{ins.text}</p>
                 {ins.source && (
                   <p className="text-[9px] text-slate-400 mb-3 italic">{t("extract.source")} {ins.source}</p>
@@ -128,7 +128,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
             {pendingInsights.length === 0 && acceptedInsights.length > 0 && (
               <button
                 onClick={() => setActiveTab("review")}
-                className="w-full py-3 bg-[#001f33] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[#00AEEF] transition-colors mt-2"
+                className="w-full py-3 bg-[var(--color-overlay)] text-white text-[10px] font-black uppercase tracking-widest rounded-sm hover:bg-[var(--color-analysis)] transition-colors mt-2"
               >
                 {t("extract.go.review", { n: acceptedInsights.length })}
               </button>
@@ -184,7 +184,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     }}
-                    className="flex-1 py-2.5 bg-[var(--color-primary)] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#2c7a4b] transition-colors"
+                    className="flex-1 py-2.5 bg-[var(--color-primary)] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[var(--color-success)] transition-colors"
                   >
                     {t("review.to.canvas")}
                   </button>
@@ -278,7 +278,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                                   <option key={s.id} value={s.id} disabled={s.id === activeSubTab}>{t(s.labelKey)}</option>
                                 ))}
                               </select>
-                              <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#2c7a4b]"><Edit3 size={14} /></button>
+                              <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[var(--color-success)]"><Edit3 size={14} /></button>
                               <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
                           </div>
@@ -330,7 +330,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               /* ── Non-pillar blocks: flat list (unchanged) ── */
               <>
                 <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                  <span className="text-[9px] font-black text-[#001f33] uppercase tracking-widest">{t("canvas.bullets.count", { n: blockBullets.length })}</span>
+                  <span className="text-[9px] font-black text-[var(--color-overlay)] uppercase tracking-widest">{t("canvas.bullets.count", { n: blockBullets.length })}</span>
                   {blockBullets.length < 7 && (
                     <button
                       onClick={() => setAddingBullet(true)}
@@ -377,7 +377,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                         )}
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[#2c7a4b]"><Edit3 size={14} /></button>
+                        <button onClick={() => { setEditingIdx(i); setEditVal(bulletText); }} className="text-slate-300 hover:text-[var(--color-success)]"><Edit3 size={14} /></button>
                         <button onClick={() => onDeleteBullet(block.id, i)} className="text-slate-300 hover:text-red-500"><Trash2 size={14} /></button>
                       </div>
                     </div>
