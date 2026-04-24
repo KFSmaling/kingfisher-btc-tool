@@ -106,7 +106,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_profiles (id, tenant_id, role)
 VALUES (
-  'VERVANG-MET-UUID-VAN-ACCOUNT-2',              -- !! invullen na aanmaken Gmail-account
+  '6f0dac6b-d082-41f4-be2f-e0aacca4c73b',              -- !! invullen na aanmaken Gmail-account
   '00000000-0000-0000-0000-000000000002',         -- Kingfisher tenant
   'tenant_admin'
 )

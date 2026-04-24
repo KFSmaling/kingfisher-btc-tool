@@ -27,9 +27,9 @@ import MasterImporterPanel from "./features/dossier/components/MasterImporterPan
 
 // ── Main App ─────────────────────────────────────────────────────────────────
 function AppInner() {
-  const { t, lang, setLang }   = useLang();
-  const { user, signOut }      = useAuth();
-  const { label: appLabel }    = useAppConfig();
+  const { t, lang, setLang }        = useLang();
+  const { user, signOut, tenantId } = useAuth();
+  const { label: appLabel }         = useAppConfig();
 
   // ── UI-only state (panels, modals — geen business logic) ──────────────────
   const [activeBlockId,   setActiveBlockId]   = useState(null);
@@ -50,6 +50,7 @@ function AppInner() {
     handleMoveToBullets, handleDeleteBullet, handleAddBullet,
   } = useCanvasState({
     user,
+    tenantId,
     lang,
     onCanvasSwitch: () => {
       setActiveBlockId(null);
@@ -341,10 +342,11 @@ function AppInner() {
 const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "";
 
 function AuthGate() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, profileLoading, tenantId } = useAuth();
   const isAdminRoute = window.location.pathname === "/admin";
 
-  if (session === undefined) {
+  // Wacht tot sessie én user_profiles geladen zijn
+  if (profileLoading) {
     return (
       <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#8dc63f] border-t-transparent rounded-full animate-spin" />
@@ -353,6 +355,26 @@ function AuthGate() {
   }
 
   if (!session) return <LoginScreen />;
+
+  // Ingelogd maar geen tenant-profiel gevonden
+  if (!tenantId) {
+    return (
+      <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
+        <div className="text-center text-white space-y-3 max-w-md px-6">
+          <p className="text-lg font-bold">Account wacht op activatie</p>
+          <p className="text-white/70 text-sm">
+            Je account wacht nog op activatie. Neem contact op met je beheerder.
+          </p>
+          <button
+            onClick={signOut}
+            className="mt-4 text-[#8dc63f] text-sm hover:underline"
+          >
+            Uitloggen
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Admin route — alleen voor beheerder
   if (isAdminRoute) {

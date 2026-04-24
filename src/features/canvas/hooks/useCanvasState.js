@@ -27,10 +27,11 @@ import { loadStrategyCore, loadStrategicThemes, loadAnalysisItems } from "../../
 /**
  * @param {object} options
  * @param {object}   options.user           — Supabase user object (null als niet ingelogd)
+ * @param {string}   options.tenantId       — UUID van de tenant (uit user_profiles, via AuthProvider)
  * @param {string}   options.lang           — huidige taalcode ("nl" | "en")
  * @param {function} options.onCanvasSwitch — wordt aangeroepen wanneer canvas wisselt (reset UI-state)
  */
-export function useCanvasState({ user, lang, onCanvasSwitch }) {
+export function useCanvasState({ user, tenantId, lang, onCanvasSwitch }) {
   // ── Canvas identiteit ───────────────────────────────────────────────────────
   const [activeCanvasId, setActiveCanvasId] = useState(null);
   const [canvases, setCanvases]             = useState([]);
@@ -138,7 +139,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
         // Geen canvassen — maak direct een nieuw aan
         const name = `Canvas ${today}`;
         const { data: created, error: createErr } = await createCanvas({
-          userId: user.id, name, language: lang,
+          userId: user.id, tenantId, name, language: lang,
         });
         log("[init] nieuw canvas:", created, createErr);
         if (created) {
@@ -201,7 +202,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
       day: "2-digit", month: "short", year: "numeric",
     });
     const name = `Canvas ${today}`;
-    const { data, error } = await createCanvas({ userId: user.id, name, language: lang });
+    const { data, error } = await createCanvas({ userId: user.id, tenantId, name, language: lang });
     if (!error && data) {
       setCanvases(prev => [data, ...prev]);
       suppressSaveRef.current = true;
@@ -213,7 +214,7 @@ export function useCanvasState({ user, lang, onCanvasSwitch }) {
       onCanvasSwitch?.();
       setTimeout(() => { suppressSaveRef.current = false; }, 100);
     }
-  }, [user, lang, onCanvasSwitch]);
+  }, [user, tenantId, lang, onCanvasSwitch]);
 
   const handleSelectCanvas = useCallback(async (canvasRecord) => {
     // Reset state METEEN zodat de gebruiker geen verouderd canvas ziet tijdens de DB-fetch

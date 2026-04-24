@@ -42,17 +42,18 @@ export async function loadUserCanvases(userId) {
  * Maak een nieuw canvas aan voor een gebruiker.
  * Geeft het aangemaakte record terug (inclusief id).
  */
-export async function createCanvas({ userId, name, language = "nl" }) {
+export async function createCanvas({ userId, tenantId, name, language = "nl" }) {
   if (!supabase) return { data: null, error: "Supabase niet geconfigureerd" };
 
-  console.log("[createCanvas] inserting:", { userId, name, language });
+  console.log("[createCanvas] inserting:", { userId, tenantId, name, language });
 
   const { data, error } = await supabase
     .from("canvases")
     .insert({
-      user_id: userId,
-      name:    name,
-      blocks:  {},
+      user_id:   userId,
+      tenant_id: tenantId,
+      name:      name,
+      blocks:    {},
     })
     .select()
     .single();
