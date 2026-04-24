@@ -72,10 +72,10 @@ function AppInner() {
   }, [deepDiveBlockId, activeCanvasId, refreshGuidelineCounts]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#1a365d] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] text-[var(--color-primary)] font-sans flex flex-col">
 
       {/* Header */}
-      <header className="h-20 bg-[#1a365d] flex items-center justify-between z-20 border-b-2 border-[#8dc63f] shrink-0 shadow-lg">
+      <header className="h-20 bg-[var(--color-primary)] flex items-center justify-between z-20 border-b-2 border-[var(--color-accent)] shrink-0 shadow-lg">
 
         {/* Left: logo + app title */}
         <div className="flex items-center h-full shrink-0">
@@ -91,7 +91,7 @@ function AppInner() {
             <h1 className="text-[15px] font-bold tracking-[0.14em] uppercase text-white leading-none">
               {appLabel("app.title", "Business Transformation Canvas")}
             </h1>
-            <p className="text-[10px] tracking-[0.12em] text-[#8dc63f] mt-1.5 uppercase font-semibold">
+            <p className="text-[10px] tracking-[0.12em] text-[var(--color-accent)] mt-1.5 uppercase font-semibold">
               {appLabel("app.subtitle", "From strategy to execution")}
             </p>
           </div>
@@ -120,7 +120,7 @@ function AppInner() {
             </span>
           )}
           {saveStatus === "saved" && (
-            <span className="flex items-center gap-1 text-[10px] text-[#8dc63f] font-medium">
+            <span className="flex items-center gap-1 text-[10px] text-[var(--color-accent)] font-medium">
               <Zap size={10} /> Opgeslagen
             </span>
           )}
@@ -158,14 +158,14 @@ function AppInner() {
 
           <button
             onClick={() => setShowConsistency(true)}
-            className="flex items-center gap-2 bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
+            className="flex items-center gap-2 bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] px-5 py-2.5 rounded-sm font-bold text-[10px] shadow-sm transition-all uppercase tracking-widest"
           >
             <ShieldCheck size={14} /> {t("header.consistency")}
           </button>
 
           <button
             onClick={() => setShowInfoSidebar(s => !s)}
-            className={`flex items-center gap-1.5 transition-colors ml-1 ${showInfoSidebar ? "text-[#8dc63f]" : "text-white/40 hover:text-white"}`}
+            className={`flex items-center gap-1.5 transition-colors ml-1 ${showInfoSidebar ? "text-[var(--color-accent)]" : "text-white/40 hover:text-white"}`}
             title="Project details"
           >
             <SlidersHorizontal size={15} />
@@ -175,7 +175,7 @@ function AppInner() {
           {user?.email === process.env.REACT_APP_ADMIN_EMAIL && (
             <a
               href="/admin"
-              className="flex items-center gap-1.5 text-white/40 hover:text-[#8dc63f] transition-colors ml-1"
+              className="flex items-center gap-1.5 text-white/40 hover:text-[var(--color-accent)] transition-colors ml-1"
               title="App Config beheren"
             >
               <SlidersHorizontal size={13} />
@@ -267,7 +267,7 @@ function AppInner() {
             {allDone ? (
               <button
                 onClick={() => setShowConsistency(true)}
-                className="flex items-center gap-2 bg-[#2c7a4b] hover:bg-[#1a365d] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
+                className="flex items-center gap-2 bg-[#2c7a4b] hover:bg-[var(--color-primary)] text-white px-6 py-2.5 rounded-sm text-xs font-bold uppercase tracking-widest shadow-sm transition-colors"
               >
                 <ShieldCheck size={14} /> {t("progress.all.done")}
               </button>
@@ -349,8 +349,8 @@ function AuthGate() {
   // Wacht tot sessie én user_profiles geladen zijn
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#8dc63f] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[var(--color-primary)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -360,7 +360,7 @@ function AuthGate() {
   // Ingelogd maar geen tenant-profiel gevonden
   if (!tenantId) {
     return (
-      <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-primary)] flex items-center justify-center">
         <div className="text-center text-white space-y-3 max-w-md px-6">
           <p className="text-lg font-bold">Account wacht op activatie</p>
           <p className="text-white/70 text-sm">
@@ -368,7 +368,7 @@ function AuthGate() {
           </p>
           <button
             onClick={signOut}
-            className="mt-4 text-[#8dc63f] text-sm hover:underline"
+            className="mt-4 text-[var(--color-accent)] text-sm hover:underline"
           >
             Uitloggen
           </button>
@@ -381,11 +381,11 @@ function AuthGate() {
   if (isAdminRoute) {
     if (session.user?.email !== ADMIN_EMAIL) {
       return (
-        <div className="min-h-screen bg-[#1a365d] flex items-center justify-center">
+        <div className="min-h-screen bg-[var(--color-primary)] flex items-center justify-center">
           <div className="text-center text-white space-y-3">
             <p className="text-lg font-bold">Geen toegang</p>
             <p className="text-white/60 text-sm">Deze pagina is alleen voor beheerders.</p>
-            <a href="/" className="block text-[#8dc63f] text-sm hover:underline">← Terug naar app</a>
+            <a href="/" className="block text-[var(--color-accent)] text-sm hover:underline">← Terug naar app</a>
           </div>
         </div>
       );

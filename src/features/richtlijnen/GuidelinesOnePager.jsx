@@ -14,7 +14,7 @@ import React, { useEffect } from "react";
 import { X, Printer } from "lucide-react";
 
 const SEGMENTS = [
-  { key: "generiek",    label: "Generiek",     sublabel: "Strategie & Governance",  color: "#1a365d", lightColor: "#eef2ff" },
+  { key: "generiek",    label: "Generiek",     sublabel: "Strategie & Governance",  color: "var(--color-primary)", lightColor: "#eef2ff" },
   { key: "klanten",     label: "Klanten",       sublabel: "Markt & Dienstverlening", color: "#c2410c", lightColor: "#fff7ed" },
   { key: "organisatie", label: "Organisatie",   sublabel: "Mens & Proces",           color: "#166534", lightColor: "#f0fdf4" },
   { key: "it",          label: "IT",            sublabel: "Technologie & Data",      color: "#6b21a8", lightColor: "#faf5ff" },
@@ -124,14 +124,14 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
     <div className="fixed inset-0 z-[60] flex flex-col bg-slate-700 guidelines-print-root">
 
       {/* ── Toolbar (niet zichtbaar bij print) ── */}
-      <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] flex-shrink-0 print:hidden">
+      <div className="flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] flex-shrink-0 print:hidden">
         <span className="text-[10px] font-bold uppercase tracking-widest text-white">
           Richtlijnen Onepager — A4 Portrait preview
         </span>
         <div className="flex items-center gap-3">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
+            className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
           >
             <Printer size={13} /> PDF Printen
           </button>
@@ -148,17 +148,17 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
           style={{ width: "794px", minHeight: "1123px" }}
         >
           {/* Document header */}
-          <div className="px-8 pt-8 pb-4 border-b-2" style={{ borderColor: "#8dc63f" }}>
+          <div className="px-8 pt-8 pb-4 border-b-2" style={{ borderColor: "var(--color-accent)" }}>
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[8px] font-bold uppercase tracking-[0.3em] text-slate-400 mb-1">
                   Richtlijnen & Leidende Principes
                 </p>
-                <h1 className="text-xl font-black text-[#1a365d] leading-tight">{canvasName || "Canvas"}</h1>
+                <h1 className="text-xl font-black text-[var(--color-primary)] leading-tight">{canvasName || "Canvas"}</h1>
               </div>
               <div className="text-right max-w-xs">
                 <p className="text-[7px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Stip op de Horizon</p>
-                <p className="text-[9px] font-semibold text-[#1a365d] leading-snug">{core.ambitie || "(geen ambitie)"}</p>
+                <p className="text-[9px] font-semibold text-[var(--color-primary)] leading-snug">{core.ambitie || "(geen ambitie)"}</p>
               </div>
             </div>
 
@@ -166,7 +166,7 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
             {themas.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {themas.map((t, i) => (
-                  <span key={t.id} className="inline-flex items-center gap-1 text-[7px] font-semibold bg-[#8dc63f]/10 text-[#2c7a4b] border border-[#8dc63f]/30 rounded-full px-1.5 py-0.5">
+                  <span key={t.id} className="inline-flex items-center gap-1 text-[7px] font-semibold bg-[var(--color-accent)]/10 text-[#2c7a4b] border border-[var(--color-accent)]/30 rounded-full px-1.5 py-0.5">
                     <span className="font-black text-[6px]">{i + 1}</span>
                     {t.title}
                   </span>

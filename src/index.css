@@ -2,11 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theming defaults ────────────────────────────────────────────────────────
+   ThemeProvider overschrijft deze variabelen op document.documentElement
+   zodra tenant theme_config geladen is. Zolang dat niet het geval is
+   (login-scherm, laden) gelden deze Kingfisher-defaults.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --color-primary:   #1a365d;
+  --color-accent:    #8dc63f;
+  --logo-url:        /kf-logo.png;
+  --logo-white-url:  /kf-logo-white.png;
+  --brand-name:      Kingfisher;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #ffffff;
-  color: #1a365d;
+  color: var(--color-primary);
 }

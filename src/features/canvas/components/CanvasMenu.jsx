@@ -44,7 +44,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
         <button onClick={() => setOpen(o => !o)} className="flex items-center gap-2.5 group">
           <div className="flex flex-col items-start">
             <span className="text-[9px] text-white/55 uppercase tracking-[0.2em] font-medium leading-none mb-1">{t("header.active.canvas")}</span>
-            <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[#8dc63f] transition-colors">
+            <span className="text-white font-semibold text-[15px] leading-none group-hover:text-[var(--color-accent)] transition-colors">
               {displayName}
             </span>
           </div>
@@ -75,9 +75,9 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
               {/* Nieuw canvas */}
               <button
                 onClick={() => { onNew(); setOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[#1a365d] transition-colors"
+                className="w-full text-left px-3 py-2.5 rounded-sm text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border border-dashed border-slate-200 hover:border-[var(--color-primary)] transition-colors"
               >
-                <Plus size={13} className="text-[#1a365d] shrink-0" />
+                <Plus size={13} className="text-[var(--color-primary)] shrink-0" />
                 <span className="font-semibold">{t("menu.new.canvas")}</span>
               </button>
             </div>
@@ -135,7 +135,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
 
                   return (
                     <div key={c.id} className={`group/item rounded-sm flex items-center gap-1 transition-colors
-                      ${isActive ? "bg-[#1a365d]/5 border border-[#1a365d]/20" : "hover:bg-slate-50"}`}>
+                      ${isActive ? "bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20" : "hover:bg-slate-50"}`}>
                       <button
                         onClick={() => { onSelect(c); setOpen(false); }}
                         className="flex-1 text-left px-3 py-2.5 min-w-0"
@@ -144,7 +144,7 @@ function CanvasMenu({ currentName, activeCanvasId, canvases, onNew, onSelect, on
                         <p className="text-[9px] text-slate-400">Aangemaakt {createdAt} · {docCount} {docCount === 1 ? "document" : "documenten"}</p>
                       </button>
                       {isActive
-                        ? <span className="text-[8px] font-bold text-[#1a365d]/60 uppercase tracking-widest pr-3 flex-shrink-0">Actief</span>
+                        ? <span className="text-[8px] font-bold text-[var(--color-primary)]/60 uppercase tracking-widest pr-3 flex-shrink-0">Actief</span>
                         : (
                           <button
                             onClick={e => { e.stopPropagation(); setConfirmDeleteId(c.id); setDeleteError(null); }}

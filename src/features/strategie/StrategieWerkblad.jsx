@@ -30,11 +30,11 @@ const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete
     <div className={`grid ${isKsf ? "grid-cols-[1fr_20px]" : "grid-cols-[1fr_90px_90px_20px]"} gap-1.5 items-center group`}>
       <input value={item.description} onChange={e => onChange({ ...item, description: e.target.value })}
         placeholder="Omschrijving…"
-        className="text-sm bg-white border border-slate-200 rounded px-3 py-2 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40" />
+        className="text-sm bg-white border border-slate-200 rounded px-3 py-2 text-slate-700 placeholder:text-slate-300 focus:outline-none focus:border-[var(--color-primary)]/40" />
       {!isKsf && (
         <input value={item.current_value} onChange={e => onChange({ ...item, current_value: e.target.value })}
           placeholder="Huidig"
-          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40 text-center" />
+          className="text-sm bg-white border border-slate-200 rounded px-2 py-2 text-slate-500 placeholder:text-slate-300 focus:outline-none focus:border-[var(--color-primary)]/40 text-center" />
       )}
       {!isKsf && (
         <input value={item.target_value} onChange={e => onChange({ ...item, target_value: e.target.value })}
@@ -68,7 +68,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
     <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-200">
-        <span className="text-xs font-black text-[#1a365d]/60 uppercase tracking-widest w-5 flex-shrink-0">{index + 1}</span>
+        <span className="text-xs font-black text-[var(--color-primary)]/60 uppercase tracking-widest w-5 flex-shrink-0">{index + 1}</span>
         <input
           value={thema.title}
           onChange={e => onTitleChange(e.target.value)}
@@ -81,7 +81,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             onClick={() => { if (!ksfKpiDraft?.loading) { setOpen(true); onGenerateKsfKpi(); } }}
             disabled={ksfKpiDraft?.loading}
             title="KSF & KPI genereren op basis van dit thema"
-            className="flex items-center gap-1 text-[9px] font-bold text-[#8dc63f] hover:text-[#2c7a4b] border border-[#8dc63f]/40 hover:border-[#2c7a4b]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+            className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-accent)] hover:text-[#2c7a4b] border border-[var(--color-accent)]/40 hover:border-[#2c7a4b]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
             <Wand2 size={10} />
             {ksfKpiDraft?.loading ? "…" : "KSF & KPI"}
           </button>
@@ -133,7 +133,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                   {/* KSF preview */}
                   {(ksfKpiDraft.ksf || []).map((k, i) => (
                     <div key={`ksf-${i}`} className="group grid grid-cols-[20px_1fr_20px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
-                      <span className="text-[8px] font-black text-[#1a365d]/50 uppercase">KSF</span>
+                      <span className="text-[8px] font-black text-[var(--color-primary)]/50 uppercase">KSF</span>
                       <span className="text-xs text-slate-700">{k.description}</span>
                       <button onClick={() => onRemoveDraftItem?.("ksf", i)}
                         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
@@ -168,12 +168,12 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             {/* KSF kolom */}
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h5 className="text-sm font-black uppercase tracking-widest text-[#1a365d]">
+                <h5 className="text-sm font-black uppercase tracking-widest text-[var(--color-primary)]">
                   KSF — Succesfactoren <span className="font-normal text-slate-400">({ksfs.length}/3)</span>
                 </h5>
                 {ksfs.length < 3 && (
                   <button onClick={() => onAddKsfKpi("ksf")}
-                    className="text-[10px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
+                    className="text-[10px] font-bold text-[var(--color-primary)] hover:text-[var(--color-primary)]/70 flex items-center gap-1">
                     <Plus size={10} /> Toevoegen
                   </button>
                 )}
@@ -378,10 +378,10 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
           placeholder={`+ Nieuwe ${title.toLowerCase()}…`}
-          className="flex-1 text-sm bg-white border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[#1a365d]/40"
+          className="flex-1 text-sm bg-white border border-dashed border-slate-300 rounded-lg px-3 py-2 text-slate-600 placeholder:text-slate-300 focus:outline-none focus:border-[var(--color-primary)]/40"
         />
         <button onClick={commit}
-          className="text-xs font-bold text-white bg-[#1a365d] hover:bg-[#1a365d]/80 rounded-lg px-3 py-2 transition-colors">
+          className="text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/80 rounded-lg px-3 py-2 transition-colors">
           +
         </button>
       </div>
@@ -410,7 +410,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           {value && onImprove && (
             <div className="relative">
               <button onClick={() => setImproveOpen(o => !o)}
-                className="text-[9px] font-bold text-slate-400 hover:text-[#1a365d] px-2 py-0.5 rounded border border-slate-200 hover:border-[#1a365d]/40 transition-colors flex items-center gap-1"
+                className="text-[9px] font-bold text-slate-400 hover:text-[var(--color-primary)] px-2 py-0.5 rounded border border-slate-200 hover:border-[var(--color-primary)]/40 transition-colors flex items-center gap-1"
                 title="Tekst verbeteren">
                 <span>✨</span> Improve
               </button>
@@ -441,14 +441,14 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
           rows={rows}
-          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300 leading-relaxed"
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 resize-y focus:outline-none focus:border-[var(--color-primary)]/40 placeholder:text-slate-300 leading-relaxed"
         />
       ) : (
         <input
           value={value || ""}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder || `${label}…`}
-          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[#1a365d]/40 placeholder:text-slate-300"
+          className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[var(--color-primary)]/40 placeholder:text-slate-300"
         />
       )}
 
@@ -468,7 +468,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
                 <span>✓</span> Accepteren
               </button>
               <button onClick={onEditDraft}
-                className="text-[9px] font-bold text-[#1a365d] hover:text-[#1a365d]/70 flex items-center gap-1">
+                className="text-[9px] font-bold text-[var(--color-primary)] hover:text-[var(--color-primary)]/70 flex items-center gap-1">
                 <span>✏️</span> Bewerken
               </button>
               <button onClick={onRejectDraft}
@@ -1047,7 +1047,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   if (!isLoaded) return (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center space-y-3">
-        <Wand2 size={28} className="text-[#8dc63f] animate-pulse mx-auto" />
+        <Wand2 size={28} className="text-[var(--color-accent)] animate-pulse mx-auto" />
         <p className="text-sm text-slate-500">Strategie laden…</p>
       </div>
     </div>
@@ -1058,14 +1058,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[#8dc63f] border-b border-b-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[var(--color-accent)] border-b border-b-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={handleClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
+          <button onClick={handleClose} className="text-slate-400 hover:text-[var(--color-primary)] transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">De Werkkamer</p>
-            <h2 className="text-lg font-bold text-[#1a365d] leading-tight">Strategie Werkblad</h2>
+            <h2 className="text-lg font-bold text-[var(--color-primary)] leading-tight">Strategie Werkblad</h2>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -1075,8 +1075,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             onClick={() => setShowAdvies(true)}
             className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
               ${analysis
-                ? "bg-[#8dc63f]/10 border-[#8dc63f]/50 text-[#2c7a4b] hover:border-[#8dc63f]"
-                : "bg-white border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d]"}`}
+                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[#2c7a4b] hover:border-[var(--color-accent)]"
+                : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
             <Sparkles size={13} />
             Strategisch Advies{analysis ? " ✓" : ""}
@@ -1084,7 +1084,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           {/* Strategie Rapport knop */}
           <button
             onClick={() => setShowOnePager(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d] text-xs font-bold rounded-lg transition-colors">
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)] text-xs font-bold rounded-lg transition-colors">
             <FileText size={13} />
             Strategie Rapport
           </button>
@@ -1092,7 +1092,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           <button
             onClick={() => setAutoDraftOpen(true)}
             disabled={autoDraftRunning}
-            className="flex items-center gap-2 px-4 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50">
             <Zap size={13} />
             {autoDraftRunning ? "Bezig…" : "Creëer Full Draft"}
           </button>
@@ -1119,9 +1119,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         {/* SECTIE 1: IDENTITEIT */}
         <section className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#1a365d] text-white text-xs font-black flex items-center justify-center flex-shrink-0">1</div>
-            <h3 className="text-2xl font-bold text-[#1a365d]">{appLabel("strat.section.identiteit", "Identiteit")}</h3>
-            <div className="flex-1 h-px bg-[#1a365d]/15" />
+            <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">1</div>
+            <h3 className="text-2xl font-bold text-[var(--color-primary)]">{appLabel("strat.section.identiteit", "Identiteit")}</h3>
+            <div className="flex-1 h-px bg-[var(--color-primary)]/15" />
           </div>
           <div className="grid grid-cols-2 gap-8">
             <WerkbladTextField
@@ -1173,10 +1173,10 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               </div>
               <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
                 {core.kernwaarden.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-sm text-[#1a365d] bg-[#1a365d]/8 border border-[#1a365d]/20 rounded-full px-2.5 py-1">
+                  <span key={i} className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/8 border border-[var(--color-primary)]/20 rounded-full px-2.5 py-1">
                     {kw}
                     <button onClick={() => setCore(prev => ({ ...prev, kernwaarden: prev.kernwaarden.filter((_,j) => j !== i) }))}
-                      className="text-[#1a365d]/40 hover:text-red-400 transition-colors"><X size={10} /></button>
+                      className="text-[var(--color-primary)]/40 hover:text-red-400 transition-colors"><X size={10} /></button>
                   </span>
                 ))}
                 <input
@@ -1283,15 +1283,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         {/* SECTIE 3: EXECUTIE 7-3-3 */}
         <section className="space-y-6 pb-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#8dc63f] text-white text-xs font-black flex items-center justify-center flex-shrink-0">3</div>
+            <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">3</div>
             <h3 className="text-2xl font-bold text-[#2c7a4b]">{appLabel("strat.section.executie", "Executie — 7·3·3 Regel")}</h3>
-            <div className="flex-1 h-px bg-[#8dc63f]/30" />
+            <div className="flex-1 h-px bg-[var(--color-accent)]/30" />
             <p className="text-xs text-slate-400 flex-shrink-0">{themas.length}/7 thema's</p>
             {themas.length < 7 && (
               <button
                 onClick={generateThemas}
                 disabled={themaDraft?.loading}
-                className="flex items-center gap-1.5 text-[9px] font-bold text-[#8dc63f] hover:text-[#2c7a4b] border border-[#8dc63f]/40 hover:border-[#2c7a4b]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
+                className="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:text-[#2c7a4b] border border-[var(--color-accent)]/40 hover:border-[#2c7a4b]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
                 <Wand2 size={10} />
                 {themaDraft?.loading ? "Genereren…" : "Genereer Thema's"}
               </button>
@@ -1329,7 +1329,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               )}
               {!themaDraft.loading && (themaDraft.lines || []).map((line, i) => (
                 <div key={i} className="group flex items-center gap-3 px-4 py-2.5 bg-white hover:bg-amber-50/30 border-b border-amber-100 last:border-0 transition-colors">
-                  <span className="text-[9px] font-black text-[#8dc63f]/70 w-4 flex-shrink-0">{i + 1}</span>
+                  <span className="text-[9px] font-black text-[var(--color-accent)]/70 w-4 flex-shrink-0">{i + 1}</span>
                   <p className="flex-1 text-sm font-semibold text-slate-700">{line}</p>
                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
@@ -1372,7 +1372,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             })}
             {themas.length < 7 && (
               <button onClick={addThema}
-                className="w-full border-2 border-dashed border-slate-200 hover:border-[#8dc63f]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[#2c7a4b] transition-colors flex items-center justify-center gap-2">
+                className="w-full border-2 border-dashed border-slate-200 hover:border-[var(--color-accent)]/50 rounded-lg py-3 text-xs font-semibold text-slate-400 hover:text-[#2c7a4b] transition-colors flex items-center justify-center gap-2">
                 <Plus size={14} />
                 Strategisch Thema handmatig toevoegen {themas.length > 0 ? `(${themas.length}/7)` : ""}
               </button>
@@ -1405,16 +1405,16 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
 
           {/* Header — identiek aan StrategyOnePager header */}
-          <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] border-b border-white/10 flex-shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles size={12} className="text-[#8dc63f]" />
+              <Sparkles size={12} className="text-[var(--color-accent)]" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-white">Strategisch Advies</span>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleAnalyze}
                 disabled={analysisLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
                 {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}

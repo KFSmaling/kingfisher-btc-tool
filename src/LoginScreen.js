@@ -69,7 +69,7 @@ export default function LoginScreen() {
     <div className="min-h-screen bg-[#F4F7F9] flex flex-col">
 
       {/* Header */}
-      <header className="h-20 bg-[#1a365d] flex items-center shadow-md">
+      <header className="h-20 bg-[var(--color-primary)] flex items-center shadow-md">
         <div className="px-6 flex items-center justify-center h-full border-r border-white/10">
           <div className="bg-white rounded px-2 py-1">
             <img
@@ -81,7 +81,7 @@ export default function LoginScreen() {
         </div>
         <div className="px-6">
           <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-white leading-none">Business Transformation Canvas</h1>
-          <p className="text-[10px] tracking-[0.12em] text-[#8dc63f] mt-1.5 uppercase font-semibold">From strategy to execution</p>
+          <p className="text-[10px] tracking-[0.12em] text-[var(--color-accent)] mt-1.5 uppercase font-semibold">From strategy to execution</p>
         </div>
       </header>
 
@@ -89,10 +89,10 @@ export default function LoginScreen() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
 
-          <div className="bg-white rounded-sm shadow-lg border-t-4 border-[#1a365d] overflow-hidden">
+          <div className="bg-white rounded-sm shadow-lg border-t-4 border-[var(--color-primary)] overflow-hidden">
 
             {/* Card header */}
-            <div className="px-8 py-7 bg-[#1a365d]">
+            <div className="px-8 py-7 bg-[var(--color-primary)]">
               <h2 className="text-white font-black text-base uppercase tracking-widest">
                 {titles[mode]}
               </h2>
@@ -141,7 +141,7 @@ export default function LoginScreen() {
                       <button
                         type="button"
                         onClick={() => switchMode("reset")}
-                        className="text-xs text-[#1a365d] hover:text-[#2c7a4b] font-semibold transition-colors"
+                        className="text-xs text-[var(--color-primary)] hover:text-[#2c7a4b] font-semibold transition-colors"
                       >
                         Wachtwoord vergeten?
                       </button>
@@ -168,7 +168,7 @@ export default function LoginScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[#1a365d] hover:bg-[#2c7a4b] text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-[var(--color-primary)] hover:bg-[#2c7a4b] text-white text-xs font-bold uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50"
               >
                 {loading
                   ? "Bezig…"
@@ -186,7 +186,7 @@ export default function LoginScreen() {
               {mode !== "login" && (
                 <p className="text-sm text-slate-500 text-center">
                   Al een account?{" "}
-                  <button onClick={() => switchMode("login")} className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors">
+                  <button onClick={() => switchMode("login")} className="text-[var(--color-primary)] font-bold hover:text-[#2c7a4b] transition-colors">
                     Inloggen
                   </button>
                 </p>
@@ -194,7 +194,7 @@ export default function LoginScreen() {
               {mode !== "register" && (
                 <p className="text-sm text-slate-500 text-center">
                   Nog geen account?{" "}
-                  <button onClick={() => switchMode("register")} className="text-[#1a365d] font-bold hover:text-[#2c7a4b] transition-colors">
+                  <button onClick={() => switchMode("register")} className="text-[var(--color-primary)] font-bold hover:text-[#2c7a4b] transition-colors">
                     Aanmaken
                   </button>
                 </p>

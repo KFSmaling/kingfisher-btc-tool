@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="min-h-screen bg-[#1a365d] flex items-center justify-center p-8">
+        <div className="min-h-screen bg-[var(--color-primary)] flex items-center justify-center p-8">
           <div className="bg-white rounded-sm shadow-xl max-w-lg w-full p-10 text-center space-y-6">
 
             {/* Logo */}
@@ -41,7 +41,7 @@ class ErrorBoundary extends React.Component {
             {/* Foutmelding */}
             <div className="flex items-center justify-center gap-3 text-red-500">
               <AlertOctagon size={24} />
-              <h2 className="text-lg font-bold text-[#1a365d]">Er is iets misgegaan</h2>
+              <h2 className="text-lg font-bold text-[var(--color-primary)]">Er is iets misgegaan</h2>
             </div>
 
             <p className="text-sm text-slate-500 leading-relaxed">
@@ -59,7 +59,7 @@ class ErrorBoundary extends React.Component {
             {/* Herstel-knop */}
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center gap-2 mx-auto bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] px-6 py-3 rounded-sm font-bold text-sm uppercase tracking-widest transition-colors shadow-sm"
+              className="flex items-center gap-2 mx-auto bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] px-6 py-3 rounded-sm font-bold text-sm uppercase tracking-widest transition-colors shadow-sm"
             >
               <RefreshCw size={14} /> Pagina herladen
             </button>

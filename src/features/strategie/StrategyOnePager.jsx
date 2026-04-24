@@ -15,8 +15,8 @@ import { supabase } from "../../shared/services/supabase.client";
 
 // ── Kleurendefinities ────────────────────────────────────────────────────────
 const C = {
-  navy:    "#1a365d",
-  green:   "#8dc63f",
+  navy:    "var(--color-primary)",
+  green:   "var(--color-accent)",
   blue:    "#00AEEF",
   greenDk: "#2c7a4b",
   slate:   "#475569",
@@ -508,7 +508,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
       <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
 
         {/* Controls (no-print) */}
-        <div className="no-print flex items-center justify-between px-6 py-3 bg-[#1a365d] border-b border-white/10 flex-shrink-0">
+        <div className="no-print flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] border-b border-white/10 flex-shrink-0">
 
           {/* Tabs */}
           <div className="flex items-center gap-1">
@@ -518,7 +518,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
                 onClick={() => setActiveTab(id)}
                 className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all
                   ${activeTab === id
-                    ? "bg-[#8dc63f] text-[#1a365d]"
+                    ? "bg-[var(--color-accent)] text-[var(--color-primary)]"
                     : "text-white/50 hover:text-white hover:bg-white/10"}`}
               >
                 <Icon size={12} />
@@ -538,7 +538,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
                 ${!analysis
                   ? "opacity-30 cursor-not-allowed text-white/40 border-white/20"
                   : includeInPrint
-                    ? "bg-[#8dc63f]/20 text-[#8dc63f] border-[#8dc63f]/50 hover:bg-[#8dc63f]/30"
+                    ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/30"
                     : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"}`}
             >
               <Sparkles size={10} />
@@ -546,7 +546,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
+              className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
             >
               <Printer size={13} /> PDF / Printen
             </button>

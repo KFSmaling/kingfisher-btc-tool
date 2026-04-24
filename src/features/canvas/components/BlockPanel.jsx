@@ -31,10 +31,10 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
   return (
     <aside className="fixed right-0 top-0 bottom-0 w-[520px] bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.12)] z-30 flex flex-col">
       {/* Panel header */}
-      <div className="px-8 py-5 bg-[#1a365d] flex items-center justify-between shrink-0">
+      <div className="px-8 py-5 bg-[var(--color-primary)] flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-white font-black text-lg uppercase tracking-tight">{t(block.titleKey)}</h2>
-          <p className="text-[#1a365d] text-[10px] uppercase tracking-widest mt-0.5">{t(block.subKey)}</p>
+          <p className="text-[var(--color-primary)] text-[10px] uppercase tracking-widest mt-0.5">{t(block.subKey)}</p>
         </div>
         <div className="flex items-center gap-3">
           {TIPS_DATA.nl[block.id] && (
@@ -143,7 +143,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
               <div className="text-center py-16">
                 <CheckSquare size={32} className="mx-auto text-slate-200 mb-4" />
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{t("review.empty")}</p>
-                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[#1a365d] font-bold hover:underline">{t("review.back")}</button>
+                <button onClick={() => setActiveTab("extract")} className="mt-4 text-xs text-[var(--color-primary)] font-bold hover:underline">{t("review.back")}</button>
               </div>
             )}
             {acceptedInsights.length > 0 && (
@@ -158,7 +158,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     });
                   }}
-                  className="text-[9px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors"
+                  className="text-[9px] font-black text-[var(--color-primary)] hover:text-orange-500 uppercase tracking-widest transition-colors"
                 >
                   {t("review.all.to.canvas")}
                 </button>
@@ -176,7 +176,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                   value={editedInsightTexts[ins.id] ?? ins.text}
                   onChange={e => setEditedInsightTexts(prev => ({ ...prev, [ins.id]: e.target.value }))}
                   rows={3}
-                  className="w-full text-sm text-slate-800 leading-relaxed border border-slate-200 rounded-sm p-3 resize-none focus:outline-none focus:border-[#1a365d] bg-slate-50 transition-colors"
+                  className="w-full text-sm text-slate-800 leading-relaxed border border-slate-200 rounded-sm p-3 resize-none focus:outline-none focus:border-[var(--color-primary)] bg-slate-50 transition-colors"
                 />
                 <div className="flex gap-2">
                   <button
@@ -184,7 +184,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       const text = (editedInsightTexts[ins.id] ?? ins.text).trim();
                       if (text) onMoveToBullets(block.id, { ...ins, text });
                     }}
-                    className="flex-1 py-2.5 bg-[#1a365d] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#2c7a4b] transition-colors"
+                    className="flex-1 py-2.5 bg-[var(--color-primary)] text-white text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#2c7a4b] transition-colors"
                   >
                     {t("review.to.canvas")}
                   </button>
@@ -247,7 +247,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                                     autoFocus
                                     value={editVal}
                                     onChange={e => setEditVal(e.target.value)}
-                                    className="flex-1 text-sm border-b border-[#1a365d] outline-none text-slate-800 bg-transparent"
+                                    className="flex-1 text-sm border-b border-[var(--color-primary)] outline-none text-slate-800 bg-transparent"
                                     onKeyDown={e => {
                                       if (e.key === "Enter") { onMoveToBullets(block.id, { text: editVal, source: bulletSource, subtab: activeSubTab }, i, true); setEditingIdx(null); }
                                       if (e.key === "Escape") setEditingIdx(null);
@@ -271,7 +271,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                               <select
                                 value={activeSubTab}
                                 onChange={e => onMoveToBullets(block.id, { text: bulletText, source: bulletSource, subtab: e.target.value }, i, true)}
-                                className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[#1a365d] cursor-pointer"
+                                className="text-[9px] text-slate-400 bg-white border border-slate-200 rounded-sm px-1 py-0.5 outline-none hover:border-[var(--color-primary)] cursor-pointer"
                                 title={t("canvas.move.to")}
                               >
                                 {(block.subTabs || PILLAR_SUBTABS).map(s => (
@@ -286,7 +286,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       })}
 
                       {addingBullet && (
-                        <div className="flex items-center gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
+                        <div className="flex items-center gap-2 p-3 border border-dashed border-[var(--color-primary)] rounded-sm">
                           <div className={`w-2 h-2 rotate-45 shrink-0 ${st.dot}`} />
                           <textarea
                             autoFocus
@@ -318,7 +318,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
 
                       <button
                         onClick={() => setAddingBullet(true)}
-                        className="flex items-center gap-1 text-[10px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
+                        className="flex items-center gap-1 text-[10px] font-black text-[var(--color-primary)] hover:text-orange-500 uppercase tracking-widest transition-colors pt-1"
                       >
                         <Plus size={14} /> {t("canvas.add.manual")}
                       </button>
@@ -334,7 +334,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                   {blockBullets.length < 7 && (
                     <button
                       onClick={() => setAddingBullet(true)}
-                      className="flex items-center gap-1 text-[10px] font-black text-[#1a365d] hover:text-orange-500 uppercase tracking-widest transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-black text-[var(--color-primary)] hover:text-orange-500 uppercase tracking-widest transition-colors"
                     >
                       <Plus size={14} /> {t("canvas.add.manual")}
                     </button>
@@ -355,14 +355,14 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                               value={editVal}
                               onChange={e => setEditVal(e.target.value)}
                               rows={3}
-                              className="w-full text-sm border border-[#1a365d] rounded-sm outline-none text-slate-800 bg-slate-50 p-2 resize-none leading-relaxed"
+                              className="w-full text-sm border border-[var(--color-primary)] rounded-sm outline-none text-slate-800 bg-slate-50 p-2 resize-none leading-relaxed"
                               onKeyDown={e => {
                                 if (e.key === "Enter" && e.metaKey) { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }
                                 if (e.key === "Escape") setEditingIdx(null);
                               }}
                             />
                             <div className="flex gap-2">
-                              <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] px-3 py-1 bg-[#1a365d] text-white rounded-sm font-bold">Opslaan</button>
+                              <button onClick={() => { onMoveToBullets(block.id, { text: editVal, source: bulletSource }, i, true); setEditingIdx(null); }} className="text-[10px] px-3 py-1 bg-[var(--color-primary)] text-white rounded-sm font-bold">Opslaan</button>
                               <button onClick={() => setEditingIdx(null)} className="text-[10px] px-3 py-1 border border-slate-200 text-slate-400 rounded-sm font-bold">Annuleer</button>
                             </div>
                           </div>
@@ -385,7 +385,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                 })}
 
                 {addingBullet && (
-                  <div className="flex flex-col gap-2 p-3 border border-dashed border-[#1a365d] rounded-sm">
+                  <div className="flex flex-col gap-2 p-3 border border-dashed border-[var(--color-primary)] rounded-sm">
                     <textarea
                       autoFocus
                       value={newBullet}
@@ -407,7 +407,7 @@ function BlockPanel({ block, docs, insights, bullets, canvasId, userId, onClose,
                       <div className="flex gap-2">
                         <button
                           onClick={() => { if (newBullet.trim()) { onAddBullet(block.id, newBullet.trim(), null); setNewBullet(""); setAddingBullet(false); } }}
-                          className="text-[10px] px-3 py-1 bg-[#1a365d] text-white rounded-sm font-bold"
+                          className="text-[10px] px-3 py-1 bg-[var(--color-primary)] text-white rounded-sm font-bold"
                         >Toevoegen</button>
                         <button onClick={() => { setAddingBullet(false); setNewBullet(""); }} className="text-slate-300 hover:text-red-500"><X size={14} /></button>
                       </div>

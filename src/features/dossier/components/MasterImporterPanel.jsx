@@ -9,7 +9,7 @@ const IMPORT_PHASES = {
   queued:    { label: "In wachtrij", pct: 0,   color: "bg-slate-200"  },
   uploading: { label: "Uploaden…",   pct: 25,  color: "bg-[#00AEEF]" },
   reading:   { label: "Lezen…",      pct: 55,  color: "bg-amber-400"  },
-  indexing:  { label: "Indexeren…",  pct: 80,  color: "bg-[#8dc63f]"  },
+  indexing:  { label: "Indexeren…",  pct: 80,  color: "bg-[var(--color-accent)]"  },
   done:      { label: "Klaar",       pct: 100, color: "bg-[#2c7a4b]"  },
   error:     { label: "Fout",        pct: 100, color: "bg-red-400"    },
 };
@@ -157,9 +157,9 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
     <div className="fixed inset-0 z-50 bg-black/30 flex items-start justify-center pt-16 px-8 pb-8">
       <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#1a365d] flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 bg-[var(--color-primary)] flex-shrink-0">
           <div className="flex items-center gap-3">
-            <Database size={16} className="text-[#8dc63f]" />
+            <Database size={16} className="text-[var(--color-accent)]" />
             <div>
               <h2 className="text-white font-black text-sm uppercase tracking-widest">Het Dossier</h2>
               <p className="text-white/50 text-[9px] uppercase tracking-wider">Kennisbank — Magic Staff AI</p>
@@ -180,12 +180,12 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
           onClick={() => fileInputRef.current?.click()}
           className={`mx-6 mt-5 border-2 border-dashed rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all
-            ${dragOver ? "border-[#1a365d] bg-[#1a365d]/5" : "border-slate-200 hover:border-[#1a365d]/40 hover:bg-slate-50"}`}
+            ${dragOver ? "border-[var(--color-primary)] bg-[var(--color-primary)]/5" : "border-slate-200 hover:border-[var(--color-primary)]/40 hover:bg-slate-50"}`}
         >
           <input ref={fileInputRef} type="file" accept=".pdf,.pptx,.docx,.txt,.csv" multiple className="hidden"
             onChange={e => handleFiles(e.target.files)} />
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${dragOver ? "bg-[#1a365d]/10" : "bg-slate-100"}`}>
-            <Upload size={18} className={dragOver ? "text-[#1a365d]" : "text-slate-400"} />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${dragOver ? "bg-[var(--color-primary)]/10" : "bg-slate-100"}`}>
+            <Upload size={18} className={dragOver ? "text-[var(--color-primary)]" : "text-slate-400"} />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-700">Bestanden toevoegen aan Dossier</p>
@@ -205,7 +205,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                 <div key={job.id} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                   <div className="flex items-center justify-between gap-3 mb-1.5">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[#1a365d]/10 text-[#1a365d] rounded flex-shrink-0">{ext}</span>
+                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded flex-shrink-0">{ext}</span>
                       <span className="text-xs font-semibold text-slate-700 truncate">{job.file.name}</span>
                     </div>
                     <span className={`text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${job.phase === "done" ? "text-[#2c7a4b]" : job.phase === "error" ? "text-red-500" : "text-slate-400"}`}>
@@ -218,8 +218,8 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
                   <div className="flex items-center gap-1 mt-1.5">
                     {phaseOrder.map((p, i) => (
                       <span key={p} className={`text-[8px] uppercase tracking-wider font-semibold px-1 py-0.5 rounded ${
-                        job.phase === p ? "bg-[#1a365d] text-white" :
-                        (job.phase === "done" || (currentIdx > i && job.phase !== "error")) ? "bg-[#8dc63f]/20 text-[#2c7a4b]" :
+                        job.phase === p ? "bg-[var(--color-primary)] text-white" :
+                        (job.phase === "done" || (currentIdx > i && job.phase !== "error")) ? "bg-[var(--color-accent)]/20 text-[#2c7a4b]" :
                         "text-slate-300"}`}>
                         {IMPORT_PHASES[p]?.label}
                       </span>
@@ -277,7 +277,7 @@ function MasterImporterPanel({ canvasId, userId, onClose }) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 flex-shrink-0 flex items-center justify-between">
           <p className="text-[9px] text-slate-300 uppercase tracking-widest">Magic Staff gebruikt alleen documenten uit dit Dossier</p>
-          <button onClick={onClose} className="text-xs font-bold text-slate-400 hover:text-[#1a365d] uppercase tracking-widest transition-colors">Sluiten</button>
+          <button onClick={onClose} className="text-xs font-bold text-slate-400 hover:text-[var(--color-primary)] uppercase tracking-widest transition-colors">Sluiten</button>
         </div>
       </div>
     </div>

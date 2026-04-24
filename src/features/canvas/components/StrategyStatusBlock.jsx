@@ -36,7 +36,7 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
       {/* Top: title + badge */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em]" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
+          <h3 className="text-[var(--color-primary)] font-bold text-[13px] uppercase tracking-[0.12em]" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
         </div>
         <div className="flex items-center gap-2">
           {badge && (
@@ -47,11 +47,11 @@ function StrategyStatusBlock({ block, status, bullets, strategyManual, onClick, 
 
       {/* Strategische samenvatting (max 2 zinnen) — geen bronvermelding */}
       {filled(strategyManual?.samenvatting) ? (
-        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic line-clamp-2">
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[var(--color-accent)] pl-3 italic line-clamp-2">
           {strategyManual.samenvatting}
         </p>
       ) : filled(strategyManual?.missie) ? (
-        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic line-clamp-2">
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[var(--color-accent)] pl-3 italic line-clamp-2">
           {strategyManual.missie}
         </p>
       ) : (

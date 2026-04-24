@@ -14,7 +14,7 @@ const ORG_SIZE_OPTIONS = ["< 100 fte", "100-500 fte", "500-2500 fte", "2500+ fte
 const PROJECT_STATUS_OPTIONS = [
   { value: "concept",   label: "Concept",   color: "bg-slate-100 text-slate-600 border-slate-300" },
   { value: "review",    label: "In Review", color: "bg-amber-50 text-amber-700 border-amber-300"  },
-  { value: "definitief",label: "Definitief",color: "bg-[#8dc63f]/20 text-[#4a7c1f] border-[#8dc63f]" },
+  { value: "definitief",label: "Definitief",color: "bg-[var(--color-accent)]/20 text-[#4a7c1f] border-[var(--color-accent)]" },
 ];
 
 function ProjectInfoSidebar({ meta, onChange }) {
@@ -23,7 +23,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
   return (
     <aside className="w-[280px] shrink-0 bg-white border-l border-slate-200 flex flex-col overflow-y-auto">
       <div className="px-5 py-4 border-b border-slate-100">
-        <h2 className="text-[11px] font-bold text-[#1a365d] uppercase tracking-[0.15em]">Project Details</h2>
+        <h2 className="text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-[0.15em]">Project Details</h2>
         <p className="text-[10px] text-slate-400 mt-0.5">Metadata voor analyse & benchmarks</p>
       </div>
 
@@ -31,7 +31,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
         {/* Klantnaam */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <Building2 size={11} /> Klantnaam
           </label>
           <input
@@ -39,13 +39,13 @@ function ProjectInfoSidebar({ meta, onChange }) {
             value={meta.client_name || ""}
             onChange={e => field("client_name", e.target.value)}
             placeholder="Naam van de klant…"
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors placeholder-slate-300"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors placeholder-slate-300"
           />
         </div>
 
         {/* Lead Consultant */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <User size={11} /> Lead Consultant
           </label>
           <input
@@ -53,19 +53,19 @@ function ProjectInfoSidebar({ meta, onChange }) {
             value={meta.author_name || ""}
             onChange={e => field("author_name", e.target.value)}
             placeholder="Naam van de consultant…"
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors placeholder-slate-300"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors placeholder-slate-300"
           />
         </div>
 
         {/* Branche */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <Layers size={11} /> Branche
           </label>
           <select
             value={meta.industry || ""}
             onChange={e => field("industry", e.target.value)}
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors bg-white"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors bg-white"
           >
             <option value="">Selecteer branche…</option>
             {INDUSTRY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -74,13 +74,13 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
         {/* Type Transformatie */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <Tag size={11} /> Type Transformatie
           </label>
           <select
             value={meta.transformation_type || ""}
             onChange={e => field("transformation_type", e.target.value)}
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors bg-white"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors bg-white"
           >
             <option value="">Selecteer type…</option>
             {TRANSFORMATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -89,13 +89,13 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
         {/* Organisatiegrootte */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <Users size={11} /> Organisatiegrootte
           </label>
           <select
             value={meta.org_size || ""}
             onChange={e => field("org_size", e.target.value)}
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors bg-white"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors bg-white"
           >
             <option value="">Selecteer grootte…</option>
             {ORG_SIZE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -104,7 +104,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
         {/* Projectstatus */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-2">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-2">
             <ShieldCheck size={11} /> Projectstatus
           </label>
           <div className="flex gap-2 flex-wrap">
@@ -125,7 +125,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
 
         {/* Beschrijving */}
         <div>
-          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[#1a365d] uppercase tracking-widest mb-1.5">
+          <label className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--color-primary)] uppercase tracking-widest mb-1.5">
             <FileText size={11} /> Beschrijving
           </label>
           <textarea
@@ -133,7 +133,7 @@ function ProjectInfoSidebar({ meta, onChange }) {
             onChange={e => field("project_description", e.target.value)}
             placeholder="Aanleiding, scope of bijzonderheden van dit traject…"
             rows={4}
-            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[#1a365d] transition-colors placeholder-slate-300 resize-none leading-relaxed"
+            className="w-full text-sm text-slate-700 border border-slate-200 rounded-sm px-3 py-2 outline-none focus:border-[var(--color-primary)] transition-colors placeholder-slate-300 resize-none leading-relaxed"
           />
         </div>
 

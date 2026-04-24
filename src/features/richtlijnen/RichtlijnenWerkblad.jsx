@@ -33,10 +33,10 @@ const SEGMENTS = [
     key:        "generiek",
     label:      "Generiek",
     sublabel:   "Strategie & Governance",
-    headerBg:   "bg-[#1a365d]",
-    borderL:    "border-l-[#1a365d]",
-    badgeActive:"bg-[#1a365d] text-white",
-    focusRing:  "focus:border-[#1a365d]/40",
+    headerBg:   "bg-[var(--color-primary)]",
+    borderL:    "border-l-[var(--color-primary)]",
+    badgeActive:"bg-[var(--color-primary)] text-white",
+    focusRing:  "focus:border-[var(--color-primary)]/40",
   },
   {
     key:        "klanten",
@@ -171,7 +171,7 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
                 <button
                   onClick={onGenerateImplications}
                   disabled={implLoading}
-                  className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[#1a365d] border border-slate-200 hover:border-[#1a365d]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[var(--color-primary)] border border-slate-200 hover:border-[var(--color-primary)]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
                   title="AI Stop/Start/Continue genereren"
                 >
                   <Wand2 size={9} />
@@ -648,7 +648,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
   if (!isLoaded) {
     return (
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50 items-center justify-center">
-        <Wand2 size={28} className="text-[#8dc63f] animate-pulse mx-auto" />
+        <Wand2 size={28} className="text-[var(--color-accent)] animate-pulse mx-auto" />
         <p className="text-sm text-slate-500 mt-3">Richtlijnen laden…</p>
       </div>
     );
@@ -659,14 +659,14 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[#8dc63f] border-b border-b-slate-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-8 py-4 bg-white border-t-4 border-t-[var(--color-accent)] border-b border-b-slate-200 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-slate-400 hover:text-[#1a365d] transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-[var(--color-primary)] transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">Werkblad</p>
-            <h2 className="text-lg font-bold text-[#1a365d] leading-tight">
+            <h2 className="text-lg font-bold text-[var(--color-primary)] leading-tight">
               Richtlijnen &amp; Leidende Principes
             </h2>
           </div>
@@ -676,15 +676,15 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
             onClick={() => setShowAdvies(true)}
             className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
               ${analysis
-                ? "bg-[#8dc63f]/10 border-[#8dc63f]/50 text-[#2c7a4b] hover:border-[#8dc63f]"
-                : "bg-white border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d]"}`}
+                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[#2c7a4b] hover:border-[var(--color-accent)]"
+                : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
             <Sparkles size={13} />
             Richtlijnen Advies{analysis ? " ✓" : ""}
           </button>
           <button
             onClick={() => setShowOnePager(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[#1a365d]/40 text-[#1a365d] text-xs font-bold rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)] text-xs font-bold rounded-lg transition-colors"
           >
             <FileText size={13} />
             Onepager
@@ -698,11 +698,11 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
 
           {/* Paneel 1: Stip op de Horizon — toont strategische samenvatting (max 2 zinnen) */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] mb-2.5 flex-shrink-0">
               Stip op de Horizon
             </p>
             {(core.samenvatting || core.ambitie) ? (
-              <p className="text-sm font-semibold text-[#1a365d] leading-snug flex-1 overflow-y-auto pr-1">
+              <p className="text-sm font-semibold text-[var(--color-primary)] leading-snug flex-1 overflow-y-auto pr-1">
                 {core.samenvatting || core.ambitie}
               </p>
             ) : (
@@ -720,7 +720,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
           {/* Paneel 2: Strategische Thema's */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between mb-2.5 flex-shrink-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)]">
                 Strategische Thema's
               </p>
               {themas.length > 0 && guidelines.length > 0 && (
@@ -728,7 +728,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
                   onClick={handleLinkThemes}
                   disabled={linkingThemes}
                   title="AI koppelt alle principes automatisch aan de meest passende thema's"
-                  className="flex items-center gap-1 text-[9px] font-bold text-[#1a365d]/50 hover:text-[#1a365d] border border-[#1a365d]/20 hover:border-[#1a365d]/40 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-primary)]/50 hover:text-[var(--color-primary)] border border-[var(--color-primary)]/20 hover:border-[var(--color-primary)]/40 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
                 >
                   <Wand2 size={9} />
                   {linkingThemes ? "Bezig…" : "Auto-link"}
@@ -741,7 +741,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
                 {themas.map((th, i) => (
                   <div key={th.id} className="flex items-center gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-[#1a365d] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-[var(--color-primary)] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
                       {i + 1}
                     </span>
                     <span className="text-xs text-slate-700 font-medium leading-tight">{th.title}</span>
@@ -753,7 +753,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
 
           {/* Paneel 3: Uitleg werkwijze */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col overflow-hidden">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1a365d] mb-2.5 flex-shrink-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--color-primary)] mb-2.5 flex-shrink-0">
               Werkwijze
             </p>
             <p className="text-xs text-slate-500 leading-relaxed mb-2.5 flex-shrink-0">
@@ -762,8 +762,8 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
             </p>
             <div className="space-y-1.5 flex-1">
               {[
-                { Icon: BookOpen,  color: "text-[#1a365d]",  bg: "bg-[#1a365d]/8",  title: "Formuleer principes",    desc: "Titel en strategische motivatie" },
-                { Icon: Link2,     color: "text-[#8dc63f]",  bg: "bg-[#8dc63f]/10", title: "Koppel thema's",         desc: "Klik de nummerbadges"            },
+                { Icon: BookOpen,  color: "text-[var(--color-primary)]",  bg: "bg-[var(--color-primary)]/8",  title: "Formuleer principes",    desc: "Titel en strategische motivatie" },
+                { Icon: Link2,     color: "text-[var(--color-accent)]",  bg: "bg-[var(--color-accent)]/10", title: "Koppel thema's",         desc: "Klik de nummerbadges"            },
                 { Icon: RotateCcw, color: "text-orange-500", bg: "bg-orange-50",    title: "Stop · Start · Continue", desc: "Vertaal naar concreet gedrag"    },
               ].map(({ Icon, color, bg, title, desc }) => (
                 <div key={title} className="flex items-center gap-2.5">
@@ -818,9 +818,9 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
       {/* ── ✨ Advies overlay ── */}
       {showAdvies && (
         <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 bg-[#1a365d] flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] flex-shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles size={12} className="text-[#8dc63f]" />
+              <Sparkles size={12} className="text-[var(--color-accent)]" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-white">
                 Richtlijnen Advies
               </span>
@@ -829,7 +829,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               <button
                 onClick={handleAnalyze}
                 disabled={analysisLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-[#8dc63f] hover:bg-[#7ab535] text-[#1a365d] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[#7ab535] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
                 {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer richtlijnen"}

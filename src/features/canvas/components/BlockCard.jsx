@@ -7,12 +7,12 @@ import { useLang } from "../../../i18n";
 // Subtabs en blocks zijn ID-gebaseerd; labels worden via t() opgehaald
 const PILLAR_SUBTABS = [
   { id: "current", labelKey: "subtab.current", dot: "bg-slate-400",    activeBg: "bg-slate-50 border-slate-300",    color: "border-slate-400 text-slate-600"    },
-  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[#1a365d]",     color: "border-[#1a365d] text-[#1a365d]"    },
+  { id: "tobe",    labelKey: "subtab.tobe",    dot: "bg-[#00AEEF]",    activeBg: "bg-blue-50 border-[var(--color-primary)]",     color: "border-[var(--color-primary)] text-[var(--color-primary)]"    },
   { id: "change",  labelKey: "subtab.change",  dot: "bg-orange-400",   activeBg: "bg-orange-50 border-orange-300",  color: "border-orange-400 text-orange-500"  },
 ];
 
 const PRINCIPLES_SUBTABS = [
-  { id: "generic",    labelKey: "subtab.generic",         dot: "bg-[#1a365d]",   activeBg: "bg-[#1a365d]/5 border-[#1a365d]/30", color: "border-[#1a365d] text-[#1a365d]"    },
+  { id: "generic",    labelKey: "subtab.generic",         dot: "bg-[var(--color-primary)]",   activeBg: "bg-[var(--color-primary)]/5 border-[var(--color-primary)]/30", color: "border-[var(--color-primary)] text-[var(--color-primary)]"    },
   { id: "customers",  labelKey: "block.customers.title",  dot: "bg-[#00AEEF]",   activeBg: "bg-blue-50 border-blue-300",         color: "border-blue-400 text-blue-600"      },
   { id: "processes",  labelKey: "block.processes.title",  dot: "bg-violet-500",  activeBg: "bg-violet-50 border-violet-300",     color: "border-violet-500 text-violet-600"  },
   { id: "people",     labelKey: "block.people.title",     dot: "bg-green-500",   activeBg: "bg-green-50 border-green-300",       color: "border-green-500 text-green-600"    },
@@ -113,16 +113,16 @@ function runConsistencyCheck(bullets) {
 // ── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_COLORS = {
   empty:    "border-l-4 border-l-transparent border border-slate-100 bg-white",
-  uploaded: "border-l-4 border-l-[#1a365d] border border-slate-100 bg-white",
+  uploaded: "border-l-4 border-l-[var(--color-primary)] border border-slate-100 bg-white",
   insights: "border-l-4 border-l-amber-400 border border-slate-100 bg-white",
-  done:     "border-l-4 border-l-[#8dc63f] border border-slate-100 bg-white",
+  done:     "border-l-4 border-l-[var(--color-accent)] border border-slate-100 bg-white",
 };
 
 const STATUS_BADGE_KEYS = {
   empty:    null,
-  uploaded: { labelKey: "status.uploaded", color: "bg-[#1a365d]/10 text-[#1a365d]" },
+  uploaded: { labelKey: "status.uploaded", color: "bg-[var(--color-primary)]/10 text-[var(--color-primary)]" },
   insights: { labelKey: "status.insights", color: "bg-amber-50 text-amber-700" },
-  done:     { labelKey: "status.done",     color: "bg-[#8dc63f]/20 text-[#4a7c1f]" },
+  done:     { labelKey: "status.done",     color: "bg-[var(--color-accent)]/20 text-[#4a7c1f]" },
 };
 
 const SEV_COLOR = { high: "border-l-red-400 bg-red-50", medium: "border-l-amber-400 bg-amber-50", low: "border-l-slate-300 bg-slate-50" };
@@ -151,7 +151,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
       <div>
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em] leading-tight" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
+            <h3 className="text-[var(--color-primary)] font-bold text-[13px] uppercase tracking-[0.12em] leading-tight" style={{fontFamily:"'Montserrat','Inter',sans-serif"}}>{title}</h3>
             <p className="text-[11px] text-slate-500 mt-0.5 tracking-wide">{sub}</p>
           </div>
           {badge && (
@@ -224,7 +224,7 @@ function BlockCard({ block, status, bullets, insightCount, onClick }) {
         ) : (
           <span className="text-[9px] text-slate-300 uppercase">{(bullets || []).length} bullets</span>
         )}
-        <ChevronRight size={18} className="text-slate-200 group-hover:text-[#8dc63f] transition-colors" />
+        <ChevronRight size={18} className="text-slate-200 group-hover:text-[var(--color-accent)] transition-colors" />
       </div>
     </div>
   );

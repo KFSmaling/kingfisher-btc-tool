@@ -38,7 +38,7 @@ const PROMPT_GROUPS = [
     label: "Strategie Werkblad",
     icon: Layers,
     desc: "Thema's, KSF/KPI en strategisch advies",
-    headerCls: "bg-[#1a365d]/8 border-[#1a365d]/25 text-[#1a365d]",
+    headerCls: "bg-[var(--color-primary)]/8 border-[var(--color-primary)]/25 text-[var(--color-primary)]",
     match: k => k.startsWith("prompt.strategy."),
   },
   {
@@ -65,7 +65,7 @@ const LABEL_GROUPS = [
     label: "Strategie Werkblad",
     icon: Layers,
     desc: "Sectiekoppen, veldnamen en werkbladnaam",
-    headerCls: "bg-[#1a365d]/8 border-[#1a365d]/25 text-[#1a365d]",
+    headerCls: "bg-[var(--color-primary)]/8 border-[var(--color-primary)]/25 text-[var(--color-primary)]",
     match: k =>
       k === "label.werkblad.strategie" ||
       k.startsWith("label.strat.") ||
@@ -177,7 +177,7 @@ function ConfigRow({ row, onSave }) {
         onClick={() => setOpen(o => !o)}
       >
         <div className="flex-1 min-w-0">
-          <code className="text-xs font-mono text-[#1a365d] font-semibold">{row.key}</code>
+          <code className="text-xs font-mono text-[var(--color-primary)] font-semibold">{row.key}</code>
           {row.description && (
             <p className="text-[11px] text-slate-400 mt-0.5">{row.description}</p>
           )}
@@ -201,7 +201,7 @@ function ConfigRow({ row, onSave }) {
             onChange={e => setValue(e.target.value)}
             rows={isLong ? 12 : 2}
             className="w-full text-sm border border-slate-200 rounded-sm px-3 py-2 font-mono
-                       focus:outline-none focus:border-[#8dc63f] resize-y leading-relaxed bg-white"
+                       focus:outline-none focus:border-[var(--color-accent)] resize-y leading-relaxed bg-white"
             spellCheck={false}
           />
           <div className="flex items-center justify-between">
@@ -213,7 +213,7 @@ function ConfigRow({ row, onSave }) {
               disabled={!isDirty || status === "saving"}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-xs font-bold uppercase tracking-widest transition-all
                 ${isDirty && status === "idle"
-                  ? "bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] shadow-sm"
+                  ? "bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] shadow-sm"
                   : status === "saved"  ? "bg-green-100 text-green-700"
                   : status === "error"  ? "bg-red-100 text-red-600"
                   : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
@@ -261,13 +261,13 @@ function BlockDefRow({ row, onSave }) {
   return (
     <div className={`border-b border-slate-100 last:border-0 ${isDirty ? "bg-amber-50/50" : "bg-white"}`}>
       <div className="grid grid-cols-[180px_1fr_1fr_auto] gap-3 items-center px-4 py-3">
-        <code className="text-xs font-mono text-[#1a365d] font-semibold">{row.key}</code>
+        <code className="text-xs font-mono text-[var(--color-primary)] font-semibold">{row.key}</code>
         <div className="flex flex-col gap-1">
           <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">NL</span>
           <input
             value={nlVal}
             onChange={e => setNlVal(e.target.value)}
-            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700 bg-white"
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[var(--color-accent)] text-slate-700 bg-white"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -275,7 +275,7 @@ function BlockDefRow({ row, onSave }) {
           <input
             value={enVal}
             onChange={e => setEnVal(e.target.value)}
-            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[#8dc63f] text-slate-700 bg-white"
+            className="text-sm border border-slate-200 rounded-sm px-2.5 py-1.5 focus:outline-none focus:border-[var(--color-accent)] text-slate-700 bg-white"
           />
         </div>
         <button
@@ -283,7 +283,7 @@ function BlockDefRow({ row, onSave }) {
           disabled={!isDirty || status === "saving"}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-sm text-xs font-bold uppercase tracking-widest transition-all self-end
             ${isDirty && status === "idle"
-              ? "bg-[#8dc63f] hover:bg-[#7ab52e] text-[#1a365d] shadow-sm"
+              ? "bg-[var(--color-accent)] hover:bg-[#7ab52e] text-[var(--color-primary)] shadow-sm"
               : status === "saved"  ? "bg-green-100 text-green-700"
               : status === "error"  ? "bg-red-100 text-red-600"
               : "bg-slate-100 text-slate-400 cursor-not-allowed"}`}
@@ -388,16 +388,16 @@ export default function AdminPage({ user, onSignOut }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#1a365d] font-sans">
+    <div className="min-h-screen bg-[#f8fafc] text-[var(--color-primary)] font-sans">
 
       {/* Header */}
-      <header className="h-16 bg-[#1a365d] flex items-center justify-between px-8 border-b-2 border-[#8dc63f] shadow-lg">
+      <header className="h-16 bg-[var(--color-primary)] flex items-center justify-between px-8 border-b-2 border-[var(--color-accent)] shadow-lg">
         <div className="flex items-center gap-4">
           <img src="/kf-logo-white.png" alt="Kingfisher" className="h-8 w-auto object-contain"
             onError={e => { e.target.style.display = "none"; }} />
           <div>
             <h1 className="text-sm font-bold tracking-widest uppercase text-white">App Config</h1>
-            <p className="text-[10px] text-[#8dc63f] uppercase tracking-widest">Admin — {user?.email}</p>
+            <p className="text-[10px] text-[var(--color-accent)] uppercase tracking-widest">Admin — {user?.email}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -432,7 +432,7 @@ export default function AdminPage({ user, onSignOut }) {
               onClick={() => setActiveTab(t.id)}
               className={`px-6 py-2.5 text-xs font-bold uppercase tracking-widest border-b-2 transition-all -mb-px
                 ${activeTab === t.id
-                  ? "border-[#8dc63f] text-[#1a365d]"
+                  ? "border-[var(--color-accent)] text-[var(--color-primary)]"
                   : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
               {t.label}

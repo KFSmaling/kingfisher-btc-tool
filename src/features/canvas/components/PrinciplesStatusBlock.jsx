@@ -31,7 +31,7 @@ function PrinciplesStatusBlock({ block, status, bullets, guidelineCounts = {}, o
       {/* ── Titel + statusbadge ── */}
       <div className="flex items-start justify-between">
         <h3
-          className="text-[#1a365d] font-bold text-[13px] uppercase tracking-[0.12em]"
+          className="text-[var(--color-primary)] font-bold text-[13px] uppercase tracking-[0.12em]"
           style={{ fontFamily: "'Montserrat','Inter',sans-serif" }}
         >
           {title}
@@ -45,7 +45,7 @@ function PrinciplesStatusBlock({ block, status, bullets, guidelineCounts = {}, o
 
       {/* ── Preview / hint ── */}
       {totalCount > 0 ? (
-        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[#8dc63f] pl-3 italic">
+        <p className="text-xs text-slate-600 leading-relaxed border-l-2 border-[var(--color-accent)] pl-3 italic">
           {lang === "en"
             ? `${totalCount} guiding principle${totalCount !== 1 ? "s" : ""} defined across ${filledSegments} segment${filledSegments !== 1 ? "s" : ""}`
             : `${totalCount} leidende principe${totalCount !== 1 ? "s" : ""} gedefinieerd in ${filledSegments} segment${filledSegments !== 1 ? "en" : ""}`

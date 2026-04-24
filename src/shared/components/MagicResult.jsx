@@ -24,9 +24,9 @@ export default function MagicResult({ result, onAccept, onReject }) {
   if (!result || (!result.loading && !result.suggestion && !result.error && !result.noChunks)) return null;
 
   if (result.loading) return (
-    <div className="mt-2 px-3 py-2.5 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg">
+    <div className="mt-2 px-3 py-2.5 bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 rounded-lg">
       <div className="flex items-center gap-2">
-        <Wand2 size={11} className="text-[#8dc63f] animate-pulse flex-shrink-0" />
+        <Wand2 size={11} className="text-[var(--color-accent)] animate-pulse flex-shrink-0" />
         <span className="text-[9px] font-semibold text-[#2c7a4b] uppercase tracking-wider animate-pulse">AI genereert voorstel…</span>
       </div>
     </div>
@@ -57,7 +57,7 @@ export default function MagicResult({ result, onAccept, onReject }) {
   const canAccept = !result.isNoInfo;
 
   return (
-    <div className="mt-2 bg-[#8dc63f]/5 border border-[#8dc63f]/20 rounded-lg overflow-hidden">
+    <div className="mt-2 bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 rounded-lg overflow-hidden">
       <div className="px-3 py-2.5 space-y-2">
         {result.isNoInfo ? (
           <div className="flex items-start gap-2">
@@ -74,13 +74,13 @@ export default function MagicResult({ result, onAccept, onReject }) {
         )}
       </div>
       {/* Sticky accept/reject balk */}
-      <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[#edf7e0] border-t border-[#8dc63f]/30">
+      <div className="sticky bottom-0 flex items-center gap-4 px-3 py-2 bg-[#edf7e0] border-t border-[var(--color-accent)]/30">
         <button
           onClick={canAccept ? onAccept : undefined}
           disabled={!canAccept}
           className={`text-[10px] font-black uppercase tracking-widest transition-colors
             ${canAccept
-              ? "text-[#2c7a4b] hover:text-[#1a365d] cursor-pointer"
+              ? "text-[#2c7a4b] hover:text-[var(--color-primary)] cursor-pointer"
               : "text-slate-300 cursor-not-allowed"}`}
         >
           ✓ Overnemen

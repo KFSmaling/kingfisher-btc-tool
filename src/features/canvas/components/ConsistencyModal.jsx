@@ -12,7 +12,7 @@ function ConsistencyModal({ bullets, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-[#001f33]/95 backdrop-blur-sm z-50 flex items-center justify-center p-8">
-      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#1a365d] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[var(--color-primary)] max-h-[90vh] overflow-y-auto">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
             <h2 className="text-[#001f33] font-black text-2xl uppercase tracking-tighter">{t("consistency.title")}</h2>

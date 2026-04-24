@@ -177,13 +177,13 @@ function TipsModal({ onClose, initialSection }) {
 
   return (
     <div className="fixed inset-0 bg-[#001f33]/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[#1a365d] flex overflow-hidden" style={{ height: "80vh" }}>
+      <div className="bg-white w-full max-w-4xl rounded-sm shadow-2xl border-t-4 border-[var(--color-primary)] flex overflow-hidden" style={{ height: "80vh" }}>
 
         {/* Left nav */}
         <div className="w-52 bg-[#001f33] flex flex-col shrink-0">
           <div className="px-5 py-5 border-b border-white/10">
             <div className="flex items-center gap-2 mb-0.5">
-              <BookOpen size={14} className="text-[#1a365d]" />
+              <BookOpen size={14} className="text-[var(--color-primary)]" />
               <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">{t("tips.title")}</span>
             </div>
             <p className="text-[9px] text-white/30 leading-snug mt-1">{t("tips.subtitle")}</p>
@@ -198,11 +198,11 @@ function TipsModal({ onClose, initialSection }) {
                   onClick={() => setActiveSection(item.key)}
                   className={`w-full text-left px-5 py-2.5 text-xs transition-all flex items-center gap-2
                     ${isActive
-                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[#1a365d]"
+                      ? "bg-[#00AEEF]/20 text-white font-bold border-l-2 border-[var(--color-primary)]"
                       : "text-white/50 hover:text-white/80 hover:bg-white/5"}
                     ${isFirst ? "mb-1" : ""}`}
                 >
-                  {isFirst && <Lightbulb size={12} className={isActive ? "text-[#1a365d]" : "text-white/30"} />}
+                  {isFirst && <Lightbulb size={12} className={isActive ? "text-[var(--color-primary)]" : "text-white/30"} />}
                   {!isFirst && <div className={`w-1.5 h-1.5 rotate-45 shrink-0 ${isActive ? "bg-orange-400" : "bg-white/20"}`} />}
                   <span className={isFirst ? "text-[10px] uppercase tracking-wider" : ""}>{item.label}</span>
                 </button>
@@ -232,7 +232,7 @@ function TipsModal({ onClose, initialSection }) {
           {/* Tips list */}
           <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
             {section.tips.map((tip, i) => (
-              <div key={i} className="flex gap-4 p-5 bg-slate-50 border border-slate-100 rounded-sm hover:border-[#1a365d]/30 transition-colors">
+              <div key={i} className="flex gap-4 p-5 bg-slate-50 border border-slate-100 rounded-sm hover:border-[var(--color-primary)]/30 transition-colors">
                 <div className="shrink-0 mt-1">
                   <div className="w-2 h-2 bg-orange-500 rotate-45" />
                 </div>

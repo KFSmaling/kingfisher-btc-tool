@@ -29,7 +29,7 @@ const TagPill = React.memo(function TagPill({ tag, onChange, allowedKeys }) {
           <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[130px]">
             {tags.map(t => (
               <button key={t.key} onClick={() => { onChange(t.key); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-slate-50 ${t.key === tag ? "text-[#1a365d]" : "text-slate-600"}`}>
+                className={`w-full text-left px-3 py-1.5 text-[10px] font-semibold hover:bg-slate-50 ${t.key === tag ? "text-[var(--color-primary)]" : "text-slate-600"}`}>
                 {t.label}
               </button>
             ))}
