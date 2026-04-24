@@ -5,6 +5,28 @@
 
 ---
 
+## Scope van dit document
+
+Deze CLAUDE.md beschrijft de HUIDIGE werkende codebase en de patronen
+die daarin consistent worden toegepast. Claude Code gebruikt dit
+document als leidraad voor wijzigingen aan bestaande code.
+
+Voor architectonische richting en toekomstige features: zie
+`docs/architecture-spec.md`. De spec beschrijft waar het platform
+naartoe beweegt (multi-tenant SaaS met content packs, billing,
+monorepo). Niet alles in de spec is nu geïmplementeerd.
+
+Regel bij conflict:
+- Wijzigingen aan bestaande code volgen CLAUDE.md-patronen
+- Nieuwe features worden ontworpen volgens de spec, tenzij dit
+  een grotere refactor zou vereisen dan de feature zelf
+- Bij twijfel: vraag expliciet om richting, ga niet uit van aannames
+
+Wijziging van CLAUDE.md-patronen gebeurt alleen met expliciete
+opdracht (niet automatisch "om de spec te volgen").
+
+---
+
 ## 1. DEPLOY — via het script, en verificatie
 
 ./deploy-prod.sh "feat: beschrijving van wijziging"
