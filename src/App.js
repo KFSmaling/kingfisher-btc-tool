@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "./shared/services/auth.service";
 import ThemeProvider from "./shared/context/ThemeProvider";
 import LoginScreen from "./LoginScreen";
 import ErrorBoundary from "./shared/components/ErrorBoundary";
+import LogoBrand from "./shared/components/LogoBrand";
+import { useDocumentTitle } from "./shared/hooks/useDocumentTitle";
 import { AppConfigProvider, useAppConfig } from "./shared/context/AppConfigContext";
 import AdminPage from "./features/admin/AdminPage";
 
@@ -59,6 +61,8 @@ function AppInner() {
     },
   });
 
+  useDocumentTitle();
+
   const activeBlock = BLOCKS.find(b => b.id === activeBlockId);
   const allDone     = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
 
@@ -80,11 +84,10 @@ function AppInner() {
         {/* Left: logo + app title */}
         <div className="flex items-center h-full shrink-0">
           <div className="px-6 flex items-center justify-center h-full shrink-0 border-r border-white/10">
-            <img
-              src="/kf-logo-white.png"
-              alt="Kingfisher & Partners"
-              className="h-10 w-auto object-contain object-center"
-              onError={e => { e.target.src = "/kf-logo.png"; }}
+            <LogoBrand
+              variant="light"
+              imgClassName="h-10 w-auto object-contain object-center"
+              textClassName="text-white font-bold text-lg tracking-wide"
             />
           </div>
           <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">

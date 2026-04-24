@@ -7,6 +7,7 @@
 
 import React from "react";
 import { AlertOctagon, RefreshCw } from "lucide-react";
+import LogoBrand from "./LogoBrand";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -31,11 +32,10 @@ class ErrorBoundary extends React.Component {
           <div className="bg-white rounded-sm shadow-xl max-w-lg w-full p-10 text-center space-y-6">
 
             {/* Logo */}
-            <img
-              src="/kf-logo.png"
-              alt="Kingfisher & Partners"
-              className="h-10 w-auto mx-auto object-contain"
-              onError={e => { e.target.style.display = "none"; }}
+            <LogoBrand
+              variant="dark"
+              imgClassName="h-10 w-auto mx-auto object-contain"
+              textClassName="text-[var(--color-primary)] font-bold text-xl tracking-wide text-center block"
             />
 
             {/* Foutmelding */}

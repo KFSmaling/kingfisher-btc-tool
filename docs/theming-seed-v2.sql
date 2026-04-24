@@ -49,8 +49,8 @@ SET theme_config = jsonb_build_object(
   'analysis_color',      '#0ea5e9',
   'overlay_color',       '#020617',
   'accent_light_color',  '#fff7ed',
-  'logo_url',            '/kf-logo.png',
-  'logo_white_url',      '/kf-logo-white.png'
+  'logo_url',            NULL,
+  'logo_white_url',      NULL
 )
 WHERE id = '00000000-0000-0000-0000-000000000001';
 

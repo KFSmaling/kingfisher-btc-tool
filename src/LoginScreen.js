@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "./shared/services/auth.service";
+import LogoBrand from "./shared/components/LogoBrand";
 
 export default function LoginScreen() {
   const { signIn, signUp, resetPassword } = useAuth();
@@ -72,10 +73,10 @@ export default function LoginScreen() {
       <header className="h-20 bg-[var(--color-primary)] flex items-center shadow-md">
         <div className="px-6 flex items-center justify-center h-full border-r border-white/10">
           <div className="bg-white rounded px-2 py-1">
-            <img
-              src="/kf-logo.png"
-              alt="Kingfisher & Partners"
-              className="h-8 w-auto object-contain"
+            <LogoBrand
+              variant="dark"
+              imgClassName="h-8 w-auto object-contain"
+              textClassName="text-[var(--color-primary)] font-bold text-base tracking-wide px-1"
             />
           </div>
         </div>

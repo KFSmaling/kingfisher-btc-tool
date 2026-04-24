@@ -13,6 +13,7 @@ import {
   Check, AlertOctagon, Wand2, Tag, Settings2, Layers,
 } from "lucide-react";
 import { supabase } from "../../shared/services/supabase.client";
+import LogoBrand from "../../shared/components/LogoBrand";
 
 // ── Groep-definities per tab ─────────────────────────────────────────────────
 
@@ -393,8 +394,11 @@ export default function AdminPage({ user, onSignOut }) {
       {/* Header */}
       <header className="h-16 bg-[var(--color-primary)] flex items-center justify-between px-8 border-b-2 border-[var(--color-accent)] shadow-lg">
         <div className="flex items-center gap-4">
-          <img src="/kf-logo-white.png" alt="Kingfisher" className="h-8 w-auto object-contain"
-            onError={e => { e.target.style.display = "none"; }} />
+          <LogoBrand
+            variant="light"
+            imgClassName="h-8 w-auto object-contain"
+            textClassName="text-white font-bold text-base tracking-wide"
+          />
           <div>
             <h1 className="text-sm font-bold tracking-widest uppercase text-white">App Config</h1>
             <p className="text-[10px] text-[var(--color-accent)] uppercase tracking-widest">Admin — {user?.email}</p>
