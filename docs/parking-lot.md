@@ -4,42 +4,6 @@ Items die bewust zijn uitgesteld. Niet vergeten, niet nu.
 
 ---
 
-## 🔴 Hoge prioriteit — vóór externe gebruikers
-
-### LogoBrand in ErrorBoundary — AuthProvider dependency
-
-`ErrorBoundary` wrapt de hele app inclusief `AuthProvider`. Als een crash
-**vóór** `AuthProvider` initialiseert, roept `LogoBrand` → `useTheme()` →
-`useAuth()` aan buiten context → crash in de crash-handler.
-
-Huidige situatie is veilig zolang crashes pas na `AuthProvider`-mount
-optreden (wat normaal geldt). Maar het is een latente kwetsbaarheid.
-
-Oplossing: `ErrorBoundary` een prop `brandName` / `logoUrl` meegeven die
-*niet* via context loopt, of de `ErrorBoundary` buiten `ThemeProvider` maar
-binnen een light `BrandContext` plaatsen die altijd beschikbaar is.
-
-Locatie: `src/shared/components/ErrorBoundary.jsx`, `src/App.js`
-
----
-
-### `useDocumentTitle` niet actief op login-scherm
-
-`useDocumentTitle` wordt aangeroepen in `AppInner` (na login). Het
-login-scherm toont de statische `<title>Strategy Platform</title>` uit
-`index.html` — nooit de tenant-specifieke titel.
-
-Voor externe gebruikers van het Platform-tenant is dit zichtbaar: zij zien
-"Strategy Platform" op de tab, ook als de tenant "Platform" heet (toevallig
-correct), maar mist de productnaam-opmaak.
-
-Oplossing: `LoginScreen` krijgt ook `useDocumentTitle()` — maar dat vereist
-dat `LoginScreen` binnen `ThemeProvider` staat. Controleer of dat zo is.
-
-Locatie: `src/LoginScreen.js`
-
----
-
 ## 🟡 Middelgrote prioriteit
 
 ### StrategyOnePager.jsx — C-object hex-constanten
@@ -115,3 +79,20 @@ Gepland als onderdeel van de admin-module, na fase 2.
 Demo-alias (`kingfisher-btcdemo.vercel.app`) verwijderd per 2026-04-22.
 Nieuwe demo-architectuur gepland — zie `TECH_DEBT.md` P5.
 Overwegen: apart demo-tenant in bestaande DB, of volledig aparte Supabase-instantie.
+
+---
+
+### LogoBrand in ErrorBoundary — AuthProvider dependency
+
+`ErrorBoundary` wrapt de hele app inclusief `AuthProvider`. Als een crash
+**vóór** `AuthProvider` initialiseert, roept `LogoBrand` → `useTheme()` →
+`useAuth()` aan buiten context → crash in de crash-handler.
+
+Alleen relevant bij ernstige provider-fouten vroeg in de bootstrap. In de
+praktijk treden crashes na `AuthProvider`-mount op.
+
+Oplossing indien nodig: `ErrorBoundary` een prop `brandName` / `logoUrl`
+meegeven die niet via context loopt, of een lichte `BrandContext` buiten
+`AuthProvider` introduceren.
+
+Locatie: `src/shared/components/ErrorBoundary.jsx`, `src/App.js`
