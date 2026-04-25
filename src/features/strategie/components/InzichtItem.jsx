@@ -1,50 +1,52 @@
 /**
- * InzichtItem — één bevinding in document-stijl
+ * InzichtItem — één bevinding als lees-sectie (document-stijl)
+ *
+ * Visueel: geen card/border, geen gekleurde achtergrond per bevinding.
+ * Bevindingen zijn lees-secties gescheiden door een subtiele border-bottom.
+ * Gebaseerd op docs/prototypes/inzichten-prototype-v2.html.
+ *
+ * Color mapping: docs/inzichten-68-color-mapping.md
  *
  * Props:
  *   insight   — { id, category, type, title, observation, recommendation, source_refs[] }
  *   appLabel  — (key, fallback) => string  (vanuit AppConfigContext)
+ *
+ * Named exports:
+ *   TYPE_CONFIG — gebruikt door InzichtenOverlay voor TOC-dots
+ *   FALLBACK_TYPE
  */
 
 import React from "react";
 import { Minus, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
 
-// ── Type-configuratie (kleurenblind-safe: kleur + icoon-vorm) ────────────────
-// Labels worden via appLabel() opgehaald bij render; labelKey verwijst naar de
-// config-key zonder het "analysis.type."-prefix.
-const TYPE_CONFIG = {
+// ── Type-configuratie ─────────────────────────────────────────────────────────
+// Kleur-toewijzing via Tailwind semantic names — nooit hardcoded hex.
+// dotColor = TOC-indicator (geëxporteerd voor gebruik in InzichtenOverlay).
+// Kleuren per color-mapping doc: zwak → amber-700, kans → blue-600 (dichter bij proto).
+export const TYPE_CONFIG = {
   ontbreekt: {
     Icon:       Minus,
     labelKey:   "analysis.type.ontbreekt",
     labelFb:    "Ontbreekt",
     color:      "text-red-700",
     bg:         "bg-red-50",
-    border:     "border-red-200",
-    leftBar:    "bg-red-700",
-    badgeBg:    "bg-red-100",
-    badgeText:  "text-red-700",
+    dotColor:   "bg-red-700",
   },
   zwak: {
     Icon:       AlertTriangle,
     labelKey:   "analysis.type.zwak",
     labelFb:    "Zwak punt",
-    color:      "text-amber-800",
+    color:      "text-amber-700",     // proto: #c26a1f → amber-700 dichter dan amber-800
     bg:         "bg-amber-50",
-    border:     "border-amber-200",
-    leftBar:    "bg-amber-700",
-    badgeBg:    "bg-amber-100",
-    badgeText:  "text-amber-800",
+    dotColor:   "bg-amber-700",
   },
   kans: {
     Icon:       TrendingUp,
     labelKey:   "analysis.type.kans",
     labelFb:    "Kans",
-    color:      "text-blue-700",
+    color:      "text-blue-600",      // proto: #2a6bb4 → blue-600 dichter dan blue-700
     bg:         "bg-blue-50",
-    border:     "border-blue-200",
-    leftBar:    "bg-blue-700",
-    badgeBg:    "bg-blue-100",
-    badgeText:  "text-blue-700",
+    dotColor:   "bg-blue-600",
   },
   sterk: {
     Icon:       CheckCircle,
@@ -52,87 +54,118 @@ const TYPE_CONFIG = {
     labelFb:    "Sterkte",
     color:      "text-green-700",
     bg:         "bg-green-50",
-    border:     "border-green-200",
-    leftBar:    "bg-green-700",
-    badgeBg:    "bg-green-100",
-    badgeText:  "text-green-700",
+    dotColor:   "bg-green-700",
   },
 };
 
-const FALLBACK_TYPE = TYPE_CONFIG.zwak;
+export const FALLBACK_TYPE = TYPE_CONFIG.zwak;
 
-// ── Bron-pill ────────────────────────────────────────────────────────────────
-// FIX 1: prop hernoemd van 'ref' (React-gereserveerd) naar 'source'
-function SourcePill({ source }) {
+// ── Bron-link (tekst + · scheidingsteken, geen pill) ─────────────────────────
+// missing: dashed border rood (semantisch, mag hardcoded — geen brand-kleur)
+function SourceLink({ source, isLast }) {
   const { label, exists } = source;
-  if (exists === false) {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border border-dashed border-red-300 text-red-700 bg-red-50">
-        {label} (ontbreekt)
-      </span>
-    );
-  }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-      {label}
-    </span>
+    <>
+      {exists === false ? (
+        <span className="inline border border-dashed border-red-400 text-red-600 text-[10px] px-1 rounded leading-normal">
+          {label} (ontbreekt)
+        </span>
+      ) : (
+        <span className="text-slate-600 underline decoration-slate-200 underline-offset-2 hover:decoration-slate-400 transition-colors cursor-default">
+          {label}
+        </span>
+      )}
+      {!isLast && (
+        <span className="mx-2 text-slate-300 select-none" aria-hidden="true">·</span>
+      )}
+    </>
   );
 }
 
 // ── InzichtItem ───────────────────────────────────────────────────────────────
 export default function InzichtItem({ insight, appLabel }) {
   const { id, type, title, observation, recommendation } = insight;
-  // FIX 2: null-guard — zowel undefined als null vallen veilig terug naar []
+  // Null-guard: zowel undefined als null vallen veilig terug naar []
   const source_refs = Array.isArray(insight.source_refs) ? insight.source_refs : [];
 
   const cfg = TYPE_CONFIG[type] ?? FALLBACK_TYPE;
-  const { Icon, labelKey, labelFb, bg, border, leftBar, badgeBg, badgeText, color } = cfg;
+  const { Icon, labelKey, labelFb, bg, color } = cfg;
 
-  // FIX 3: type-label via appLabel() i.p.v. hardcoded
+  // Labels via appLabel() — fallback naar hardcoded als prop afwezig (defensive)
   const typeLabel = appLabel ? appLabel(labelKey, labelFb) : labelFb;
+  const obsLabel  = appLabel ? appLabel("analysis.section.observation",    "Observatie")    : "Observatie";
+  const recLabel  = appLabel ? appLabel("analysis.section.recommendation", "Aanbeveling")   : "Aanbeveling";
+  const refsLabel = appLabel ? appLabel("analysis.section.references",     "Verwijst naar") : "Verwijst naar";
 
   return (
-    <div
+    <article
       id={`insight-${id}`}
-      className={`relative flex gap-0 rounded-lg border ${border} ${bg} overflow-hidden mb-4`}
+      className="py-8 border-b border-slate-100 last:border-b-0"
     >
-      {/* Verticale kleur-balk links */}
-      <div className={`w-1 flex-shrink-0 ${leftBar}`} />
+      {/* ── Kop: 24px cirkel-marker + type-label kicker + h3 ─────────────── */}
+      <div className="flex items-start gap-3.5 mb-4">
 
-      {/* Inhoud */}
-      <div className="flex-1 px-5 py-4">
-        {/* Type-badge + titel */}
-        <div className="flex items-start gap-2 mb-2">
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide flex-shrink-0 ${badgeBg} ${badgeText}`}>
-            <Icon size={10} />
+        {/* Ronde cirkel-marker — type-achtergrond (zacht), icoon in type-kleur */}
+        {/* bg uit TYPE_CONFIG → Tailwind semantic class, nooit hardcoded hex */}
+        <span
+          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${bg}`}
+          aria-hidden="true"
+        >
+          <span className={color}><Icon size={13} /></span>
+        </span>
+
+        <div className="flex-1 min-w-0">
+          {/* Type-label: eigen regel boven de titel, 10px uppercase */}
+          {/* color uit TYPE_CONFIG → Tailwind semantic class */}
+          <div className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-1 ${color}`}>
             {typeLabel}
-          </span>
-          <h3 className={`text-sm font-semibold leading-snug ${color}`}>{title}</h3>
+          </div>
+          {/* Titel: 18px, brand-primair via CSS-variabele */}
+          <h3 className="text-[18px] font-semibold text-[var(--color-primary)] leading-snug tracking-[-0.005em]">
+            {title}
+          </h3>
         </div>
+      </div>
 
-        {/* Observatie */}
-        <p className="text-sm text-slate-700 leading-relaxed mb-2">{observation}</p>
+      {/* ── Body: ingesprongen 38px (= w-6 cirkel + gap-3.5 = 24 + 14 = 38px) */}
+      <div className="ml-[38px]">
 
-        {/* Aanbeveling */}
-        {recommendation && (
-          <p className="text-sm text-slate-600 leading-relaxed italic border-l-2 border-slate-300 pl-3 mb-3">
-            → {recommendation}
-          </p>
+        {/* Observatie-blok */}
+        {observation && (
+          <div className="mb-3.5">
+            <strong className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-1 not-italic">
+              {obsLabel}
+            </strong>
+            <p className="text-[15px] text-slate-700 leading-relaxed m-0">
+              {observation}
+            </p>
+          </div>
         )}
 
-        {/* Verwijst naar — FIX 3: header via appLabel() */}
+        {/* Aanbeveling-blok */}
+        {recommendation && (
+          <div className="mb-3.5">
+            <strong className="block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-1 not-italic">
+              {recLabel}
+            </strong>
+            <p className="text-[15px] text-slate-700 leading-relaxed m-0">
+              {recommendation}
+            </p>
+          </div>
+        )}
+
+        {/* "Verwijst naar" footer */}
         {source_refs.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mr-0.5">
-              {appLabel ? appLabel("analysis.sourceref.header", "Verwijst naar") : "Verwijst naar"}
+          <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mr-2">
+              {refsLabel}
             </span>
-            {/* FIX 1: prop 'source' i.p.v. 'ref' */}
             {source_refs.map((ref, i) => (
-              <SourcePill key={i} source={ref} />
+              <SourceLink key={i} source={ref} isLast={i === source_refs.length - 1} />
             ))}
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
