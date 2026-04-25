@@ -224,9 +224,7 @@ async function _callAnalysisApi(system, messages, apiKey) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
-  const raw = (data.content || []).map(c => c.text || "").join("").trim();
-  console.log("[strategy-raw]", raw); // TODO: remove in sprint B (#68)
-  return raw;
+  return (data.content || []).map(c => c.text || "").join("").trim();
 }
 
 const ANALYSIS_SYSTEM_PROMPT = `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en levert gestructureerde bevindingen in het Inzichten-formaat.
@@ -284,7 +282,6 @@ async function generateAnalysis(core, items, themas, apiKey, systemOverride, lan
   const raw1     = await _callAnalysisApi(system, [{ role: "user", content: userMsg }], apiKey);
   const parsed1  = _tryParseInsights(raw1);
   const error1   = parsed1 ? _validateInsights(parsed1) : "geen geldige JSON gevonden";
-  console.log("[strategy-a1]", JSON.stringify({ ok: !error1, err: error1, rawStart: raw1.slice(0, 200) })); // TODO: remove in sprint B (#68)
   if (!error1) return { insights: parsed1.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
 
   // Tweede poging — fout-context meegeven
@@ -292,7 +289,6 @@ async function generateAnalysis(core, items, themas, apiKey, systemOverride, lan
   const raw2     = await _callAnalysisApi(system, [{ role: "user", content: retryMsg }], apiKey);
   const parsed2  = _tryParseInsights(raw2);
   const error2   = parsed2 ? _validateInsights(parsed2) : "geen geldige JSON gevonden";
-  console.log("[strategy-a2]", JSON.stringify({ ok: !error2, err: error2, rawStart: raw2.slice(0, 200) })); // TODO: remove in sprint B (#68)
   if (!error2) return { insights: parsed2.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
 
   throw new Error(`AI-analyse leverde na twee pogingen geen geldig formaat op. Laatste fout: ${error2}`);
