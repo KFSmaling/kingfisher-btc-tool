@@ -1,6 +1,6 @@
 # Plan: Issue #68 — Inzichten UI (Sprint B)
 
-**Status:** In planning  
+**Status:** ✅ Besluiten ontvangen — implementatie gereed  
 **Datum:** 2026-04-25  
 **Afhankelijkheid:** Issue #67 ✅ klaar  
 **Scope:** Huidige "Strategisch Advies"-overlay vervangen door document-layout Inzichten-overlay. Geen drie-knoppen-patroon (sprint C).
@@ -152,33 +152,41 @@ Sticky TOC: per bevinding een subtiel verticaal kleur-streepje (4px) links van d
 
 ### Nieuwe componenten
 
-**`InzichtenOverlay.jsx`** — alles zit in dit bestand:
+**`InzichtenOverlay.jsx`** — container + layout:
 
 ```
 InzichtenOverlay
   props: { insights[], loading, error, onClose }
   intern:
     - activeFilters: Set van actieve type-filters
-    - ref-lijst per bevinding (voor scroll-spy TOC)
   render:
     ├─ Header (sticky): titel + sluit-knop
     ├─ Filters: type-toggles met count
     ├─ Body (flex-row):
-    │   ├─ TOC (sticky, w-48): lijst van titels met kleur-streepje
+    │   ├─ TOC (sticky, w-48): anker-links met kleur-streepje, titels
+    │   │   truncated op ~6-7 woorden (text-ellipsis whitespace-nowrap overflow-hidden)
     │   └─ Content (flex-1): twee <section> blokken (onderdelen / dwarsverbanden)
-    │       └─ per bevinding: type-badge + titel + observatie + aanbeveling + bronnen-footer
+    │       └─ <InzichtItem> per bevinding
+    ├─ Empty-state: als insights null of [] → label.analysis.empty tekst
     └─ Footer: "opgeslagen per canvas" tekst
 ```
 
-**`InzichtItem.jsx`** — optioneel uit te splitsen als `InzichtenOverlay` te groot wordt:
+**`InzichtItem.jsx`** — apart bestand:
 ```
-props: { insight, index }
-render: één bevinding in document-stijl
+props: { insight }
+render:
+  ├─ Type-badge: icoon + label (kleurenblind-safe)
+  ├─ Titel (h3)
+  ├─ Observatie (platte tekst, geen inline highlights)
+  ├─ Aanbeveling
+  └─ "Verwijst naar"-voetregel: bron-pills
+      ├─ exists: true  → normale pill
+      └─ exists: false → border-dashed border-red-300 text-red-700 bg-red-50
 ```
 
-### Scroll-spy TOC
+### TOC
 
-Eenvoudige aanpak met `IntersectionObserver` op `id="insight-{insight.id}"` divs. Actieve TOC-entry krijgt `font-semibold`. Geen externe library nodig.
+Eenvoudige anker-links (`href="#insight-{id}"`). Geen scroll-spy, geen `IntersectionObserver`. TOC-titels truncaten: `className="truncate max-w-[160px]"` (text-ellipsis, whitespace-nowrap, overflow-hidden — Tailwind `truncate` utility dekt dit).
 
 ### Knop in StrategieWerkblad
 
@@ -197,50 +205,17 @@ Alleen labels — geen schema-wijzigingen. De `strategy_core.insights` kolom sta
 
 ---
 
-## 4. Open vragen
+## 4. Besluiten (2026-04-25)
 
-### V1 — TOC: wel of geen scroll-spy?
+| # | Vraag | Besluit |
+|---|---|---|
+| V1 | TOC: scroll-spy of anker-links? | **Eenvoudige anker-links.** Geen scroll-spy, geen `IntersectionObserver`. |
+| V2 | Inline bron-highlights of "Verwijst naar"-voetregel? | **Optie A.** Observatie plat renderen, "Verwijst naar"-voetregel onderaan elke bevinding. |
+| V3 | Stijl `exists: false` bronnen? | **Bevestigd:** `border-dashed border-red-300 text-red-700 bg-red-50` (of vergelijkbaar). |
+| V4 | Drie-knoppen-layout in sprint B? | **Nee.** Sprint B: alleen knop-naam `"Strategisch Advies ✓"` → `"Inzichten bekijken ✓"`. Drie-knoppen-layout = sprint C. |
+| V5 | Één component of splitsen? | **Splitsen:** `InzichtItem.jsx` apart bestand. |
+| V6 | Migratie: automatisch of handmatig? | **Handmatig**, zoals sprint A. |
 
-Scroll-spy (`IntersectionObserver`) voegt ~30 regels toe en een `useEffect`. Bij 5 bevindingen is dat overkill; bij 8 is het handig. Alternatief: klikbare TOC die alleen scrollt, zonder aktieve-state bijhouden.
-
-**Vraag:** Scroll-spy implementeren of eenvoudige anker-links?
-
-### V2 — Inline bron-highlights in observatie-tekst
-
-INZICHTEN_DESIGN.md zegt "licht gehighlight in lopende tekst". Maar de observatie-tekst is een platte string — de source_refs zijn aparte objecten, niet gemarkeerd in de tekst.
-
-Twee opties:
-- **A (eenvoudig):** Observatie-tekst normaal renderen, daarna een "Verwijst naar"-voetregeltje met de source_ref labels. Geen inline highlights.
-- **B (complex):** AI instrueren om placeholder-tokens te plaatsen in de tekst (`[REF:uuid]`) die de UI vervangt door highlights. Wijziging in prompt + validator nodig.
-
-**Vraag:** Optie A of B? INZICHTEN_DESIGN.md geeft voorkeur aan A ("Onderaan elke bevinding een 'Verwijst naar'-samenvatting").
-
-### V3 — `exists: false` bronnen: stijl
-
-INZICHTEN_DESIGN.md: "dashed border, rood" voor ontbrekende bronnen. Dit geldt voor de bron-pill in de "Verwijst naar"-rij. Is een rode dashed pill de gewenste stijl, of volstaat een andere visuele indicator (bijv. `opacity-50` + doorhaalstreep)?
-
-**Vraag:** Bevestig "dashed border + roodtint" voor `exists: false` bronnen.
-
-### V4 — Drie-knoppen-patroon: wachten of alvast beginnen?
-
-INZICHTEN_DESIGN.md beschrijft drie knoppen: `[Analyse draaien] [Inzichten bekijken] [Rapportage]`. Sprint B heeft als scope alleen de overlay. De knop-herziening is sprint C.
-
-In de tussentijd heeft de header van het werkblad:
-- Knop "Strategisch Advies ✓" → opent overlay
-- Knop "Strategie Rapport" → opent OnePager
-
-Sprint B: alleen de naam van de eerste knop aanpassen naar "Inzichten" + overlay vervangen. Drie-knoppen-layout (incl. "Opnieuw analyseren" los van "Bekijken") wacht op sprint C.
-
-**Vraag:** Bevestig dat sprint B de knop-naam aanpast maar niet de drie-knoppen-layout introduceert.
-
-### V5 — Component: één bestand of splitsen?
-
-`InzichtenOverlay.jsx` zal ~200–300 regels worden. `InzichtItem.jsx` apart maakt het testbaarder maar voegt een extra bestand toe.
-
-**Vraag:** Alles in `InzichtenOverlay.jsx`, of `InzichtItem.jsx` apart?
-
-### V6 — Migratie draaien: automatisch of handmatig?
-
-De labels-migratie (`INSERT INTO app_config`) kan door jou handmatig in Supabase SQL Editor worden gedraaid (zoals sprint A). Geen Supabase CLI nodig.
-
-**Vraag:** Zelfde aanpak als sprint A (jij draait handmatig na push)?
+**Aanvullende besluiten:**
+- TOC-titels truncaten op ~6–7 woorden (`className="truncate max-w-[160px]"`).
+- Expliciete empty-state: als `insights` null of `[]` → nette melding via `label.analysis.empty`. Geen leeg scherm.
