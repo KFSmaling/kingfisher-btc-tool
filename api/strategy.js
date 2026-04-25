@@ -148,68 +148,154 @@ Gebruik de Balanced Scorecard-lenzen. Maak de KPI's SMART met realistische huidi
   return JSON.parse(jsonMatch[0]);
 }
 
-// ── MODE: ANALYSIS ────────────────────────────────────────────────────────────
-async function generateAnalysis(core, items, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
-  const context = buildSwotContext(core, items);
+// ── MODE: ANALYSIS — Inzichten schema (sprint A) ─────────────────────────────
 
-  // Bouw thema-overzicht
-  const themasContext = themas.length > 0
-    ? themas.map((t, i) => {
+// Bouwt analyse-context met expliciete IDs zodat de AI source_refs correct kan invullen
+function buildAnalysisContext(core, items, themas) {
+  const identity = [
+    `strategy_core_field (id: missie):      ${core.missie      || "(niet ingevuld)"}`,
+    `strategy_core_field (id: visie):       ${core.visie       || "(niet ingevuld)"}`,
+    `strategy_core_field (id: ambitie):     ${core.ambitie     || "(niet ingevuld)"}`,
+    `strategy_core_field (id: kernwaarden): ${(core.kernwaarden || []).join(", ") || "(niet ingevuld)"}`,
+  ].join("\n");
+
+  const tagged = items.filter(i => i.tag && i.tag !== "niet_relevant");
+  const swot = tagged.length
+    ? tagged.map(i => `analysis_item (id: ${i.id}, tag: ${i.tag}): ${i.content}`).join("\n")
+    : "(geen getagde analyse-items)";
+
+  const themasCtx = themas.length > 0
+    ? themas.map(t => {
         const ksfs = (t.ksf_kpi || []).filter(k => k.type === "ksf").map(k => k.description).filter(Boolean);
         const kpis = (t.ksf_kpi || []).filter(k => k.type === "kpi").map(k => `${k.description}${k.target_value ? ` (target: ${k.target_value})` : ""}`).filter(Boolean);
-        return `${i + 1}. ${t.title || "(geen titel)"}${ksfs.length ? `\n   KSF: ${ksfs.join(" | ")}` : ""}${kpis.length ? `\n   KPI: ${kpis.join(" | ")}` : ""}`;
-      }).join("\n")
-    : "(Geen strategische thema's aangemaakt)";
+        return `theme (id: ${t.id}): ${t.title || "(geen titel)"}${ksfs.length ? `\n   KSF: ${ksfs.join(" | ")}` : ""}${kpis.length ? `\n   KPI: ${kpis.join(" | ")}` : ""}`;
+      }).join("\n\n")
+    : "(geen strategische thema's)";
 
-  const rawSystem = systemOverride || `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en geeft 4 tot 6 concrete, prioritaire aanbevelingen.
+  return `IDENTITEIT (gebruik deze strategy_core_field IDs in source_refs):
+${identity}
 
-FOCUS:
-- Coherentie: sluiten thema's aan bij missie/visie/ambitie?
-- Volledigheid: zijn alle Balanced Scorecard-perspectieven gedekt?
-- Kwaliteit: zijn missie/visie/ambitie scherp geformuleerd of te vaag?
-- Risico's: ontbreken er kritische thema's of KPI's?
-- Overlap of tegenstrijdigheden tussen thema's?
+SWOT-ANALYSE (gebruik deze analysis_item IDs in source_refs):
+${swot}
 
-OUTPUT FORMAT — antwoord EXACT in dit JSON-formaat, geen uitleg erbuiten:
-{
-  "recommendations": [
-    { "type": "warning", "title": "Korte titel (max 6 woorden)", "text": "Concrete aanbeveling in 1-2 zinnen." },
-    { "type": "info",    "title": "...", "text": "..." },
-    { "type": "success", "title": "...", "text": "..." }
-  ]
+STRATEGISCHE THEMA'S (gebruik deze theme IDs in source_refs):
+${themasCtx}`;
 }
 
-TYPE WAARDEN:
-- "warning" = urgent verbeterpunt
-- "info"    = kans of aandachtspunt
-- "success" = sterkte die benut kan worden
+// Valideert één insight-object. Geeft null bij succes, foutmelding als string.
+const _ANALYSIS_VALID_CATEGORIES = new Set(["onderdeel", "dwarsverband"]);
+const _ANALYSIS_VALID_TYPES      = new Set(["ontbreekt", "zwak", "kans", "sterk"]);
+const _ANALYSIS_VALID_KINDS      = new Set(["strategy_core_field", "analysis_item", "theme", "cross_worksheet"]);
 
-{taal_instructie}`;
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+function _validateInsights(insights) {
+  if (!Array.isArray(insights) || insights.length === 0) return "insights is geen array of leeg";
+  for (let i = 0; i < insights.length; i++) {
+    const v = insights[i];
+    if (!_ANALYSIS_VALID_CATEGORIES.has(v.category))   return `[${i}].category ongeldig: "${v.category}"`;
+    if (!_ANALYSIS_VALID_TYPES.has(v.type))             return `[${i}].type ongeldig: "${v.type}"`;
+    if (typeof v.title          !== "string")           return `[${i}].title geen string`;
+    if (typeof v.observation    !== "string")           return `[${i}].observation geen string`;
+    if (typeof v.recommendation !== "string")           return `[${i}].recommendation geen string`;
+    if (!Array.isArray(v.source_refs))                  return `[${i}].source_refs geen array`;
+    for (let j = 0; j < v.source_refs.length; j++) {
+      const r = v.source_refs[j];
+      if (!_ANALYSIS_VALID_KINDS.has(r.kind)) return `[${i}].source_refs[${j}].kind ongeldig: "${r.kind}"`;
+      if (typeof r.id    !== "string")        return `[${i}].source_refs[${j}].id geen string`;
+      if (typeof r.label !== "string")        return `[${i}].source_refs[${j}].label geen string`;
+      if (typeof r.exists !== "boolean")      return `[${i}].source_refs[${j}].exists geen boolean`;
+    }
+  }
+  return null;
+}
 
-  const user = `Analyseer deze strategische kaart en geef 4-6 prioritaire aanbevelingen.
+function _tryParseInsights(raw) {
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]).insights || null; } catch { return null; }
+}
 
-${context}
-
-STRATEGISCHE THEMA'S & KSF/KPI:
-${themasContext}`;
-
+async function _callAnalysisApi(system, messages, apiKey) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: HEADERS(apiKey),
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1000,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
-  const raw = (data.content || []).map(c => c.text || "").join("").trim();
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Onverwacht AI-formaat — geen JSON gevonden");
-  return JSON.parse(jsonMatch[0]);
+  return (data.content || []).map(c => c.text || "").join("").trim();
+}
+
+const ANALYSIS_SYSTEM_PROMPT = `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en levert gestructureerde bevindingen in het Inzichten-formaat.
+
+FOCUS:
+- Coherentie: sluiten thema's en KSF/KPI aan bij missie/visie/ambitie?
+- Volledigheid: zijn alle Balanced Scorecard-perspectieven gedekt?
+- Kwaliteit: zijn missie/visie/ambitie scherp geformuleerd of te vaag?
+- Risico's: ontbreken kritische thema's, KSF's of KPI's?
+- Verbanden: tegenstrijdigheden of ontbrekende koppelingen tussen elementen?
+
+BEVINDING-TYPES:
+- "ontbreekt" — een verwacht element is volledig afwezig
+- "zwak"      — aanwezig maar onvoldoende scherp, concreet of consistent
+- "kans"      — positieve samenhang of onbenutte mogelijkheid
+- "sterk"     — element dat uitzonderlijk goed is of als voorbeeld dient
+
+CATEGORIEËN:
+- "onderdeel"    — bevinding over één specifiek element (veld, thema, KPI)
+- "dwarsverband" — bevinding over relatie of spanning TUSSEN meerdere elementen
+
+REGELS:
+- Minimaal 3, maximaal 8 bevindingen
+- Minimaal 1 bevinding met category "dwarsverband" als de data daartoe aanleiding geeft
+- Maximaal 2 bevindingen met type "sterk" — focus op verbetering, niet complimenteren
+- cross_worksheet is altijd false — blijf binnen de Strategie-scope
+- observation beschrijft (feiten, patronen); recommendation schrijft voor (concrete actie)
+- source_refs verwijzen naar EXACTE elementen uit de meegegeven context
+- exists: false alleen bij verwijzingen naar ontbrekende elementen
+- {taal_instructie}
+
+SOURCE REF KINDS:
+- "strategy_core_field" — id is de veldnaam: missie, visie, ambitie, of kernwaarden
+- "analysis_item"       — id is de UUID van het analyse-item
+- "theme"               — id is de UUID van het strategisch thema
+
+OUTPUT FORMAT — antwoord EXACT in dit JSON-formaat, geen tekst erbuiten:
+{
+  "insights": [
+    {
+      "category": "onderdeel",
+      "type": "zwak",
+      "title": "Missie beschrijft activiteiten, niet richting",
+      "observation": "De missie beschrijft wat de organisatie doet, niet waarom ze bestaat.",
+      "recommendation": "Herformuleer als normatieve uitspraak over het bestaansrecht.",
+      "source_refs": [
+        { "kind": "strategy_core_field", "id": "missie", "label": "Missie", "exists": true }
+      ],
+      "cross_worksheet": false
+    }
+  ]
+}`;
+
+async function generateAnalysis(core, items, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+  const context  = buildAnalysisContext(core, items, themas);
+  const rawSystem = systemOverride || ANALYSIS_SYSTEM_PROMPT;
+  const system    = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const userMsg   = `Analyseer de strategie en lever 3–8 bevindingen in het Inzichten-formaat.\n\n${context}`;
+
+  // Eerste poging
+  const raw1     = await _callAnalysisApi(system, [{ role: "user", content: userMsg }], apiKey);
+  const parsed1  = _tryParseInsights(raw1);
+  const error1   = parsed1 ? _validateInsights(parsed1) : "geen geldige JSON gevonden";
+  if (!error1) return { insights: parsed1.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
+
+  // Tweede poging — fout-context meegeven
+  const retryMsg = `${userMsg}\n\nJe vorige antwoord was ongeldig (fout: ${error1}). Geef nu EXACT het gevraagde JSON-formaat terug zonder tekst erbuiten.`;
+  const raw2     = await _callAnalysisApi(system, [{ role: "user", content: retryMsg }], apiKey);
+  const parsed2  = _tryParseInsights(raw2);
+  const error2   = parsed2 ? _validateInsights(parsed2) : "geen geldige JSON gevonden";
+  if (!error2) return { insights: parsed2.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
+
+  throw new Error(`AI-analyse leverde na twee pogingen geen geldig formaat op. Laatste fout: ${error2}`);
 }
 
 // ── MODE: SAMENVATTING ────────────────────────────────────────────────────────

@@ -738,10 +738,13 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI fout");
-      const recs = data.recommendations || [];
-      setAnalysis(recs);
+      const insights = data.insights || [];
+      setAnalysis(insights);
+      // TODO: remove in sprint B (#68)
+      console.log("[Inzichten sprint A] schema output:", JSON.stringify(insights, null, 2));
       // Sla op in DB (strategy_core.analysis)
-      await upsertStrategyCore(canvasId, { analysis: recs });
+      const { error: saveError } = await upsertStrategyCore(canvasId, { analysis: insights });
+      if (saveError) console.error("[handleAnalyze] opslaan mislukt:", saveError.message);
     } catch (e) {
       setAnalysisError(e.message);
     } finally {

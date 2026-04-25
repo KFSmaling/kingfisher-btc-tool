@@ -1,19 +1,25 @@
 # Plan: Issue #67 — Inzichten data-model & prompt (Sprint A)
 
-**Status:** Concept — wacht op beantwoording van Open Vragen  
+**Status:** ✅ Besluiten ontvangen — implementatie gereed  
 **Datum:** 2026-04-25  
 **Scope:** Data-model + prompt aanpassen. Geen UI (sprint B). Geen andere werkbladen (sprint C).
 
 ---
 
-## 🚨 Blokker — INZICHTEN_DESIGN.md bestaat niet
+## Besluiten D.1–D.6 (2026-04-25)
 
-Issue #67 en TECH_DEBT.md P4 verwijzen beide naar `INZICHTEN_DESIGN.md` als de
-primaire specificatie. Dit bestand bestaat **niet** op schijf (ook niet in git-history).
+| # | Vraag | Besluit |
+|---|---|---|
+| D.1 | INZICHTEN_DESIGN.md | Aangeleverd. Gelezen. Schema is definitief. |
+| D.2 | Response-wrapper | `{ "insights": [...] }` — named key |
+| D.3 | `cross_worksheet` sprint A | Altijd `false`. Prompt instrueert AI binnen Strategie-scope te blijven. |
+| D.4 | Bestaande analysis-data | `UPDATE strategy_core SET analysis = NULL WHERE analysis IS NOT NULL` in migratie. Is testdata, geen productiedata. |
+| D.5 | Retry bij schema-mismatch | Ja, één retry. Eerste mismatch → fout-context mee. Tweede mismatch → error naar UI. Max ~20 regels. |
+| D.6 | Aantal bevindingen | Min 3, max 8. Verdeling onderdelen/dwarsverbanden door AI. |
 
-Zonder dit document kan ik het nieuwe JSON-schema niet volledig afleiden. Het plan
-hieronder is gebaseerd op de fragmentarische informatie in TECH_DEBT.md P4 en de
-issue-body. Zie sectie D (Open Vragen) voor de concrete lacunes.
+**Aanvullende besluiten:**
+- 4.2-compliance bug (`upsertStrategyCore` zonder error-check) meenemen in deze sprint
+- Tijdelijk `console.log` voor debug-validatie, gemarkeerd `// TODO: remove in sprint B (#68)`
 
 ---
 
@@ -268,49 +274,6 @@ Je test via de browser DevTools console.
 
 ---
 
-## D. Open vragen — richting nodig vóór bouwen
+## D. Open vragen — beantwoord 2026-04-25
 
-### D.1 🚨 INZICHTEN_DESIGN.md ontbreekt
-
-TECH_DEBT.md P4 zegt: "Design-notitie: zie `INZICHTEN_DESIGN.md` (root van project)."
-Het bestand bestaat niet. Dit is de bron van waarheid voor het volledige schema.
-
-**Vraag:** Heb jij dit document ergens (Notion, email, notitie-app)?
-Is het de bedoeling dat ik het nu schrijf op basis van de fragmenten in de issue +
-TECH_DEBT.md, of wil je het zelf eerst aanleveren?
-
-### D.2 Exacte veldnamen en wrapper-key
-
-Issue #67 noemt `source_refs[]` maar de API retourneert nu `{ recommendations: [] }`.
-De nieuwe wrapper zou `insights` worden — maar klopt dat, of is het direct een array
-(zonder wrapper)?
-
-**Vraag:** Is de API-response `{ "insights": [...] }` of direct `[...]`?
-
-### D.3 `cross_worksheet` flag — wat zijn de regels?
-
-Issue #67 noemt de flag. TECH_DEBT.md beschrijft "cross-werkblad bevindingen".
-Nu Roadmap/Richtlijnen etc. nog niet af zijn, moeten we dummy-source_refs genereren
-of de flag simpelweg altijd `false` zetten in sprint A?
-
-**Vraag:** Altijd `false` in sprint A, of mag de prompt al echte cross-worksheet
-bevindingen formuleren (zonder werkende target-link)?
-
-### D.4 Migratie-strategie voor bestaande analysis-data
-
-Er staat nu waarschijnlijk één canvas met `analysis` gevuld in het oude schema
-(`[{ type, title, text }]`). Sprint B-UI wordt gebouwd op het nieuwe schema.
-
-**Vraag:** Accepteer je dat bestaande analysis-data stale wordt (sprint B start
-met "Analyseer opnieuw"), of wil je een data-migratie die het oude schema omzet?
-Het omzetten is lastig want `title` + `text` → `observation` + `recommendation`
-is niet mechanisch te splitsen.
-
-### D.5 Retry-logica
-
-Zie sectie B.4. Wel of geen automatische retry bij schema-mismatch in de API?
-
-### D.6 Aantallen bevindingen
-
-Huidige prompt: "4 tot 6". Issue noemt geen getal. Mijn schets zegt 4–8.
-Wat is het gewenste minimum/maximum?
+Alle vragen beantwoord. Zie besluitentabel bovenaan dit document.
