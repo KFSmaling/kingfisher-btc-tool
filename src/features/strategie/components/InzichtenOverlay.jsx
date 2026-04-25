@@ -202,7 +202,7 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
                   <span className="ml-2 font-normal text-slate-300">({onderdelen.length})</span>
                 </h2>
                 {onderdelen.map(insight => (
-                  <InzichtItem key={insight.id} insight={insight} />
+                  <InzichtItem key={insight.id} insight={insight} appLabel={appLabel} />
                 ))}
               </section>
             )}
@@ -215,7 +215,7 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
                   <span className="ml-2 font-normal text-slate-300">({dwarsverb.length})</span>
                 </h2>
                 {dwarsverb.map(insight => (
-                  <InzichtItem key={insight.id} insight={insight} />
+                  <InzichtItem key={insight.id} insight={insight} appLabel={appLabel} />
                 ))}
               </section>
             )}

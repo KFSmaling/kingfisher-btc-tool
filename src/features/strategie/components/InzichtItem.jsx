@@ -2,17 +2,21 @@
  * InzichtItem — één bevinding in document-stijl
  *
  * Props:
- *   insight  — { id, category, type, title, observation, recommendation, source_refs[] }
+ *   insight   — { id, category, type, title, observation, recommendation, source_refs[] }
+ *   appLabel  — (key, fallback) => string  (vanuit AppConfigContext)
  */
 
 import React from "react";
 import { Minus, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
 
-// ── Type-configuratie (kleurenblind-safe: kleur + icoon-vorm + label) ────────
+// ── Type-configuratie (kleurenblind-safe: kleur + icoon-vorm) ────────────────
+// Labels worden via appLabel() opgehaald bij render; labelKey verwijst naar de
+// config-key zonder het "analysis.type."-prefix.
 const TYPE_CONFIG = {
   ontbreekt: {
     Icon:       Minus,
-    label:      "Ontbreekt",
+    labelKey:   "analysis.type.ontbreekt",
+    labelFb:    "Ontbreekt",
     color:      "text-red-700",
     bg:         "bg-red-50",
     border:     "border-red-200",
@@ -22,7 +26,8 @@ const TYPE_CONFIG = {
   },
   zwak: {
     Icon:       AlertTriangle,
-    label:      "Zwak punt",
+    labelKey:   "analysis.type.zwak",
+    labelFb:    "Zwak punt",
     color:      "text-amber-800",
     bg:         "bg-amber-50",
     border:     "border-amber-200",
@@ -32,7 +37,8 @@ const TYPE_CONFIG = {
   },
   kans: {
     Icon:       TrendingUp,
-    label:      "Kans",
+    labelKey:   "analysis.type.kans",
+    labelFb:    "Kans",
     color:      "text-blue-700",
     bg:         "bg-blue-50",
     border:     "border-blue-200",
@@ -42,7 +48,8 @@ const TYPE_CONFIG = {
   },
   sterk: {
     Icon:       CheckCircle,
-    label:      "Sterkte",
+    labelKey:   "analysis.type.sterk",
+    labelFb:    "Sterkte",
     color:      "text-green-700",
     bg:         "bg-green-50",
     border:     "border-green-200",
@@ -55,8 +62,9 @@ const TYPE_CONFIG = {
 const FALLBACK_TYPE = TYPE_CONFIG.zwak;
 
 // ── Bron-pill ────────────────────────────────────────────────────────────────
-function SourcePill({ ref: sourceRef }) {
-  const { label, exists } = sourceRef;
+// FIX 1: prop hernoemd van 'ref' (React-gereserveerd) naar 'source'
+function SourcePill({ source }) {
+  const { label, exists } = source;
   if (exists === false) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border border-dashed border-red-300 text-red-700 bg-red-50">
@@ -72,10 +80,16 @@ function SourcePill({ ref: sourceRef }) {
 }
 
 // ── InzichtItem ───────────────────────────────────────────────────────────────
-export default function InzichtItem({ insight }) {
-  const { id, type, title, observation, recommendation, source_refs = [] } = insight;
+export default function InzichtItem({ insight, appLabel }) {
+  const { id, type, title, observation, recommendation } = insight;
+  // FIX 2: null-guard — zowel undefined als null vallen veilig terug naar []
+  const source_refs = Array.isArray(insight.source_refs) ? insight.source_refs : [];
+
   const cfg = TYPE_CONFIG[type] ?? FALLBACK_TYPE;
-  const { Icon, label: typeLabel, bg, border, leftBar, badgeBg, badgeText, color } = cfg;
+  const { Icon, labelKey, labelFb, bg, border, leftBar, badgeBg, badgeText, color } = cfg;
+
+  // FIX 3: type-label via appLabel() i.p.v. hardcoded
+  const typeLabel = appLabel ? appLabel(labelKey, labelFb) : labelFb;
 
   return (
     <div
@@ -106,14 +120,15 @@ export default function InzichtItem({ insight }) {
           </p>
         )}
 
-        {/* Verwijst naar */}
+        {/* Verwijst naar — FIX 3: header via appLabel() */}
         {source_refs.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70">
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mr-0.5">
-              Verwijst naar
+              {appLabel ? appLabel("analysis.sourceref.header", "Verwijst naar") : "Verwijst naar"}
             </span>
+            {/* FIX 1: prop 'source' i.p.v. 'ref' */}
             {source_refs.map((ref, i) => (
-              <SourcePill key={i} ref={ref} />
+              <SourcePill key={i} source={ref} />
             ))}
           </div>
         )}
