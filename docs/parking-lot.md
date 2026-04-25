@@ -6,9 +6,9 @@ Items die bewust zijn uitgesteld. Niet vergeten, niet nu.
 
 ## 🟡 Middelgrote prioriteit
 
-### Inzichten-prompt verfijning — AI analyseert AI-gegenereerde inhoud
+### Inzichten-prompt verfijning — feedback-loop op AI-output
 
-AI analyseert ook velden die zijzelf eerder heeft gegenereerd, wat leidt tot
+AI analyseert ook velden die ze zelf eerder heeft gegenereerd, wat leidt tot
 zelf-correctie zonder gebruikerswaarde. Bijvoorbeeld: AI genereert missie →
 AI analyseert missie → AI vindt missie zwak. Dit is een feedback-loop, geen analyse.
 
@@ -21,6 +21,19 @@ Mogelijke richtingen:
 
 Niet urgent voor sprint B/C. Wel belangrijk voor productkwaliteit. Aparte
 design-sessie nodig om richting te bepalen.
+
+---
+
+### Visuele consistentie tussen werkblad en Inzichten-document
+
+Werkblad heeft eigen visuele taal (genummerde section-bollen, kleurmarkeringen
+op KSF/KPI-lijsten, sidebars). Inzichten-overlay is een document zonder die
+elementen. Bij schakelen voelt het alsof je in twee verschillende apps zit.
+
+Niet urgent — Sprint B prioriteit was prototype-conformiteit. Bij Sprint C
+(drie-knoppen-shell) of bij rapportage-design herevalueren of werkblad-styling
+licht wordt aangepast voor visuele consistentie, of het verschil bewust wordt
+gelaten ("produceren" vs "consumeren" zoals `INZICHTEN_DESIGN.md` voorschrijft).
 
 ---
 
