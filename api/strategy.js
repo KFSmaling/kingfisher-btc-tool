@@ -220,7 +220,7 @@ async function _callAnalysisApi(system, messages, apiKey) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: HEADERS(apiKey),
-    body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, messages }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 6000, system, messages }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
@@ -230,6 +230,12 @@ async function _callAnalysisApi(system, messages, apiKey) {
 }
 
 const ANALYSIS_SYSTEM_PROMPT = `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en levert gestructureerde bevindingen in het Inzichten-formaat.
+
+BEKNOPTHEID — VERPLICHT:
+- observation: maximaal 80 woorden
+- recommendation: maximaal 60 woorden
+- Geen lege regels of overbodige witruimte in de JSON-output
+- Compacte JSON: geen extra inspringen of opmaak buiten het vereiste formaat
 
 FOCUS:
 - Coherentie: sluiten thema's en KSF/KPI aan bij missie/visie/ambitie?
@@ -263,22 +269,10 @@ SOURCE REF KINDS:
 - "analysis_item"       — id is de UUID van het analyse-item
 - "theme"               — id is de UUID van het strategisch thema
 
-OUTPUT FORMAT — antwoord EXACT in dit JSON-formaat, geen tekst erbuiten:
-{
-  "insights": [
-    {
-      "category": "onderdeel",
-      "type": "zwak",
-      "title": "Missie beschrijft activiteiten, niet richting",
-      "observation": "De missie beschrijft wat de organisatie doet, niet waarom ze bestaat.",
-      "recommendation": "Herformuleer als normatieve uitspraak over het bestaansrecht.",
-      "source_refs": [
-        { "kind": "strategy_core_field", "id": "missie", "label": "Missie", "exists": true }
-      ],
-      "cross_worksheet": false
-    }
-  ]
-}`;
+OUTPUT FORMAT — antwoord EXACT in dit JSON-formaat, geen tekst erbuiten, geen witruimte buiten de strings:
+- observation: maximaal 80 woorden per bevinding
+- recommendation: maximaal 60 woorden per bevinding
+{"insights":[{"category":"onderdeel","type":"zwak","title":"Missie beschrijft activiteiten, niet richting","observation":"De missie beschrijft wat de organisatie doet, niet waarom ze bestaat.","recommendation":"Herformuleer als normatieve uitspraak over het bestaansrecht.","source_refs":[{"kind":"strategy_core_field","id":"missie","label":"Missie","exists":true}],"cross_worksheet":false}]}`;
 
 async function generateAnalysis(core, items, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
   const context  = buildAnalysisContext(core, items, themas);

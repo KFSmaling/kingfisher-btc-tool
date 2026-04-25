@@ -6,6 +6,19 @@ Items die bewust zijn uitgesteld. Niet vergeten, niet nu.
 
 ## 🟡 Middelgrote prioriteit
 
+### Token-budget per analyse-type configureerbaar maken
+
+Nu hardcoded `max_tokens: 6000` in `api/strategy.js` (`_callAnalysisApi`).
+Bij canvas-brede analyse (issue #16 of latere features) wordt dit ontoereikend
+(schatting: ~12.000 tokens nodig voor meerdere werkbladen tegelijk).
+
+Oplossing: token-budget per analyse-type configureerbaar via `app_config`,
+analoog aan hoe prompts al per type opgeslagen worden.
+
+Locatie: `api/strategy.js` regel met `max_tokens: 6000`.
+
+---
+
 ### StrategyOnePager.jsx — C-object hex-constanten
 
 Twee hardcoded hex-waardes in het `C`-object worden gebruikt met template
