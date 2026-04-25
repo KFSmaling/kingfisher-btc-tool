@@ -209,11 +209,24 @@ function _validateInsights(insights) {
 }
 
 function _tryParseInsights(raw) {
-  // Strip markdown code fences (```json ... ``` of ``` ... ```)
-  const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+  // Verwijder markdown code fences globaal (```json ... ``` of ``` ... ```)
+  const stripped = raw.replace(/```(?:json)?\s*/gi, "").trim();
   const m = stripped.match(/\{[\s\S]*\}/);
   if (!m) return null;
   try { return JSON.parse(m[0]).insights || null; } catch { return null; }
+}
+
+// Normaliseert AI-output naar strict schema vóór validatie
+// (AI geeft soms strings terug waar booleans verwacht worden)
+function _normalizeInsights(insights) {
+  if (!Array.isArray(insights)) return insights;
+  return insights.map(v => ({
+    ...v,
+    cross_worksheet: false,
+    source_refs: Array.isArray(v.source_refs)
+      ? v.source_refs.map(r => ({ ...r, exists: r.exists === true || r.exists === "true" }))
+      : [],
+  }));
 }
 
 async function _callAnalysisApi(system, messages, apiKey) {
@@ -224,9 +237,7 @@ async function _callAnalysisApi(system, messages, apiKey) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
-  const raw = (data.content || []).map(c => c.text || "").join("").trim();
-  console.log("[strategy analysis raw]", raw); // TODO: remove in sprint B (#68)
-  return raw;
+  return (data.content || []).map(c => c.text || "").join("").trim();
 }
 
 const ANALYSIS_SYSTEM_PROMPT = `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en levert gestructureerde bevindingen in het Inzichten-formaat.
@@ -287,19 +298,21 @@ async function generateAnalysis(core, items, themas, apiKey, systemOverride, lan
   const userMsg   = `Analyseer de strategie en lever 3–8 bevindingen in het Inzichten-formaat.\n\n${context}`;
 
   // Eerste poging
-  const raw1     = await _callAnalysisApi(system, [{ role: "user", content: userMsg }], apiKey);
-  const parsed1  = _tryParseInsights(raw1);
-  const error1   = parsed1 ? _validateInsights(parsed1) : "geen geldige JSON gevonden";
-  console.log("[strategy analysis attempt 1]", error1 ?? "OK"); // TODO: remove in sprint B (#68)
-  if (!error1) return { insights: parsed1.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
+  const raw1      = await _callAnalysisApi(system, [{ role: "user", content: userMsg }], apiKey);
+  const parsed1   = _normalizeInsights(_tryParseInsights(raw1));
+  const error1    = parsed1 ? _validateInsights(parsed1) : "geen geldige JSON gevonden";
+  // TODO: remove in sprint B (#68)
+  console.log("[strategy-a1]", JSON.stringify({ ok: !error1, err: error1, rawStart: raw1.slice(0, 120) }));
+  if (!error1) return { insights: parsed1.map(v => ({ id: crypto.randomUUID(), ...v })) };
 
   // Tweede poging — fout-context meegeven
-  const retryMsg = `${userMsg}\n\nJe vorige antwoord was ongeldig (fout: ${error1}). Geef nu EXACT het gevraagde JSON-formaat terug zonder tekst erbuiten.`;
-  const raw2     = await _callAnalysisApi(system, [{ role: "user", content: retryMsg }], apiKey);
-  const parsed2  = _tryParseInsights(raw2);
-  const error2   = parsed2 ? _validateInsights(parsed2) : "geen geldige JSON gevonden";
-  console.log("[strategy analysis attempt 2]", error2 ?? "OK"); // TODO: remove in sprint B (#68)
-  if (!error2) return { insights: parsed2.map(v => ({ id: crypto.randomUUID(), ...v, cross_worksheet: false })) };
+  const retryMsg  = `${userMsg}\n\nJe vorige antwoord was ongeldig (fout: ${error1}). Geef nu EXACT het gevraagde JSON-formaat terug zonder tekst erbuiten.`;
+  const raw2      = await _callAnalysisApi(system, [{ role: "user", content: retryMsg }], apiKey);
+  const parsed2   = _normalizeInsights(_tryParseInsights(raw2));
+  const error2    = parsed2 ? _validateInsights(parsed2) : "geen geldige JSON gevonden";
+  // TODO: remove in sprint B (#68)
+  console.log("[strategy-a2]", JSON.stringify({ ok: !error2, err: error2, rawStart: raw2.slice(0, 120) }));
+  if (!error2) return { insights: parsed2.map(v => ({ id: crypto.randomUUID(), ...v })) };
 
   throw new Error(`AI-analyse leverde na twee pogingen geen geldig formaat op. Laatste fout: ${error2}`);
 }
