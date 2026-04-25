@@ -220,7 +220,7 @@ async function _callAnalysisApi(system, messages, apiKey) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: HEADERS(apiKey),
-    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages }),
+    body: JSON.stringify({ model: MODEL, max_tokens: 3000, system, messages }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
