@@ -558,7 +558,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
 
       if (coreData) {
         setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [], samenvatting: coreData.samenvatting || "" });
-        setAnalysis(coreData.analysis || null);
+        setAnalysis(coreData.insights || null);
       }
       if (itemsData)  setItems(itemsData);
       if (themasData) setThemas(themasData);
@@ -743,7 +743,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       // TODO: remove in sprint B (#68)
       console.log("[Inzichten sprint A] schema output:", JSON.stringify(insights, null, 2));
       // Sla op in DB (strategy_core.analysis)
-      const { error: saveError } = await upsertStrategyCore(canvasId, { analysis: insights });
+      const { error: saveError } = await upsertStrategyCore(canvasId, { insights });
       if (saveError) console.error("[handleAnalyze] opslaan mislukt:", saveError.message);
     } catch (e) {
       setAnalysisError(e.message);

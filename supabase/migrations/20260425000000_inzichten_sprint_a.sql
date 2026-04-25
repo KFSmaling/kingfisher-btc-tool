@@ -1,23 +1,20 @@
 -- ============================================================
 -- Sprint A: Inzichten — data-model & prompt update (Issue #67)
 --
--- Stap 1: Clear analysis-testdata (oud schema: recommendations[])
---   Dit zijn geen productiedata. Bestaande records werden aangemaakt
---   tijdens development met het oude { type, title, text } schema.
---   Sprint B bouwt de UI op het nieuwe schema; clean slate is veiliger
---   dan een migratie die title+text mechanisch naar observation+
---   recommendation probeert te splitsen.
+-- Stap 1: Kolom insights toevoegen aan strategy_core
+--   Vervangt de nooit-uitgevoerde migratie 20260421030000
+--   (die een 'analysis'-kolom probeerde toe te voegen).
+--   Nieuwe naam 'insights' past bij het nieuwe data-model.
+--   Nieuw schema: { insights: [{ id, category, type, title,
+--   observation, recommendation, source_refs[], cross_worksheet }] }
 --
 -- Stap 2: Prompt bijwerken naar Inzichten-schema
 --   Vervangt de bestaande prompt.strategy.analysis prompt.
---   Nieuw schema: { insights: [{ id, category, type, title,
---   observation, recommendation, source_refs[], cross_worksheet }] }
 -- ============================================================
 
--- Stap 1 — Clear testdata
-UPDATE strategy_core
-SET analysis = NULL
-WHERE analysis IS NOT NULL;
+-- Stap 1 — Kolom aanmaken (idempotent)
+ALTER TABLE strategy_core
+  ADD COLUMN IF NOT EXISTS insights JSONB;
 
 -- Stap 2 — Prompt bijwerken (idempotent)
 UPDATE app_config
@@ -78,4 +75,5 @@ WHERE key = 'prompt.strategy.analysis';
 
 -- Verificatie
 SELECT key, description, updated_at FROM app_config WHERE key = 'prompt.strategy.analysis';
-SELECT COUNT(*) AS analysis_cleared FROM strategy_core WHERE analysis IS NOT NULL;
+SELECT column_name, data_type FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'strategy_core' AND column_name = 'insights';
