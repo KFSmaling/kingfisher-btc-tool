@@ -222,7 +222,9 @@ async function _callAnalysisApi(system, messages, apiKey) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error?.message || "AI fout (analysis)");
-  return (data.content || []).map(c => c.text || "").join("").trim();
+  const raw = (data.content || []).map(c => c.text || "").join("").trim();
+  console.log("[strategy analysis raw]", raw); // TODO: remove in sprint B (#68)
+  return raw;
 }
 
 const ANALYSIS_SYSTEM_PROMPT = `Je bent een kritische Senior Strategie Consultant. Je analyseert de samenhang en kwaliteit van een strategische kaart en levert gestructureerde bevindingen in het Inzichten-formaat.
