@@ -6,6 +6,7 @@ import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
 import MagicResult from "../../shared/components/MagicResult";
 import TagPill, { EXTERN_TAGS, INTERN_TAGS } from "../../shared/components/TagPill";
+import InzichtenOverlay from "./components/InzichtenOverlay";
 import {
   loadStrategyCore,
   upsertStrategyCore,
@@ -1073,7 +1074,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </div>
         <div className="flex items-center gap-3">
           {saveLabel && <span className={`text-[10px] font-semibold ${saveColor}`}>{saveLabel}</span>}
-          {/* Strategisch Advies knop */}
+          {/* Inzichten knop */}
           <button
             onClick={() => setShowAdvies(true)}
             className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
@@ -1082,7 +1083,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
             <Sparkles size={13} />
-            Strategisch Advies{analysis ? " ✓" : ""}
+            {appLabel("analysis.title", "Inzichten")}{analysis ? " ✓" : ""}
           </button>
           {/* Strategie Rapport knop */}
           <button
@@ -1403,75 +1404,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </Suspense>
       )}
 
-      {/* ── Strategisch Advies overlay ── zelfde look & feel als Strategie Rapport */}
+      {/* ── Inzichten overlay (sprint B, issue #68) ── */}
       {showAdvies && (
-        <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
-
-          {/* Header — identiek aan StrategyOnePager header */}
-          <div className="flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] border-b border-white/10 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <Sparkles size={12} className="text-[var(--color-accent)]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white">Strategisch Advies</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleAnalyze}
-                disabled={analysisLoading}
-                className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
-              >
-                {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}
-              </button>
-              <button onClick={() => setShowAdvies(false)} className="text-white/40 hover:text-white transition-colors ml-1">
-                <X size={18} />
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6 flex justify-center">
-            <div className="w-full max-w-5xl">
-              {analysisError && (
-                <p className="text-red-500 text-sm italic mb-4">{analysisError}</p>
-              )}
-              {analysisLoading && (
-                <p className="text-slate-400 text-sm italic animate-pulse pt-8 text-center">
-                  AI analyseert uw strategie op coherentie, volledigheid en kansen…
-                </p>
-              )}
-              {!analysisLoading && analysis && analysis.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {analysis.map((rec, i) => {
-                    const cm = {
-                      warning: { bg: "bg-orange-50", border: "border-orange-200", title: "text-orange-700", text: "text-orange-800" },
-                      info:    { bg: "bg-blue-50",   border: "border-blue-200",   title: "text-blue-700",   text: "text-blue-800"   },
-                      success: { bg: "bg-green-50",  border: "border-green-200",  title: "text-green-700",  text: "text-green-800"  },
-                    };
-                    const c = cm[rec.type] || cm.info;
-                    return (
-                      <div key={i} className={`rounded-xl border p-5 bg-white shadow-sm ${c.border} border-l-4`}>
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${c.title}`}>{rec.title}</p>
-                        <p className={`text-sm leading-relaxed ${c.text}`}>{rec.text}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {!analysisLoading && !analysis && !analysisError && (
-                <div className="flex items-center justify-center h-64">
-                  <p className="text-slate-400 text-sm italic text-center max-w-sm">
-                    Klik "Analyseer strategie" voor AI-aanbevelingen op basis van uw missie, visie, SWOT en strategische thema's.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer hint */}
-          <div className="text-center py-2 text-[9px] text-slate-400 uppercase tracking-widest flex-shrink-0 bg-slate-100">
-            AI-analyse op basis van missie, visie, SWOT en strategische thema's · opgeslagen per canvas
-          </div>
-        </div>
+        <InzichtenOverlay
+          insights={analysis}
+          loading={analysisLoading}
+          error={analysisError}
+          onClose={() => setShowAdvies(false)}
+          appLabel={appLabel}
+        />
       )}
     </div>
   );
