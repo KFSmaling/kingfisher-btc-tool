@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Prototype 2 — Inzichten (Document-layout)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1e3d;
+    --ink-soft: #2a3a5e;
+    --paper: #f5f6f8;
+    --paper-warm: #fafaf9;
+    --line: #e3e5eb;
+    --line-soft: #eef0f4;
+    --muted: #6b7388;
+    --muted-strong: #4a5269;
+    --accent: #a6d608;
+
+    /* Type-kleuren */
+    --type-ontbreekt: #b43a3a;
+    --type-ontbreekt-soft: #fdecec;
+    --type-zwak: #c26a1f;
+    --type-zwak-soft: #fdf0e3;
+    --type-kans: #2a6bb4;
+    --type-kans-soft: #e8f0fa;
+    --type-sterk: #2f7a3e;
+    --type-sterk-soft: #e8f4ea;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ GEMOCKTE WERKBLAD-HEADER (context) ============ */
+  .worksheet-mock {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .worksheet-mock-left {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .worksheet-mock-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .worksheet-mock-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .worksheet-mock-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  .ws-btn {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ws-btn:hover {
+    border-color: var(--ink-soft);
+  }
+  .ws-btn.current {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .ws-btn .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .mock-banner {
+    background: #fffbe6;
+    border-bottom: 1px solid #f0e6a6;
+    padding: 8px 32px;
+    font-size: 11px;
+    color: #6b5a1f;
+    letter-spacing: 0.02em;
+  }
+
+  /* ============ OVERLAY ============ */
+  .overlay {
+    background: var(--paper);
+    min-height: calc(100vh - 90px);
+    display: grid;
+    grid-template-columns: 240px 1fr;
+  }
+
+  /* --- Inhoudsopgave (sticky links) --- */
+  .toc {
+    background: transparent;
+    padding: 40px 0 40px 32px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+  .toc-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .toc-section {
+    margin-bottom: 18px;
+  }
+  .toc-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+    color: var(--muted-strong);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    padding-left: 10px;
+    margin-left: -2px;
+    transition: all 0.15s;
+    line-height: 1.35;
+  }
+  .toc-item:hover {
+    color: var(--ink);
+  }
+  .toc-item.active {
+    color: var(--ink);
+    border-left-color: var(--ink);
+    font-weight: 500;
+  }
+  .toc-item-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--dot);
+  }
+  .toc-item[data-type="ontbreekt"] { --dot: var(--type-ontbreekt); }
+  .toc-item[data-type="zwak"]      { --dot: var(--type-zwak); }
+  .toc-item[data-type="kans"]      { --dot: var(--type-kans); }
+  .toc-item[data-type="sterk"]     { --dot: var(--type-sterk); }
+
+  /* --- Document (rechts) --- */
+  .document {
+    padding: 40px 56px 120px 56px;
+    max-width: 840px;
+  }
+
+  .doc-header {
+    padding-bottom: 24px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+  }
+  .doc-eyebrow {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .doc-title {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  .doc-meta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .doc-meta span + span::before {
+    content: "·";
+    margin: 0 8px;
+    opacity: 0.5;
+  }
+
+  /* Filter (discreet, inline) */
+  .doc-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .filter-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .type-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink-soft);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .type-toggle-icon {
+    width: 13px;
+    height: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .type-toggle.off { opacity: 0.4; }
+  .type-toggle[data-type="ontbreekt"] { color: var(--type-ontbreekt); }
+  .type-toggle[data-type="zwak"]      { color: var(--type-zwak); }
+  .type-toggle[data-type="kans"]      { color: var(--type-kans); }
+  .type-toggle[data-type="sterk"]     { color: var(--type-sterk); }
+
+  /* --- Hoofdstukken --- */
+  .chapter {
+    margin-top: 48px;
+    margin-bottom: 16px;
+  }
+  .chapter-header {
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .chapter-number {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .chapter-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+  .chapter-intro {
+    font-size: 14px;
+    color: var(--muted-strong);
+    margin-top: 10px;
+    margin-bottom: 0;
+    line-height: 1.55;
+    max-width: 620px;
+  }
+
+  /* --- Bevinding als lees-sectie --- */
+  .finding {
+    padding: 32px 0 36px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .finding:last-child { border-bottom: none; }
+  .finding.hidden { display: none; }
+
+  .finding-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .finding-type-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+    background: var(--bg);
+    color: var(--fg);
+  }
+  .finding[data-type="ontbreekt"] .finding-type-marker { --bg: var(--type-ontbreekt-soft); --fg: var(--type-ontbreekt); }
+  .finding[data-type="zwak"]      .finding-type-marker { --bg: var(--type-zwak-soft);      --fg: var(--type-zwak); }
+  .finding[data-type="kans"]      .finding-type-marker { --bg: var(--type-kans-soft);      --fg: var(--type-kans); }
+  .finding[data-type="sterk"]     .finding-type-marker { --bg: var(--type-sterk-soft);     --fg: var(--type-sterk); }
+
+  .finding-type-marker svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .finding-head-body { flex: 1; min-width: 0; }
+
+  .finding-type-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .finding[data-type="ontbreekt"] .finding-type-label { color: var(--type-ontbreekt); }
+  .finding[data-type="zwak"]      .finding-type-label { color: var(--type-zwak); }
+  .finding[data-type="kans"]      .finding-type-label { color: var(--type-kans); }
+  .finding[data-type="sterk"]     .finding-type-label { color: var(--type-sterk); }
+
+  .finding-title {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+
+  .finding-body {
+    margin-left: 38px;
+  }
+  .finding-para {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    margin: 0 0 14px 0;
+  }
+  .finding-para strong.label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Inline bron-verwijzingen */
+  .src {
+    display: inline;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--line-soft);
+    cursor: pointer;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .src:hover {
+    background: #fff;
+    border-bottom-color: var(--ink-soft);
+  }
+  .src.missing {
+    background: transparent;
+    color: var(--type-ontbreekt);
+    border: 1px dashed var(--type-ontbreekt);
+    padding: 0 5px;
+    cursor: help;
+  }
+  .src.missing::before {
+    content: "— ";
+    opacity: 0.6;
+  }
+
+  /* "Verwijst naar" footer onder bevinding */
+  .finding-refs {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .finding-refs-label {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    font-size: 10px;
+    margin-right: 8px;
+  }
+  .finding-refs a {
+    color: var(--ink-soft);
+    text-decoration: underline;
+    text-decoration-color: var(--line);
+    text-underline-offset: 3px;
+  }
+  .finding-refs a:hover {
+    text-decoration-color: var(--ink-soft);
+  }
+  .finding-refs a + a::before {
+    content: " · ";
+    color: var(--line);
+    text-decoration: none;
+  }
+
+  /* Empty state */
+  .empty {
+    padding: 40px 0;
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+  }
+
+  /* Proto banner */
+  .proto-banner {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--ink);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    opacity: 0.88;
+    box-shadow: 0 8px 24px rgba(15,30,61,0.2);
+    z-index: 100;
+  }
+
+  /* Close button */
+  .overlay-close {
+    position: fixed;
+    top: 12px;
+    right: 24px;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted-strong);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 50;
+    transition: all 0.15s;
+  }
+  .overlay-close:hover {
+    background: #fff;
+    color: var(--ink);
+  }
+
+  /* Scroll margin voor anchor-sprong */
+  [id] { scroll-margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- Gemockte werkblad-context (toont de drie knoppen) -->
+<div class="worksheet-mock">
+  <div class="worksheet-mock-left">
+    <span class="worksheet-mock-label">Werkblad</span>
+    <span class="worksheet-mock-title">Strategie</span>
+  </div>
+  <div class="worksheet-mock-buttons">
+    <button class="ws-btn">✦ Analyse draaien</button>
+    <button class="ws-btn current"><span class="dot"></span>Inzichten bekijken</button>
+    <button class="ws-btn">📄 Rapportage</button>
+  </div>
+</div>
+
+<div class="mock-banner">
+  ↑ Gemockte werkblad-header ter context. Het prototype is de document-overlay hieronder.
+</div>
+
+<main class="overlay">
+
+  <!-- Inhoudsopgave -->
+  <aside class="toc" id="toc">
+    <div class="toc-label">Inhoud</div>
+    <!-- gevuld door JS -->
+  </aside>
+
+  <!-- Document -->
+  <article class="document" id="document">
+
+    <header class="doc-header">
+      <div class="doc-eyebrow">Inzichten</div>
+      <h1 class="doc-title">Strategie — Transamerica Life Bermuda</h1>
+      <div class="doc-meta">
+        <span>Canvas: HNW Insurance 2028</span>
+        <span>Gegenereerd 22 april 2026, 14:08</span>
+        <span>6 bevindingen</span>
+      </div>
+
+      <div class="doc-filter">
+        <span class="filter-label">Filter type</span>
+        <span class="type-toggle" data-type="ontbreekt">
+          <span class="type-toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 13 13" fill="currentColor"><rect x="2" y="6" width="9" height="1.5" rx="0.5"/></svg>
+          </span>
+          Ontbreekt
+        </span>
+        <span class="type-toggle" data-type="zwak">
+          <span class="type-toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 13 13" fill="currentColor"><path d="M6.5 1L12 11H1z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><circle cx="6.5" cy="8.5" r="0.8"/><rect x="6" y="4.5" width="1" height="3" rx="0.5"/></svg>
+          </span>
+          Zwak
+        </span>
+        <span class="type-toggle" data-type="kans">
+          <span class="type-toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L10 3M10 3H5M10 3V8"/></svg>
+          </span>
+          Kans
+        </span>
+        <span class="type-toggle" data-type="sterk">
+          <span class="type-toggle-icon" aria-hidden="true">
+            <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7L5.5 9.5L10 4"/></svg>
+          </span>
+          Sterk
+        </span>
+      </div>
+    </header>
+
+    <div id="chapters"><!-- gevuld door JS --></div>
+
+  </article>
+</main>
+
+<button class="overlay-close" aria-label="Sluiten">×</button>
+<div class="proto-banner">PROTOTYPE 2 — Document-layout</div>
+
+<script>
+  // ============ ICONEN per type (kleurenblind-safe vorm-verschil) ============
+  const typeIcon = {
+    ontbreekt: '<svg viewBox="0 0 13 13" fill="currentColor"><rect x="2" y="6" width="9" height="1.5" rx="0.5"/></svg>',
+    zwak:      '<svg viewBox="0 0 13 13" fill="currentColor"><path d="M6.5 1L12 11H1z" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><circle cx="6.5" cy="8.5" r="0.8"/><rect x="6" y="4.5" width="1" height="3" rx="0.5"/></svg>',
+    kans:      '<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L10 3M10 3H5M10 3V8"/></svg>',
+    sterk:     '<svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7L5.5 9.5L10 4"/></svg>'
+  };
+
+  const typeLabel = {
+    ontbreekt: "Ontbreekt",
+    zwak: "Zwak punt",
+    kans: "Kans",
+    sterk: "Sterkte"
+  };
+
+  // ============ DATA ============
+  // Paragrafen bevatten <src> markup; source_refs is voor de footer + TOC
+  const findings = [
+    {
+      id: "f1",
+      category: "onderdeel",
+      type: "ontbreekt",
+      title: "Learning & Growth perspectief ontbreekt",
+      observation: `De strategie-kaart mist een expliciet Learning & Growth perspectief (mensen, systemen, cultuur). <a class="src">Thema 6 — Cultuur van eigenaarschap</a> heeft géén KPI's en blijft daardoor vrijblijvend, terwijl de SWOT-analyse <a class="src">fragmentatie in change-initiatieven</a> als kernzwakte signaleert.`,
+      recommendation: `Voeg meetbare people & culture KPI's toe, bijvoorbeeld employee engagement, time-to-competency en een change readiness score.`,
+      refs: [
+        { label: "Thema 6 — Cultuur van eigenaarschap", section: "themes" },
+        { label: "SWOT: fragmentatie change-initiatieven", section: "analysis" }
+      ]
+    },
+    {
+      id: "f2",
+      category: "onderdeel",
+      type: "zwak",
+      title: "Executie-gap op APE-traject",
+      observation: `De SWOT benoemt dat de geschatte APE onder de <a class="src">USD 143m-trajectorie</a> ligt, maar <a class="src">Thema 3 — APE-groei</a> biedt geen tussentijdse mijlpalen of early warning indicatoren.`,
+      recommendation: `Splits de APE-KPI in jaarlijkse tussendoelen (2025–2028) en voeg leading indicators toe zoals pipeline volume en conversion rate om stuurinformatie te verbeteren.`,
+      refs: [
+        { label: "Thema 3 — APE-groei", section: "themes" },
+        { label: "Ambitie — USD 143m APE 2028", section: "core" }
+      ]
+    },
+    {
+      id: "f3",
+      category: "onderdeel",
+      type: "ontbreekt",
+      title: "Risicomitigatie afwezig in strategische thema's",
+      observation: `De SWOT signaleert vijf externe bedreigingen (<a class="src">regulering Class C</a>, nieuwe entrants, pricing pressure, geopolitiek), maar geen enkel thema adresseert risicomanagement, compliance-agility of scenario-planning.`,
+      recommendation: `Voeg een thema 'Adaptive Risk & Compliance' toe met KPI's voor regulatory lead time en geographic revenue diversification.`,
+      refs: [
+        { label: "SWOT: 5 externe bedreigingen", section: "analysis" }
+      ]
+    },
+    {
+      id: "f4",
+      category: "dwarsverband",
+      type: "zwak",
+      title: "Overlap tussen thema's 1, 4 en 5",
+      observation: `<a class="src">Thema 1 — Schaalbare oplossingen</a>, <a class="src">Thema 4 — Platforms & partnerships</a> en <a class="src">Thema 5 — Expertise wealth protection</a> delen KSF's rond modulariteit, partnerships en snelheid. De afbakening is onduidelijk.`,
+      recommendation: `Overweeg fusie tot twee thema's: 'Product & Partnership Excellence' (1+5) en 'Enabling Technology & Ecosystem' (4). Alternatief: verduidelijk de unieke bijdrage van elk thema aan de APE-ambitie.`,
+      refs: [
+        { label: "Thema 1", section: "themes" },
+        { label: "Thema 4", section: "themes" },
+        { label: "Thema 5", section: "themes" }
+      ]
+    },
+    {
+      id: "f5",
+      category: "dwarsverband",
+      type: "kans",
+      title: "Digital enablement onderbenut in thema's",
+      observation: `De SWOT toont <a class="src">16% stijging in vraag naar digital enablement</a>, maar alleen Thema 1 en 4 adresseren digitalisering. <a class="src">Thema 2 — Klantervaring</a> mist digitale KPI's zoals % touchpoints digitaal of self-service adoption.`,
+      recommendation: `Integreer een cross-functionele 'Digital HNW Experience'-KSF in Thema 2 met concrete digital metrics.`,
+      refs: [
+        { label: "SWOT kans: +16% digital demand", section: "analysis" },
+        { label: "Thema 2 — Klantervaring", section: "themes" }
+      ]
+    },
+    {
+      id: "f6",
+      category: "dwarsverband",
+      type: "sterk",
+      title: "Heldere vertaling van visie naar kwantitatieve ambitie",
+      observation: `De koppeling tussen de visie '<a class="src">top-3 global HNW insurer</a>' en de <a class="src">USD 143m APE 2028-target</a> biedt strategische focus.`,
+      recommendation: `Benut dit door in alle thema's expliciet te linken hoe elk bijdraagt aan de top-3 positie. Bijvoorbeeld: Thema 2 NPS als differentiator t.o.v. HSBC Life en AIA, Thema 4 partnerships als versneller voor marktaandeel.`,
+      refs: [
+        { label: "Visie", section: "core" },
+        { label: "Ambitie", section: "core" }
+      ]
+    },
+    // Cross-werkblad voorbeeld (dummy, laat de vorm zien)
+    {
+      id: "f7",
+      category: "dwarsverband",
+      type: "ontbreekt",
+      title: "Externe bedreigingen niet opgevolgd in Roadmap",
+      observation: `De SWOT noemt <a class="src">vijf externe bedreigingen</a>, maar de <a class="src missing">Roadmap</a> is nog niet ingevuld. Er zijn dus geen acties gedefinieerd om deze risico's te mitigeren.`,
+      recommendation: `Na het invullen van de Roadmap: koppel minimaal één actie per externe bedreiging. Overweeg een aparte 'risico-acties' sectie in de roadmap voor zichtbaarheid.`,
+      refs: [
+        { label: "SWOT: 5 externe bedreigingen", section: "analysis" },
+        { label: "Roadmap (nog niet ingevuld)", section: "external", missing: true }
+      ],
+      cross: true
+    }
+  ];
+
+  // ============ STATE ============
+  let state = {
+    activeTypes: new Set(["ontbreekt", "zwak", "kans", "sterk"])
+  };
+
+  // ============ RENDER: document ============
+  function renderDocument() {
+    const chapters = document.getElementById("chapters");
+    const sections = [
+      {
+        key: "onderdeel",
+        number: "Hoofdstuk 1",
+        title: "Onderdelen",
+        intro: "Observaties over losse elementen van de strategie: wat ontbreekt, wat is zwak, waar liggen kansen, waar zit kracht.",
+        items: findings.filter(f => f.category === "onderdeel")
+      },
+      {
+        key: "dwarsverband",
+        number: "Hoofdstuk 2",
+        title: "Dwarsverbanden",
+        intro: "Observaties over samenhang: overlap tussen thema's, consistentie tussen visie en ambitie, en verbanden met andere werkbladen van het canvas.",
+        items: findings.filter(f => f.category === "dwarsverband")
+      }
+    ];
+
+    chapters.innerHTML = sections.map(sec => {
+      return `
+        <section class="chapter" id="ch-${sec.key}">
+          <header class="chapter-header">
+            <div class="chapter-number">${sec.number}</div>
+            <h2 class="chapter-title">${sec.title}</h2>
+          </header>
+          <p class="chapter-intro">${sec.intro}</p>
+          ${sec.items.map(f => `
+            <article class="finding ${state.activeTypes.has(f.type) ? "" : "hidden"}"
+                     data-type="${f.type}" id="${f.id}">
+              <div class="finding-head">
+                <span class="finding-type-marker" aria-hidden="true">${typeIcon[f.type]}</span>
+                <div class="finding-head-body">
+                  <div class="finding-type-label">${typeLabel[f.type]}${f.cross ? " · Cross-werkblad" : ""}</div>
+                  <h3 class="finding-title">${f.title}</h3>
+                </div>
+              </div>
+              <div class="finding-body">
+                <p class="finding-para">
+                  <strong class="label">Observatie</strong>
+                  ${f.observation}
+                </p>
+                <p class="finding-para">
+                  <strong class="label">Aanbeveling</strong>
+                  ${f.recommendation}
+                </p>
+                <div class="finding-refs">
+                  <span class="finding-refs-label">Verwijst naar</span>
+                  ${f.refs.map(r => `<a href="#" class="${r.missing ? 'missing-link' : ''}">${r.label}${r.missing ? ' (ontbreekt)' : ''}</a>`).join("")}
+                </div>
+              </div>
+            </article>
+          `).join("")}
+        </section>
+      `;
+    }).join("");
+  }
+
+  // ============ RENDER: inhoudsopgave ============
+  function renderToc() {
+    const toc = document.getElementById("toc");
+    const sections = [
+      { key: "onderdeel", title: "Onderdelen", items: findings.filter(f => f.category === "onderdeel") },
+      { key: "dwarsverband", title: "Dwarsverbanden", items: findings.filter(f => f.category === "dwarsverband") }
+    ];
+
+    toc.innerHTML = `<div class="toc-label">Inhoud</div>` +
+      sections.map(sec => {
+        const visible = sec.items.filter(f => state.activeTypes.has(f.type));
+        if (visible.length === 0) return "";
+        return `
+          <div class="toc-section">
+            <div class="toc-section-title">${sec.title}</div>
+            ${visible.map(f => `
+              <div class="toc-item" data-type="${f.type}" data-target="${f.id}">
+                <span class="toc-item-dot" aria-hidden="true"></span>
+                <span>${f.title}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }).join("");
+
+    toc.querySelectorAll(".toc-item").forEach(el => {
+      el.addEventListener("click", () => {
+        const target = document.getElementById(el.dataset.target);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
+
+  // ============ EVENTS ============
+  document.querySelectorAll(".type-toggle").forEach(tog => {
+    tog.addEventListener("click", () => {
+      const type = tog.dataset.type;
+      if (state.activeTypes.has(type)) {
+        state.activeTypes.delete(type);
+        tog.classList.add("off");
+      } else {
+        state.activeTypes.add(type);
+        tog.classList.remove("off");
+      }
+      renderDocument();
+      renderToc();
+    });
+  });
+
+  // Scroll-spy voor TOC
+  function setupScrollSpy() {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          document.querySelectorAll(".toc-item").forEach(el => {
+            el.classList.toggle("active", el.dataset.target === id);
+          });
+        }
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+
+    document.querySelectorAll(".finding").forEach(el => observer.observe(el));
+  }
+
+  // ============ INIT ============
+  renderDocument();
+  renderToc();
+  setupScrollSpy();
+</script>
+
+</body>
+</html>

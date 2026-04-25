@@ -170,7 +170,7 @@ Twee klikbare prototypes uit de ontwerpsessie:
 1. **Prototype 1 — split-view** (`strategisch-advies-prototype.html`): lijst links, detail rechts. Verworpen — te dashboard-achtig, bron-chips met tooltip onduidelijk, past niet bij "consumeren".
 2. **Prototype 2 — document-layout** (`inzichten-prototype-v2.html`): ✅ gekozen richting. Basis voor implementatie.
 
-Prototypes zijn ontwerp-materiaal, geen code voor productie. Niet committen naar repo.
+De prototypes zijn ontwerp-materiaal, geen code voor productie. Voor referentie zijn ze gecommit in docs/prototypes/. Bij implementatie volgens dit ontwerp: lees het prototype-bestand voor de exacte styling en visuele behandeling.
 
 ---
 
