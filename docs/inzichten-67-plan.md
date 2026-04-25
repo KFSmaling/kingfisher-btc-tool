@@ -1,8 +1,25 @@
 # Plan: Issue #67 — Inzichten data-model & prompt (Sprint A)
 
-**Status:** ✅ Besluiten ontvangen — implementatie gereed  
-**Datum:** 2026-04-25  
+**Status:** ✅ DONE — Sprint A volledig afgerond 2026-04-25  
 **Scope:** Data-model + prompt aanpassen. Geen UI (sprint B). Geen andere werkbladen (sprint C).
+
+---
+
+## Sprint A — Afgerond 2026-04-25
+
+Analyse werkt, 5 insights gegenereerd, persistent na refresh. Alle "klaar"-criteria uit sectie C zijn gehaald.
+
+### Afwijkingen van het plan
+
+| # | Planitem | Werkelijkheid |
+|---|---|---|
+| A1 | `max_tokens: 1000` (impliciet in originele code) | Verhoogd naar **6000** — JSON werd afgekapt bij rijke canvas (5 thema's + 14 SWOT-items ≈ 3300+ tekens output). Bevestigd via Vercel logs. |
+| A2 | Prompt-instructies niet gespecificeerd in plan | **Beknoptheids-instructies toegevoegd**: observation ≤80 woorden, recommendation ≤60 woorden. Zowel bovenin prompt (BEKNOPTHEID-sectie) als in OUTPUT FORMAT herhaald. |
+| A3 | Code fence handling niet voorzien | **`_tryParseInsights` uitgebreid** met start/end code-fence stripping — AI omhulde JSON soms in ` ```json ``` `. |
+| A4 | D.4 — `UPDATE strategy_core SET analysis = NULL` | `analysis`-kolom bleek nooit te bestaan in productie (migratie `20260421030000` nooit uitgevoerd). Vervangen door `ADD COLUMN IF NOT EXISTS insights JSONB`. |
+| A5 | Debug-logs tijdelijk | `[strategy-raw]`, `[strategy-a1]`, `[strategy-a2]` blijven in productie **tot sprint B start** — nodig voor diagnose gedurende sprint A. Worden verwijderd in sprint B (#68). |
+
+---
 
 ---
 
