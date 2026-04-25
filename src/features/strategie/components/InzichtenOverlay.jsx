@@ -313,6 +313,6 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
         </article>
         </div>{/* grid */}
       </div>{/* white card */}
-    </div>{/* outer */}
-  );
+    </div>
+  ); // outer
 }
