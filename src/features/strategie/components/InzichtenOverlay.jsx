@@ -119,26 +119,29 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
   // TODO: parameteriseer werkbladNaam bij uitrol naar andere werkbladen
   const docTitle = canvasName ? `Strategie — ${canvasName}` : "Strategie";
 
+  // Outer: vol scherm, bg-slate-100, document scrollt als geheel
   return (
-    <div className="fixed inset-0 z-[59] bg-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-[59] bg-slate-100 overflow-y-auto">
 
-      {/* ── Sluiten-knop: fixed cirkel rechtsboven ── */}
+      {/* ── Sluiten-knop: fixed — altijd bereikbaar ongeacht scroll-positie ── */}
       <button
         onClick={onClose}
         aria-label="Sluiten"
-        className="fixed top-3 right-6 z-10 w-8 h-8 rounded-full border border-slate-200 bg-transparent
+        className="fixed top-4 right-4 z-[60] w-8 h-8 rounded-full border border-slate-200 bg-white
           flex items-center justify-center text-slate-500
-          hover:bg-white hover:text-[var(--color-primary)] transition-colors"
+          hover:text-[var(--color-primary)] transition-colors shadow-sm"
       >
         <X size={14} />
       </button>
 
-      {/* ── Twee-koloms grid: TOC (240px) + Document ── */}
-      <div className="h-full grid grid-cols-[240px_1fr]">
+      {/* ── Wit document-frame: zweeft op grijs papier ── */}
+      {/* Geen overflow-hidden hier — dat breekt position:sticky op de TOC */}
+      <div className="max-w-[960px] mx-auto my-8 bg-white shadow-xl rounded-xl">
+        <div className="grid grid-cols-[240px_1fr]">
 
-        {/* ── TOC sidebar ── */}
-        {/* Zichtbaar zodra er inhoud is (niet tijdens loading of empty) */}
-        <aside className="overflow-y-auto h-full py-10 pl-8 pr-6">
+          {/* ── TOC sidebar: sticky binnen outer scroll-container ── */}
+          {/* top-8 = 32px = my-8 op de card → sluit aan op bovenkant kaart */}
+          <aside className="sticky top-8 self-start max-h-[calc(100vh-4rem)] overflow-y-auto py-10 pl-8 pr-6">
           {!loading && !isEmpty && visible.length > 0 && (
             <>
               {/* "Inhoud" label */}
@@ -169,9 +172,9 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
           )}
         </aside>
 
-        {/* ── Document-kolom ── */}
-        <div className="overflow-y-auto h-full">
-          <article className="max-w-[840px] px-14 pt-10 pb-28">
+        {/* ── Document-kolom: vloeit mee met outer scroll ── */}
+        {/* max-w weggelaten — card (960px - 240px TOC = 720px) bepaalt breedte */}
+        <article className="px-14 pt-10 pb-28">
 
             {/* ── Document-header: eyebrow + h1 + meta + filters ── */}
             <header className="pb-6 mb-10 border-b border-slate-200">
@@ -307,9 +310,9 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
               </section>
             )}
 
-          </article>
-        </div>
-      </div>
-    </div>
+        </article>
+        </div>{/* grid */}
+      </div>{/* white card */}
+    </div>{/* outer */}
   );
 }
