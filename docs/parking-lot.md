@@ -6,6 +6,24 @@ Items die bewust zijn uitgesteld. Niet vergeten, niet nu.
 
 ## 🟡 Middelgrote prioriteit
 
+### Inzichten-prompt verfijning — AI analyseert AI-gegenereerde inhoud
+
+AI analyseert ook velden die zijzelf eerder heeft gegenereerd, wat leidt tot
+zelf-correctie zonder gebruikerswaarde. Bijvoorbeeld: AI genereert missie →
+AI analyseert missie → AI vindt missie zwak. Dit is een feedback-loop, geen analyse.
+
+Mogelijke richtingen:
+- **Prompt-tweak:** instructie "neem inhoud als bewuste keuze aan, focus op
+  samenhang en volledigheid"
+- **UI/state:** tracken of veld AI-gegenereerd of menselijk-bewerkt is; alleen
+  menselijk-bewerkte velden analyseren
+- **Workflow:** bevroren-versie pattern — expliciete "klaar voor analyse" actie
+
+Niet urgent voor sprint B/C. Wel belangrijk voor productkwaliteit. Aparte
+design-sessie nodig om richting te bepalen.
+
+---
+
 ### Token-budget per analyse-type configureerbaar maken
 
 Nu hardcoded `max_tokens: 6000` in `api/strategy.js` (`_callAnalysisApi`).
