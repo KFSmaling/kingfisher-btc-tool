@@ -1,5 +1,16 @@
 import { supabase } from "../../../shared/services/supabase.client";
 
+// ── Canvas naam ───────────────────────────────────────────────────────────────
+export async function loadCanvasName(canvasId) {
+  if (!supabase || !canvasId) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from("canvases")
+    .select("name")
+    .eq("id", canvasId)
+    .maybeSingle();
+  return { data: data?.name || null, error };
+}
+
 // ── Strategy Core ─────────────────────────────────────────────────────────────
 export async function loadStrategyCore(canvasId) {
   if (!supabase || !canvasId) return { data: null, error: null };

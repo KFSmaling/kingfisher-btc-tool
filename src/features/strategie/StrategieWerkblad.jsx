@@ -9,6 +9,7 @@ import TagPill, { EXTERN_TAGS, INTERN_TAGS } from "../../shared/components/TagPi
 import InzichtenOverlay from "./components/InzichtenOverlay";
 import {
   loadStrategyCore,
+  loadCanvasName,
   upsertStrategyCore,
   loadAnalysisItems,
   upsertAnalysisItem,
@@ -505,10 +506,12 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
   const [showOnePager,   setShowOnePager]       = useState(false);
-  const [showAdvies,     setShowAdvies]         = useState(false);
-  const [analysis,       setAnalysis]           = useState(null);
-  const [analysisLoading, setAnalysisLoading]   = useState(false);
-  const [analysisError,   setAnalysisError]     = useState(null);
+  const [showAdvies,       setShowAdvies]       = useState(false);
+  const [analysis,         setAnalysis]         = useState(null);
+  const [analysisLoading,  setAnalysisLoading]  = useState(false);
+  const [analysisError,    setAnalysisError]    = useState(null);
+  const [canvasName,       setCanvasName]       = useState(null);
+  const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState(null);
 
   // Executie Magic state
   const [themaDraft, setThemaDraft]     = useState(null); // { loading, loadingMsg, lines }
@@ -538,6 +541,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     setItems([]);
     setThemas([]);
     setAnalysis(null);
+    setAnalysisUpdatedAt(null);
+    setCanvasName(null);
 
     if (!activeCanvasId) { setIsLoaded(true); return; }
 
@@ -545,10 +550,12 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       loadStrategyCore(activeCanvasId),
       loadAnalysisItems(activeCanvasId),
       loadStrategicThemes(activeCanvasId),
+      loadCanvasName(activeCanvasId),
     ]).then(([
       { data: coreData,   error: coreErr   },
       { data: itemsData,  error: itemsErr  },
       { data: themasData, error: themasErr },
+      { data: nameData,   error: nameErr   },
     ]) => {
       if (cancelled) return;                      // race-guard 1
       if (activeCanvasId !== canvasId) return;    // race-guard 2: canvas gewisseld tijdens fetch
@@ -556,11 +563,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       if (coreErr)   console.error("[StrategieWerkblad] core laden:",   coreErr.message);
       if (itemsErr)  console.error("[StrategieWerkblad] items laden:",  itemsErr.message);
       if (themasErr) console.error("[StrategieWerkblad] themas laden:", themasErr.message);
+      if (nameErr)   console.error("[StrategieWerkblad] naam laden:",   nameErr.message);
 
       if (coreData) {
         setCore({ missie: coreData.missie || "", visie: coreData.visie || "", ambitie: coreData.ambitie || "", kernwaarden: coreData.kernwaarden || [], samenvatting: coreData.samenvatting || "" });
         setAnalysis(coreData.insights || null);
+        setAnalysisUpdatedAt(coreData.updated_at || null);
       }
+      if (nameData)   setCanvasName(nameData);
       if (itemsData)  setItems(itemsData);
       if (themasData) setThemas(themasData);
       setIsLoaded(true);
@@ -741,9 +751,14 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       if (!res.ok) throw new Error(data.error || "AI fout");
       const insights = data.insights || [];
       setAnalysis(insights);
-      // Sla op in DB (strategy_core.analysis)
+      // Sla op in DB (strategy_core.insights) — updated_at wordt door upsert gezet
+      const now = new Date().toISOString();
       const { error: saveError } = await upsertStrategyCore(canvasId, { insights });
-      if (saveError) console.error("[handleAnalyze] opslaan mislukt:", saveError.message);
+      if (saveError) {
+        console.error("[handleAnalyze] opslaan mislukt:", saveError.message);
+      } else {
+        setAnalysisUpdatedAt(now); // upsert zet updated_at op server; gebruik client-now als benadering
+      }
     } catch (e) {
       setAnalysisError(e.message);
     } finally {
@@ -1418,6 +1433,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           error={analysisError}
           onClose={() => setShowAdvies(false)}
           appLabel={appLabel}
+          canvasName={canvasName}
+          generatedAt={analysisUpdatedAt}
         />
       )}
     </div>

@@ -13,12 +13,26 @@
  *   error       — string of null
  *   onClose     — () => void
  *   appLabel    — (key, fallback) => string
- *   canvasName  — string | undefined  (optioneel: toont "Strategie — {canvasName}" in h1)
+ *   canvasName  — string | null  (optioneel: toont "Strategie — {canvasName}" in h1)
+ *   generatedAt — ISO-string | null  (updated_at uit strategy_core; null = datum weglaten)
  */
 
 import React, { useState } from "react";
 import { X, Minus, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
 import InzichtItem, { TYPE_CONFIG, FALLBACK_TYPE } from "./InzichtItem";
+
+// Datum formatteren als "22 april 2026, 14:08" (NL-locale)
+function formatNlDate(isoString) {
+  if (!isoString) return null;
+  try {
+    const d = new Date(isoString);
+    const datePart = d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+    const timePart = d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+    return `${datePart}, ${timePart}`;
+  } catch {
+    return null;
+  }
+}
 
 // Filter-types — iconen en label-keys consistent met TYPE_CONFIG
 const FILTER_TYPES = [
@@ -71,7 +85,7 @@ function TocEntry({ insight }) {
 }
 
 // ── Hoofdcomponent ────────────────────────────────────────────────────────────
-export default function InzichtenOverlay({ insights, loading, error, onClose, appLabel, canvasName }) {
+export default function InzichtenOverlay({ insights, loading, error, onClose, appLabel, canvasName, generatedAt }) {
   // Alle filters standaard actief
   const [activeFilters, setActiveFilters] = useState(
     new Set(["ontbreekt", "zwak", "kans", "sterk"])
@@ -172,17 +186,19 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
                 {docTitle}
               </h1>
 
-              {/* Meta-regel: canvas · datum · n bevindingen */}
+              {/* Meta-regel: canvas · gegenereerd datum · n bevindingen
+                  Als generatedAt null: datum weglaten, alleen count tonen.
+                  Als canvasName null: canvas-span weglaten. */}
               {!loading && !isEmpty && (
                 <p className="text-xs text-slate-500 m-0 mb-5">
                   {canvasName && (
-                    <span>{lbl("analysis.meta.canvas", "Canvas:")} {canvasName}</span>
+                    <><span>{lbl("analysis.meta.canvas", "Canvas:")} {canvasName}</span>
+                    <span className="mx-2 opacity-50">·</span></>
                   )}
-                  {canvasName && <span className="mx-2 opacity-50">·</span>}
-                  <span>
-                    {lbl("analysis.meta.generated", "Gegenereerd")}
-                  </span>
-                  <span className="mx-2 opacity-50">·</span>
+                  {generatedAt && formatNlDate(generatedAt) && (
+                    <><span>{lbl("analysis.meta.generated", "Gegenereerd")} {formatNlDate(generatedAt)}</span>
+                    <span className="mx-2 opacity-50">·</span></>
+                  )}
                   <span>{allInsights.length} {lbl("analysis.meta.findings", "bevindingen")}</span>
                 </p>
               )}
