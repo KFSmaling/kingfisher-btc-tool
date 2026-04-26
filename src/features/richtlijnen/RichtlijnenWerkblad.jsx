@@ -10,9 +10,10 @@ import React, {
   useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense,
 } from "react";
 import {
-  ArrowLeft, Plus, Trash2, Wand2, X, Sparkles, FileText, RefreshCw,
+  ArrowLeft, Plus, Trash2, Wand2, X, FileText, RefreshCw,
   BookOpen, Link2, RotateCcw, ChevronDown, ChevronUp,
 } from "lucide-react";
+import AiIcon from "../../shared/components/AiIcon";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
@@ -174,7 +175,7 @@ const GuidelineKaart = React.memo(function GuidelineKaart({
                   className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-[var(--color-primary)] border border-slate-200 hover:border-[var(--color-primary)]/30 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
                   title="AI Stop/Start/Continue genereren"
                 >
-                  <Wand2 size={9} />
+                  <AiIcon variant="improve" size={9} />
                   {implLoading ? "…" : "AI"}
                 </button>
               )}
@@ -284,7 +285,7 @@ function SwimLane({
             title={`AI principes genereren voor ${segment.label}`}
             className="flex items-center gap-1.5 text-[10px] font-bold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
           >
-            <Wand2 size={11} />
+            <AiIcon variant="improve" size={11} />
             {generateDraft?.loading ? "…" : "Genereer"}
           </button>
         </div>
@@ -679,7 +680,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
                 ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[var(--color-success)] hover:border-[var(--color-accent)]"
                 : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)]"}`}
           >
-            <Sparkles size={13} />
+            <AiIcon variant="generate" size={13} />
             Richtlijnen Advies{analysis ? " ✓" : ""}
           </button>
           <button
@@ -730,7 +731,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
                   title="AI koppelt alle principes automatisch aan de meest passende thema's"
                   className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-primary)]/50 hover:text-[var(--color-primary)] border border-[var(--color-primary)]/20 hover:border-[var(--color-primary)]/40 rounded-md px-2 py-1 transition-colors disabled:opacity-40"
                 >
-                  <Wand2 size={9} />
+                  <AiIcon variant="improve" size={9} />
                   {linkingThemes ? "Bezig…" : "Auto-link"}
                 </button>
               )}
@@ -820,7 +821,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
         <div className="fixed inset-0 z-[59] flex flex-col bg-slate-100 overflow-hidden">
           <div className="flex items-center justify-between px-6 py-3 bg-[var(--color-primary)] flex-shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles size={12} className="text-[var(--color-accent)]" />
+              <AiIcon variant="generate" size={12} colorClass="text-[var(--color-accent)]" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-white">
                 Richtlijnen Advies
               </span>
@@ -831,7 +832,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
                 disabled={analysisLoading}
                 className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors disabled:opacity-50"
               >
-                {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                {analysisLoading ? <RefreshCw size={13} className="animate-spin" /> : <AiIcon variant="generate" size={13} />}
                 {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer richtlijnen"}
               </button>
               <button onClick={() => setShowAdvies(false)} className="text-white/40 hover:text-white transition-colors">

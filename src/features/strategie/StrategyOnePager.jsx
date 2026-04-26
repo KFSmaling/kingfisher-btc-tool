@@ -10,7 +10,8 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { X, Printer, LayoutGrid, Target, TrendingUp, Sparkles } from "lucide-react";
+import { X, Printer, LayoutGrid, Target, TrendingUp } from "lucide-react";
+import AiIcon from "../../shared/components/AiIcon";
 import { supabase } from "../../shared/services/supabase.client";
 
 // ── Kleurendefinities ────────────────────────────────────────────────────────
@@ -541,7 +542,7 @@ export default function StrategyOnePager({ core, items, themas, canvasId, onClos
                     ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/30"
                     : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"}`}
             >
-              <Sparkles size={10} />
+              <AiIcon variant="generate" size={10} />
               {includeInPrint ? "Advies in print ✓" : "Advies in print"}
             </button>
             <button

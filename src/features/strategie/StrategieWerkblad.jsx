@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText, Sparkles } from "lucide-react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText } from "lucide-react";
+import AiIcon from "../../shared/components/AiIcon";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
@@ -84,7 +85,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
             disabled={ksfKpiDraft?.loading}
             title="KSF & KPI genereren op basis van dit thema"
             className="flex items-center gap-1 text-[9px] font-bold text-[var(--color-accent)] hover:text-[var(--color-success)] border border-[var(--color-accent)]/40 hover:border-[var(--color-success)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
-            <Wand2 size={10} />
+            <AiIcon variant="improve" size={10} />
             {ksfKpiDraft?.loading ? "…" : "KSF & KPI"}
           </button>
         )}
@@ -1093,7 +1094,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             disabled={analysisLoading}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)] text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
           >
-            <Sparkles size={13} />
+            <AiIcon variant="generate" size={13} />
             {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}
           </button>
           <button
@@ -1103,7 +1104,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[var(--color-success)] hover:border-[var(--color-accent)]"
                 : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-slate-400"}`}
           >
-            <Sparkles size={13} />
+            <AiIcon variant="generate" size={13} />
             {appLabel("analysis.title", "Inzichten")}{analysis ? " ✓" : ""}
           </button>
           {/* Strategie Rapport knop */}
@@ -1273,7 +1274,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 title="AI classificeert externe items als kans/bedreiging en interne items als sterkte/zwakte — alleen bij zekerheid"
                 className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-analysis)]/60 hover:text-[var(--color-analysis)] border border-[var(--color-analysis)]/30 hover:border-[var(--color-analysis)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
               >
-                <Wand2 size={10} />
+                <AiIcon variant="improve" size={10} />
                 {autoTagLoading ? "Bezig…" : appLabel("strat.autotag.button", "Auto-tag")}
               </button>
             )}
@@ -1317,7 +1318,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 onClick={generateThemas}
                 disabled={themaDraft?.loading}
                 className="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-accent)] hover:text-[var(--color-success)] border border-[var(--color-accent)]/40 hover:border-[var(--color-success)]/60 rounded-md px-2.5 py-1 transition-colors disabled:opacity-50 flex-shrink-0">
-                <Wand2 size={10} />
+                <AiIcon variant="improve" size={10} />
                 {themaDraft?.loading ? "Genereren…" : "Genereer Thema's"}
               </button>
             )}

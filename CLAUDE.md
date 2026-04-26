@@ -195,6 +195,42 @@ componenten. Fallbacks staan als `:root` defaults in `src/index.css`.
 
 ---
 
+## 3B. AI-AFFORDANCES — visueel patroon
+
+Eén consistent visueel patroon voor alle AI-iconen en -knoppen, zodat
+gebruikers AI-features herkennen en zien.
+
+### Canonical componenten — `src/shared/components/`
+
+| Component | Wanneer |
+|---|---|
+| `<AiIconButton>` | Stand-alone AI-knop (icon + optionele label, eigen state-machine) |
+| `<AiIcon>` | Pure icon binnen een bestaande knop, kop of decoratieve loading-state |
+| `<WandButton>` | Backwards-compat thin wrapper rond `<AiIconButton variant="improve">` |
+
+### Variants
+
+- `variant="improve"` → `Wand2` — verbeter op basis van bestaande context (Magic Staff, KSF/KPI generator, auto-tag, auto-link)
+- `variant="generate"` → `Sparkles` — genereer nieuw / vrije AI-actie (analyse, advies, thema's, print-include)
+
+### Visuele standaard (toegepast door `<AiIconButton>`, default in `<AiIcon>`)
+
+| State | Tailwind |
+|---|---|
+| Default (clickable, idle) | `text-[var(--color-accent)]/70` |
+| Hover | `text-[var(--color-accent)]` + `bg-[var(--color-accent)]/8` |
+| Active/loading | `text-[var(--color-accent)]` (+ `animate-spin` spinner via `loading` prop) |
+| Disabled | `text-slate-400 opacity-60 cursor-not-allowed` |
+
+### Regels
+
+- Nieuwe AI-feature → gebruik `<AiIconButton>`. Geen losse `<Wand2>` of `<Sparkles>` in feature-code.
+- Inline binnen bestaand button-frame (om button-styling te behouden) → gebruik `<AiIcon>`. Default kleur is canonical accent; override via `colorClass` alleen bij donkere achtergrond of expliciet design-besluit.
+- Loading-spinners (full-size pulserende `Wand2` size 28 in lege werkbladen) blijven als losse `<Wand2 animate-pulse>` — dat is een aparte feedback-rol, geen affordance.
+- Iconen-formaat: 9–13 px in compacte knoppen, 28 px voor loading-states.
+
+---
+
 ## 4. STATE MANAGEMENT & DATA INTEGRITEIT
 
 State-problemen in deze app komen bijna altijd uit drie bronnen: ghost data bij canvas-wissel, silent save failures, en race conditions bij snel wisselen. Deze regels zijn **verplicht** — niet optioneel, niet "meestal".

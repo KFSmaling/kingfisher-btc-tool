@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Wand2, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import AiIcon from "./AiIcon";
 
 /** Typewriter-effect: typt `text` karakter voor karakter met `speed` ms interval. */
 export function useTypewriter(text, speed = 10) {
@@ -26,7 +27,7 @@ export default function MagicResult({ result, onAccept, onReject }) {
   if (result.loading) return (
     <div className="mt-2 px-3 py-2.5 bg-[var(--color-accent)]/5 border border-[var(--color-accent)]/20 rounded-lg">
       <div className="flex items-center gap-2">
-        <Wand2 size={11} className="text-[var(--color-accent)] animate-pulse flex-shrink-0" />
+        <AiIcon variant="improve" size={11} colorClass="text-[var(--color-accent)]" className="animate-pulse flex-shrink-0" />
         <span className="text-[9px] font-semibold text-[var(--color-success)] uppercase tracking-wider animate-pulse">AI genereert voorstel…</span>
       </div>
     </div>
