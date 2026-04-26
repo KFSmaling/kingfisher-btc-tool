@@ -41,6 +41,7 @@ const LABEL_FALLBACKS = {
   "strat.field.extern":             "Externe Ontwikkelingen",
   "strat.field.intern":             "Interne Ontwikkelingen",
   "strat.autotag.button":           "Auto-tag",
+  "werkblad.strategie.title":       "Strategie",
   // Inzichten overlay — generieke labels (alle werkbladen)
   "analysis.title":                          "Inzichten",
   "analysis.subtitle":                       "Strategische Analyse",
@@ -63,6 +64,7 @@ const LABEL_FALLBACKS = {
   "analysis.meta.generated":                 "Gegenereerd",
   "analysis.meta.findings":                  "bevindingen",
   "analysis.empty":                          "Nog geen analyse. Klik 'Analyseer strategie' in het werkblad.",
+  "analysis.empty.filtered":                 "Geen bevindingen zichtbaar met de huidige filters.",
   "analysis.loading":                        "AI analyseert uw strategie…",
   "analysis.filter.label":                   "Toon:",
   "analysis.filter.type":                    "Filter type",

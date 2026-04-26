@@ -1428,6 +1428,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       {/* ── Inzichten overlay (sprint B, issue #68) ── */}
       {showAdvies && (
         <InzichtenOverlay
+          key={canvasId}
+          canvasId={canvasId}
           insights={analysis}
           loading={analysisLoading}
           error={analysisError}
@@ -1435,6 +1437,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           appLabel={appLabel}
           canvasName={canvasName}
           generatedAt={analysisUpdatedAt}
+          worksheetName={appLabel("werkblad.strategie.title", "Strategie")}
         />
       )}
     </div>

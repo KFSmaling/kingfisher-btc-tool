@@ -85,7 +85,7 @@ function TocEntry({ insight }) {
 }
 
 // ── Hoofdcomponent ────────────────────────────────────────────────────────────
-export default function InzichtenOverlay({ insights, loading, error, onClose, appLabel, canvasName, generatedAt }) {
+export default function InzichtenOverlay({ insights, loading, error, onClose, appLabel, canvasName, generatedAt, canvasId, worksheetName }) {
   // Alle filters standaard actief
   const [activeFilters, setActiveFilters] = useState(
     new Set(["ontbreekt", "zwak", "kans", "sterk"])
@@ -115,9 +115,9 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
   const isEmpty     = !loading && !error && allInsights.length === 0;
   const noVisible   = !loading && !isEmpty && visible.length === 0;
 
-  // Document-h1: "Strategie" of "Strategie — {canvasNaam}"
-  // TODO: parameteriseer werkbladNaam bij uitrol naar andere werkbladen
-  const docTitle = canvasName ? `Strategie — ${canvasName}` : "Strategie";
+  // Document-h1: "{werkbladNaam}" of "{werkbladNaam} — {canvasNaam}"
+  const wName   = worksheetName ?? lbl("werkblad.strategie.title", "Strategie");
+  const docTitle = canvasName ? `${wName} — ${canvasName}` : wName;
 
   // Outer: vol scherm, bg-slate-100, document scrollt als geheel
   return (
@@ -255,7 +255,7 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
             {noVisible && (
               <div className="flex items-center justify-center h-48">
                 <p className="text-slate-400 text-sm italic text-center">
-                  Geen bevindingen zichtbaar met de huidige filters.
+                  {lbl("analysis.empty.filtered", "Geen bevindingen zichtbaar met de huidige filters.")}
                 </p>
               </div>
             )}
