@@ -356,11 +356,11 @@ const handleSave = async (data) => {
 - [ ] Gebruikt een callback `canvasId` asynchroon? → `canvasIdRef.current` of parameter, geen closure
 - [ ] Retourneert de service `{ data, error }` en checkt de call-site `error`?
 
-### 4.6 Compliance status (per 2026-04-22)
+### 4.6 Compliance status (per 2026-04-26)
 
 - **4.1** ✅ Compliant per 2026-04-22
 - **4.2** ❌ Systematisch non-compliant; zie `TECH_DEBT.md`
-- **4.3** ⚠️ Werkblad load-effects compliant per 2026-04-22; `useCanvasState.handleSelectCanvas` nog open (zie `TECH_DEBT.md`)
+- **4.3** ✅ Compliant per 2026-04-26 (`useCanvasState.handleSelectCanvas` race-guard toegevoegd)
 - **4.4** ❌ Geen enkele callback gebruikt `canvasIdRef`; zie `TECH_DEBT.md`
 - **4.5** ✅ Contract is `{ data, error }` — zie sectie 3
 

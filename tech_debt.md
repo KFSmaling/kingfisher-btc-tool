@@ -35,7 +35,7 @@
 |------|---------|--------|
 | Geen `cancelled` flag + captured canvasId | `StrategieWerkblad` useEffect L527 | ✅ Done 2026-04-22 |
 | Geen `cancelled` flag + captured canvasId | `RichtlijnenWerkblad` useEffect L385 | ✅ Done 2026-04-22 |
-| `handleSelectCanvas` mist `cancelled`-guard | `useCanvasState` | Open |
+| `handleSelectCanvas` mist `cancelled`-guard | `useCanvasState` | ✅ Done 2026-04-26 |
 
 **Risico**: verouderde data overschrijft nieuwe data als user snel wisselt tijdens fetch.  
 **Effort**: 30 min voor de eerste twee; `useCanvasState` apart beoordelen.
@@ -209,6 +209,7 @@ Fases 2-4 relevant zodra demo-sessies gepland worden.
 - 2026-04-26 — #68 compliance-cleanup — `key={canvasId}` op `<InzichtenOverlay>`, filtered-empty-state via `appLabel`, `worksheetName`-prop voor herbruikbaarheid. Commit: `81bce39`
 - 2026-04-26 — #60 AI-affordances standaard — `AiIconButton`/`AiIcon` shared components, 11 inline plekken gemigreerd, CLAUDE.md sectie 3B vastgelegd. Commit: `f0bd2f0`
 - 2026-04-26 — #69 Sprint C drie-knoppen-patroon — `WerkbladActieknoppen` shared component, Strategie + Richtlijnen gemigreerd, overlay-sluit naar "Terug naar werkblad". Commit: `d4f7af2`
+- 2026-04-26 — P1 4.3 — `useCanvasState.handleSelectCanvas` race-guard via `latestSelectRef`. Sluit hele P1-categorie. CLAUDE.md §4.6 4.3 → ✅. Commit: `<TBD>`
 
 ---
 

@@ -60,6 +60,7 @@ export function useCanvasState({ user, tenantId, lang, onCanvasSwitch }) {
   // ── Interne refs ────────────────────────────────────────────────────────────
   const suppressSaveRef  = useRef(false); // onderdruk autosave tijdens canvas-laden
   const autosaveTimerRef = useRef(null);
+  const latestSelectRef  = useRef(null);  // race-guard handleSelectCanvas (CLAUDE.md 4.3)
 
   // ── Helper: herlaad guideline counts voor actief canvas ─────────────────────
   const refreshGuidelineCounts = useCallback(async (canvasId) => {
@@ -223,7 +224,16 @@ export function useCanvasState({ user, tenantId, lang, onCanvasSwitch }) {
     setStrategyManual(null);
     setGuidelineCounts({});
 
+    // Race-guard (CLAUDE.md 4.3): bij snel achter elkaar twee canvases klikken kan de
+    // tweede fetch eerder terugkomen dan de eerste. Capture de request-id en negeer
+    // resultaten van een verouderde request.
+    const requestId = canvasRecord.id;
+    latestSelectRef.current = requestId;
+
     const { data: full } = await loadCanvasById(canvasRecord.id);
+
+    if (latestSelectRef.current !== requestId) return; // verouderde request
+
     if (full) {
       applyCanvasData(full);
       onCanvasSwitch?.();
