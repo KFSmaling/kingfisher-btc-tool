@@ -112,6 +112,59 @@ de consumeer-ervaring die een consultant nodig heeft.
 kern-waardepropositie (analyse-kwaliteit voor consultants).
 
 ---
+
+### P4 — Label-discipline tooling (CLAUDE.md sectie 2)
+
+`CLAUDE.md` sectie 2 schrijft voor: alle gebruikersgerichte UI-strings via
+`appLabel()`. In de praktijk slipt dit erin — bestaande hardcoded strings
+worden niet gemigreerd, en bij feature-werk wordt scope strict gehouden tot
+de nieuwe knoppen, niet de aangrenzende JSX-blokken.
+
+Discipline-faal alleen oplossen met meer discipline werkt niet. Tooling-laag
+nodig die handhaving automatiseert.
+
+**Opties:**
+- **ESLint-regel**: `react/jsx-no-literals` of een custom regel met allow-list 
+  voor pure technische strings (klassennamen, ARIA-rollen, IDs). Pre-commit 
+  hook of CI-check faalt → committen kan niet met hardcoded UI-tekst.
+- **Pre-commit grep-script** als minimum: detecteert `>{...woorden}<` patronen
+  in `*.jsx`, faalt commit met lijst van violations.
+
+**Aanpak:** ~1u onderzoek (welke regel/tool past beste in CRA-build), 
+~1u uitrol + eerste fixes. Geeft nieuwe code structurele garantie. 
+Combineer **eerst** met deze tooling, dán pas met de sweep hieronder.
+
+**Urgentie:** medium. Voorwaarde voor effectieve sweep — anders is sweep 
+eenmalig en sluipen nieuwe violations meteen weer in.
+
+---
+
+### P4 — Label-completeness sweep (eenmalige migratie)
+
+Eenmalige inventarisatie + migratie van alle hardcoded UI-strings in 
+werkbladen + overlays die nooit zijn meegenomen toen sectie 2 als richtlijn 
+werd vastgelegd.
+
+**Bekende gevallen (uit Sprint C-review):**
+1. `"Creëer Full Draft"` op StrategieWerkblad (regel ~1118–1124)
+2. `"Analyseer richtlijnen"` binnen inline Richtlijnen-overlay (regel ~830)
+3. `"Werkblad"` eyebrow-tekst boven werkblad-titel (Strategie + Richtlijnen)
+4. `"Richtlijnen & Leidende Principes"` als h2-titel
+5. `"Strategie Werkblad"` als h2-titel
+
+Plus alle andere hardcoded strings die door de scan in P4-tooling-item 
+gevonden worden.
+
+**Effort:** ~half dagje voor inventarisatie + migratie + label-keys + 
+DB-migratie + LABEL_FALLBACKS-uitbreiding.
+
+**Volgorde:** uitvoeren **na** de tooling (vorige item), zodat nieuwe 
+violations meteen geblokkeerd worden tijdens en na de sweep.
+
+**Urgentie:** medium. Geen acuut probleem (geen UX-breuk, geen dataverlies), 
+wel design-rule-handhaving.
+
+---
 ## P5 — Deploy-architectuur & demo-omgeving
 
 **Huidige state (per 2026-04-22):**

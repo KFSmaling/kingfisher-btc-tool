@@ -405,6 +405,7 @@ Controleer altijd voor commit: zijn alle NOT NULL kolommen aanwezig in elke INSE
 Doorloop dit vóór je code schrijft:
 
 - [ ] Welke labels gebruik ik? → `appLabel()` + `LABEL_FALLBACKS` + migratie
+- [ ] **Boy-scout:** hardcoded UI-strings in dezelfde JSX-blok als je wijziging meteen migreren naar `appLabel()` — niet vereist over het hele bestand, wel binnen de aangrenzende JSX
 - [ ] Welke data laad ik? → service aanmaken of uitbreiden, nooit direct in component
 - [ ] Past dit in een bestaand component of maak ik een nieuw bestand?
 - [ ] Als ik data toevoeg aan `useCanvasState`: ook toevoegen aan de public API return
