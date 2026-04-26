@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, FileText } from "lucide-react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
+import WerkbladActieknoppen from "../../shared/components/WerkbladActieknoppen";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
@@ -1088,32 +1089,22 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </div>
         <div className="flex items-center gap-3">
           {saveLabel && <span className={`text-[10px] font-semibold ${saveColor}`}>{saveLabel}</span>}
-          {/* TEMP: twee knoppen tot Sprint C drie-knoppen-shell raakt alle werkbladen. Zie issue #69. */}
-          <button
-            onClick={handleAnalyze}
-            disabled={analysisLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)] text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-          >
-            <AiIcon variant="generate" size={13} />
-            {analysisLoading ? "Analyseren…" : analysis ? "Opnieuw analyseren" : "Analyseer strategie"}
-          </button>
-          <button
-            onClick={() => setShowAdvies(true)}
-            className={`flex items-center gap-2 px-4 py-2 border text-xs font-bold rounded-lg transition-colors
-              ${analysis
-                ? "bg-[var(--color-accent)]/10 border-[var(--color-accent)]/50 text-[var(--color-success)] hover:border-[var(--color-accent)]"
-                : "bg-white border-slate-200 hover:border-[var(--color-primary)]/40 text-slate-400"}`}
-          >
-            <AiIcon variant="generate" size={13} />
-            {appLabel("analysis.title", "Inzichten")}{analysis ? " ✓" : ""}
-          </button>
-          {/* Strategie Rapport knop */}
-          <button
-            onClick={() => setShowOnePager(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-[var(--color-primary)]/40 text-[var(--color-primary)] text-xs font-bold rounded-lg transition-colors">
-            <FileText size={13} />
-            Strategie Rapport
-          </button>
+          {/* Drie-knoppen-shell (Sprint C, issue #69): Analyse · Bekijken · Rapportage */}
+          <WerkbladActieknoppen
+            onAnalyse={handleAnalyze}
+            onBekijken={() => setShowAdvies(true)}
+            onRapportage={() => setShowOnePager(true)}
+            analyseLabel={
+              analysisLoading
+                ? appLabel("werkblad.action.analyseert", "Analyseren…")
+                : analysis
+                  ? appLabel("werkblad.action.analyseer_opnieuw", "Opnieuw analyseren")
+                  : appLabel("werkblad.action.analyseer", "Analyse draaien")
+            }
+            analysing={analysisLoading}
+            bekijkenDisabled={!analysis}
+            appLabel={appLabel}
+          />
           {/* Full Draft */}
           <button
             onClick={() => setAutoDraftOpen(true)}

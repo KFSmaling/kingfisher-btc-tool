@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from "react";
-import { X, Minus, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
+import { Minus, AlertTriangle, TrendingUp, CheckCircle } from "lucide-react";
 import InzichtItem, { TYPE_CONFIG, FALLBACK_TYPE } from "./InzichtItem";
 
 // Datum formatteren als "22 april 2026, 14:08" (NL-locale)
@@ -123,15 +123,14 @@ export default function InzichtenOverlay({ insights, loading, error, onClose, ap
   return (
     <div className="fixed inset-0 z-[59] bg-slate-100 overflow-y-auto">
 
-      {/* ── Sluiten-knop: fixed — altijd bereikbaar ongeacht scroll-positie ── */}
+      {/* ── Terug-knop: fixed — altijd bereikbaar ongeacht scroll-positie ── */}
       <button
         onClick={onClose}
-        aria-label="Sluiten"
-        className="fixed top-4 right-4 z-[60] w-8 h-8 rounded-full border border-slate-200 bg-white
-          flex items-center justify-center text-slate-500
-          hover:text-[var(--color-primary)] transition-colors shadow-sm"
+        aria-label={lbl("analysis.action.terug", "← Terug naar werkblad")}
+        className="fixed top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600
+          hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/40 transition-colors shadow-sm"
       >
-        <X size={14} />
+        {lbl("analysis.action.terug", "← Terug naar werkblad")}
       </button>
 
       {/* ── Wit document-frame: zweeft op grijs papier ── */}
