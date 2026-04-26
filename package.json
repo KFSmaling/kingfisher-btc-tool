@@ -30,7 +30,51 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "react/jsx-no-literals": [
+        "warn",
+        {
+          "noStrings": false,
+          "ignoreProps": true,
+          "noAttributeStrings": false,
+          "allowedStrings": [
+            "·",
+            " · ",
+            "—",
+            "–",
+            "/",
+            ":",
+            "…",
+            "...",
+            "✓",
+            "✗",
+            "✕",
+            "✔",
+            "←",
+            "→",
+            "↑",
+            "↓",
+            "&",
+            "&amp;",
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}",
+            "•",
+            "›",
+            "‹",
+            "+",
+            "-",
+            "?",
+            "!",
+            "|"
+          ]
+        }
+      ]
+    }
   },
   "browserslist": {
     "production": [

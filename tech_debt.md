@@ -113,29 +113,23 @@ kern-waardepropositie (analyse-kwaliteit voor consultants).
 
 ---
 
-### P4 — Label-discipline tooling (CLAUDE.md sectie 2)
+### P4 — Label-discipline tooling (CLAUDE.md sectie 2) — ✅ Done 2026-04-26
 
-`CLAUDE.md` sectie 2 schrijft voor: alle gebruikersgerichte UI-strings via
-`appLabel()`. In de praktijk slipt dit erin — bestaande hardcoded strings
-worden niet gemigreerd, en bij feature-werk wordt scope strict gehouden tot
-de nieuwe knoppen, niet de aangrenzende JSX-blokken.
+ESLint-regel `react/jsx-no-literals` toegevoegd op **warn**-level in
+`package.json` `eslintConfig.rules` met allow-list voor technische
+separators/iconen (`·`, `—`, `✓`, `←`, etc.) en `ignoreProps: true` zodat
+className-strings niet vallen.
 
-Discipline-faal alleen oplossen met meer discipline werkt niet. Tooling-laag
-nodig die handhaving automatiseert.
+CRA's `npm run build` toont de warnings; `deploy-prod.sh` blijft slagen.
+Eerste run vond **220 violations** in legacy code — gedekt door het
+sweep-item hieronder.
 
-**Opties:**
-- **ESLint-regel**: `react/jsx-no-literals` of een custom regel met allow-list 
-  voor pure technische strings (klassennamen, ARIA-rollen, IDs). Pre-commit 
-  hook of CI-check faalt → committen kan niet met hardcoded UI-tekst.
-- **Pre-commit grep-script** als minimum: detecteert `>{...woorden}<` patronen
-  in `*.jsx`, faalt commit met lijst van violations.
+**Promotie naar `error`-level:** apart besluit voor **na** de sweep.
+Dan blokkeert het builds bij nieuwe violations.
 
-**Aanpak:** ~1u onderzoek (welke regel/tool past beste in CRA-build), 
-~1u uitrol + eerste fixes. Geeft nieuwe code structurele garantie. 
-Combineer **eerst** met deze tooling, dán pas met de sweep hieronder.
-
-**Urgentie:** medium. Voorwaarde voor effectieve sweep — anders is sweep 
-eenmalig en sluipen nieuwe violations meteen weer in.
+**Pre-commit hook (Husky/lint-staged):** **niet** geïnstalleerd (Tier 3
+overgeslagen). Build-time check via `deploy-prod.sh` is voldoende. Bij
+behoefte aan eerder feedback-moment apart oppakken.
 
 ---
 
@@ -145,24 +139,23 @@ Eenmalige inventarisatie + migratie van alle hardcoded UI-strings in
 werkbladen + overlays die nooit zijn meegenomen toen sectie 2 als richtlijn 
 werd vastgelegd.
 
-**Bekende gevallen (uit Sprint C-review):**
-1. `"Creëer Full Draft"` op StrategieWerkblad (regel ~1118–1124)
-2. `"Analyseer richtlijnen"` binnen inline Richtlijnen-overlay (regel ~830)
-3. `"Werkblad"` eyebrow-tekst boven werkblad-titel (Strategie + Richtlijnen)
-4. `"Richtlijnen & Leidende Principes"` als h2-titel
-5. `"Strategie Werkblad"` als h2-titel
+**Status:** **Uitvoerbaar** — tooling is live (zie vorig item, ✅ 2026-04-26).
+Eerste ESLint-run heeft **220 violations** geïdentificeerd. De warning-output
+fungeert als concrete punch-list.
 
-Plus alle andere hardcoded strings die door de scan in P4-tooling-item 
-gevonden worden.
+**Aanpak — voorgestelde volgorde:**
+1. Eerste pass: alle gedeelde shared-components (App.js, ErrorBoundary, LogoBrand, etc.)
+2. Tweede pass: werkbladen (Strategie, Richtlijnen) — grootste files, meeste warnings
+3. Derde pass: overlays (InzichtenOverlay, StrategyOnePager)
+4. Migratie + LABEL_FALLBACKS uitbreiden per pass
+5. Eindpunt: 0 warnings → promotie van rule naar `error` (apart commit)
 
-**Effort:** ~half dagje voor inventarisatie + migratie + label-keys + 
-DB-migratie + LABEL_FALLBACKS-uitbreiding.
-
-**Volgorde:** uitvoeren **na** de tooling (vorige item), zodat nieuwe 
-violations meteen geblokkeerd worden tijdens en na de sweep.
+**Effort:** ~half dagje voor de drie passes + migratie + LABEL_FALLBACKS.
+Te doen in één focused sessie of incrementeel per file.
 
 **Urgentie:** medium. Geen acuut probleem (geen UX-breuk, geen dataverlies), 
-wel design-rule-handhaving.
+wel design-rule-handhaving — en CRA-warnings in dev-output zijn nu actief
+ruis tot ze opgeruimd zijn.
 
 ---
 ## P5 — Deploy-architectuur & demo-omgeving
@@ -209,7 +202,8 @@ Fases 2-4 relevant zodra demo-sessies gepland worden.
 - 2026-04-26 — #68 compliance-cleanup — `key={canvasId}` op `<InzichtenOverlay>`, filtered-empty-state via `appLabel`, `worksheetName`-prop voor herbruikbaarheid. Commit: `81bce39`
 - 2026-04-26 — #60 AI-affordances standaard — `AiIconButton`/`AiIcon` shared components, 11 inline plekken gemigreerd, CLAUDE.md sectie 3B vastgelegd. Commit: `f0bd2f0`
 - 2026-04-26 — #69 Sprint C drie-knoppen-patroon — `WerkbladActieknoppen` shared component, Strategie + Richtlijnen gemigreerd, overlay-sluit naar "Terug naar werkblad". Commit: `d4f7af2`
-- 2026-04-26 — P1 4.3 — `useCanvasState.handleSelectCanvas` race-guard via `latestSelectRef`. Sluit hele P1-categorie. CLAUDE.md §4.6 4.3 → ✅. Commit: `<TBD>`
+- 2026-04-26 — P1 4.3 — `useCanvasState.handleSelectCanvas` race-guard via `latestSelectRef`. Sluit hele P1-categorie. CLAUDE.md §4.6 4.3 → ✅. Commit: `446bb8b`
+- 2026-04-26 — P4 Label-discipline tooling — ESLint `react/jsx-no-literals` op warn-level in `package.json` met allow-list. 220 legacy-violations gedetecteerd → sweep-item is nu uitvoerbaar. Commit: `<TBD>`
 
 ---
 
