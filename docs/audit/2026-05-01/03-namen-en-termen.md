@@ -5,8 +5,10 @@
 **Doel:** waar komen merk-, methode- en context-specifieke namen voor in de codebase?
 **Classificatie per voorkomen:**
 1. **Hardcoded** — staat in code (JSX, JS, comment, string-literal, alt-tekst, etc.), niet via configuratie aanpasbaar
-2. **Configureerbaar per tenant** — staat in `app_config`, `theme_config`, of vergelijkbaar tenant-aanpasbaar veld
-3. **Documentatie / metadata** — staat in `README.md`, `CLAUDE.md`, repo-naam, package.json, branch-namen, commit-messages
+2. **Configureerbaar:**
+   - **2a — Tenant-scoped**: per tenant aanpasbaar via `tenants.theme_config`, `block_definitions` of vergelijkbaar tenant-veld
+   - **2b — Global runtime-config**: aanpasbaar via Admin-UI (`app_config`), maar geldt voor alle tenants tegelijk
+3. **Documentatie / metadata** — staat in `README.md`, `CLAUDE.md`, repo-naam, `package.json`, branch-namen, commit-messages, externe project-namen (Vercel, GitHub)
 
 **Privacy-disclaimer:** persoonsnamen (incl. Kees Smaling, Marc Beijen, ex-collega's) staan integraal vermeld per Kees-instructie ("dit lees alleen ik"). Dit document moet niet publiek worden.
 
@@ -80,7 +82,7 @@
 - `public/index.html` (`<title>Strategy Platform</title>` — geen Kingfisher)
 - `tailwind.config.js`, `postcss.config.js`
 
-### Laag 2 — Configureerbaar per tenant (live DB-state per 2026-05-01)
+### Laag 2a — Tenant-scoped (live DB-state per 2026-05-01)
 
 | Locatie | Key | Live waarde |
 |---|---|---|
@@ -89,12 +91,19 @@
 | `tenants` (slug=`kingfisher`) | `theme_config.logo_url` | `/kf-logo.png` |
 | `tenants` (slug=`kingfisher`) | `theme_config.product_name` | `Strategy Platform` |
 | `tenants` (slug=`kingfisher`) | `theme_config.logo_white_url` | `null` (logo-bestand bestaat niet — zie tech_debt P3 / Issue #73) |
+
+**Beheermodus:** tenant-scoped wijzigingen zijn vandaag alleen mogelijk via SQL `UPDATE`-statement of seed-migratie — er bestaat geen Admin-UI per tenant. `tenants.theme_config` is een jsonb-veld dat door `ThemeProvider` (`src/shared/context/ThemeProvider.jsx`) bij login wordt uitgelezen en als CSS-variabelen op `document.documentElement` wordt geïnjecteerd.
+
+### Laag 2b — Global runtime-config (live DB-state per 2026-05-01)
+
+| Locatie | Key | Live waarde |
+|---|---|---|
 | `app_config` | `label.footer.tagline` | `Kingfisher & Partners · From strategy to execution` |
 | `app_config` | `prompt.magic.system_heavy` | bevat `Kingfisher & Partners` (zie sectie 8) |
 | `app_config` | `prompt.magic.system_standard` | bevat `Kingfisher & Partners` (zie sectie 8) |
 | `app_config` | `prompt.validate` | bevat `Kingfisher & Partners` (zie sectie 8) |
 
-**Belangrijk:** `app_config` is NIET tenant-scoped — global voor alle tenants. Alleen `tenants.theme_config` is per tenant aanpasbaar.
+**Belangrijk:** `app_config` is NIET tenant-scoped — global voor alle tenants. Wijzigingen via Admin-UI (`/admin`) gelden direct voor elke tenant.
 
 ### Laag 3 — Documentatie / metadata
 
@@ -153,16 +162,23 @@
 | 27 | `supabase/migrations/20260421110000_add_samenvatting_seed_all_labels.sql:16` | re-seed van label.app.title |
 | 28 | git commits (laatste 6 maanden) | `feat: Strategy Deep Dive v2 — BTC-volledig`, `Feature: BTC Validator (Poortwachter)`, `Add BTC Tool v1 - Kingfisher huisstijl`, `update TECH_DEBT.md ... for BTC Tool project` |
 
-### Laag 2 — Configureerbaar per tenant (live DB)
+### Laag 2a — Tenant-scoped (live DB)
+
+| Locatie | Key | Live waarde |
+|---|---|---|
+| `block_definitions` (tabel) | meerdere rijen | bevatten BTC-blokken: `customers`, `guidelines`, `people`, `processes`, `roadmap`, `strategy`, `technology` |
+
+(`block_definitions` is in deze audit niet 100% bevestigd als tenant-scoped — schema-CREATE-statement niet getraceerd in migraties. Wordt hier geclassificeerd als 2a omdat de keys per tenant zin maakten als het tenant-specifiek configureerbaar zou worden.)
+
+**Inconsistentie**: `block_definitions` gebruikt `guidelines` en `roadmap` als keys, terwijl `BLOCKS`-array in `BlockCard.jsx` `principles` en `portfolio` gebruikt. Genoteerd onder "opgemerkt-tijdens-audit".
+
+### Laag 2b — Global runtime-config (live DB)
 
 | Locatie | Key | Live waarde |
 |---|---|---|
 | `app_config` | `label.app.title` | `Business Transformation Canvas` (live geverifieerd) |
 | `app_config` | `prompt.validate` | bevat letterlijk `Business Transformatie Canvas (BTC)` |
 | `app_config` | `prompt.strategy.analysis` | bevat letterlijk `Business Transformatie Canvas en Novius model` (zie sectie 5) |
-| `block_definitions` (tabel) | meerdere rijen | bevatten BTC-blokken: `customers`, `guidelines`, `people`, `processes`, `roadmap`, `strategy`, `technology` |
-
-**Inconsistentie**: `block_definitions` gebruikt `guidelines` en `roadmap` als keys, terwijl `BLOCKS`-array in `BlockCard.jsx` `principles` en `portfolio` gebruikt. Genoteerd onder "opgemerkt-tijdens-audit".
 
 ### Laag 3 — Documentatie / metadata
 
@@ -192,9 +208,9 @@
 | 5 | `src/prompts/btcPrompts.js:4` | comment: `Based on: BTC book (Beijen/Heetebrij/Tigchelaar), ACE, TLB, Spain, MAG cases` |
 | 6 | `src/prompts/btcPrompts.js:10` | prompt-tekst: `... developed by Marc Beijen.` |
 
-### Laag 2 — Configureerbaar per tenant
+### Laag 2 — Configureerbaar
 
-Geen (auteursnamen worden niet vanuit `app_config` of `theme_config` gerefereerd).
+Geen 2a (tenant-scoped) en geen 2b (global runtime-config). Auteursnamen worden niet vanuit `app_config`, `theme_config` of `block_definitions` gerefereerd.
 
 ### Laag 3 — Documentatie / metadata
 
@@ -223,12 +239,14 @@ Geen (auteursnamen worden niet vanuit `app_config` of `theme_config` gerefereerd
 | 7 | `supabase/migrations/20260421090000_seed_labels.sql:8` | seed: footer.tagline |
 | 8 | `supabase/migrations/20260421110000_add_samenvatting_seed_all_labels.sql:17-18` | re-seed van beide |
 
-### Laag 2 — Configureerbaar (live DB)
+### Laag 2b — Global runtime-config (live DB)
 
 | Locatie | Key | Live waarde |
 |---|---|---|
 | `app_config` | `label.app.subtitle` | (?) niet apart geverifieerd in live-query — afgeleid uit migraties dat de DB-waarde bestaat |
 | `app_config` | `label.footer.tagline` | `Kingfisher & Partners · From strategy to execution` (live geverifieerd) |
+
+(Geen 2a — tagline wordt niet via `tenants.theme_config` of vergelijkbaar tenant-veld geconfigureerd.)
 
 ### Laag 3 — Documentatie
 
@@ -242,11 +260,13 @@ Geen (auteursnamen worden niet vanuit `app_config` of `theme_config` gerefereerd
 
 Geen voorkomens in code (`src/`, `api/`, `public/`, migraties).
 
-### Laag 2 — Configureerbaar (live DB) — **kritisch**
+### Laag 2b — Global runtime-config (live DB) — **kritisch**
 
 | Locatie | Key | Live waarde |
 |---|---|---|
 | `app_config` | `prompt.strategy.analysis` | letterlijk: `... Je analyseert de samenhang ... in het Inzichten-formaat.Je bent gespecialiseerd in het Business Transformatie Canvas en Novius model.` |
+
+(Geen 2a — Novius-claim leeft alleen in global-config, niet tenant-scoped.)
 
 **Belangrijke vondst:** Novius staat **niet** in de migratie `20260425000000_inzichten_sprint_a.sql` (Sprint A-prompt-seed), wat betekent dat deze tekst handmatig is toegevoegd via de admin-UI of direct SQL UPDATE — buiten de versie-gecontroleerde migraties om. → Genoteerd onder "opgemerkt-tijdens-audit".
 
@@ -277,9 +297,9 @@ Geen voorkomens in code (`src/`, `api/`, `public/`, migraties).
 
 **Opmerking:** alle klant-cases zitten in dood code (`src/prompts/btcPrompts.js` wordt nergens geïmporteerd — zie document E §5.1) en in een test-asset-bestand (test-suite uitgeschakeld via `playwright.yml.disabled`). Geen actieve productie-aanroep van deze prompts in de huidige code-base. Komen wel direct terug bij re-import van `BLOCK_PROMPTS`.
 
-### Laag 2 — Configureerbaar
+### Laag 2 — niet voorgekomen
 
-Niet voorgekomen in live-DB-query op `app_config`. (Vraagteken: zijn deze klant-cases via prompt-overrides in DB ooit aangevuld? Niet via huidige queries detecteerbaar zonder full-text scan op alle prompt-values.)
+Niet voorgekomen in 2a (`tenants.theme_config`/`block_definitions`) of 2b (`app_config`-prompts/labels). (Vraagteken: zijn deze klant-cases via prompt-overrides in DB ooit aangevuld? Niet via huidige queries detecteerbaar zonder full-text scan op alle prompt-values.)
 
 ### Laag 3 — Documentatie
 
@@ -302,12 +322,14 @@ Geen vermeldingen.
 | 7 | `src/features/strategie/StrategieWerkblad.jsx:402` | preset-label: `{ key: "mckinsey", icon: "📊", label: "McKinsey-stijl" }` |
 | 8 | `api/strategy.js:51` | `rawSystem`-fallback: `"...Senior Strategie Consultant op McKinsey/BCG-niveau..."` |
 
-### Laag 2 — Configureerbaar (live DB)
+### Laag 2b — Global runtime-config (live DB)
 
 | Locatie | Key | Live waarde bevat |
 |---|---|---|
 | `app_config` | `prompt.improve.mckinsey` | `"McKinsey/BCG"` (preset-tekst) |
 | `app_config` | `prompt.magic.system_heavy` | `"McKinsey/BCG-niveau"` |
+
+(Geen 2a — geen tenant-scoped vermelding van McKinsey/BCG.)
 
 ### Laag 3 — Documentatie
 
@@ -336,11 +358,13 @@ Geen vermeldingen.
 | 9 | `api/magic.js:37` | prompt: `Senior Strategie Consultant ... gespecialiseerd in business transformatie voor de financiële en verzekeringssector bij Kingfisher & Partners` |
 | 10 | `supabase/migrations/20260420140000_sprint_4d_seed_prompts.sql:27` | seed: idem als (9) — `prompt.magic.system_heavy` |
 
-### Laag 2 — Configureerbaar (live DB)
+### Laag 2b — Global runtime-config (live DB)
 
 | Locatie | Key | Live tekst |
 |---|---|---|
 | `app_config` | `prompt.magic.system_heavy` | bevat `"financiële en verzekeringssector"` |
+
+(Geen 2a — branche-claim leeft alleen in global-config, niet tenant-scoped.)
 
 ### Laag 3 — Documentatie
 
@@ -370,12 +394,16 @@ Geen vermeldingen.
 | 5 | `supabase/migrations/20260424070000_seed_initial_tenants_and_profiles.sql:79, 87` | comment + INSERT: `User-profiel voor Account 1 (Kees)`, hardcoded `5d76d65e-e102-4c33-bf45-d13fa4385537` (Kees' Auth UUID) |
 | 6 | `supabase/migrations/20260424070000_seed_initial_tenants_and_profiles.sql:88` | comment: `Kees Holding tenant` (oude tenant-naam — DB-tenant heet inmiddels `Platform`) |
 
-### Laag 2 — Configureerbaar (live DB)
+### Laag 2a — Tenant-scoped identiteit-data (live DB)
 
 | Locatie | Key | Live waarde |
 |---|---|---|
 | `user_profiles` | `id=5d76d65e-e102-4c33-bf45-d13fa4385537` | role=`platform_admin`, tenant_id=`...0001` (Platform) |
 | `auth.users` (niet gequeried) | (?) | bevat de werkelijke email-adressen — niet zelf geverifieerd in deze pass om privacy-redenen |
+
+(Strikt gezien is `user_profiles` geen "config" — wel persoonsgebonden tenant-relevante data. Hier opgenomen omdat het de enige plek is waar Kees' identiteit als platform_admin koppelt aan een tenant.)
+
+(Geen 2b — persoonsnamen worden niet via `app_config` of vergelijkbare global-config gerefereerd.)
 
 ### Laag 3 — Documentatie / metadata
 
