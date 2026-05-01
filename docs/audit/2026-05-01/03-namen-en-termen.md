@@ -287,6 +287,38 @@ Geen vermeldingen.
 
 ---
 
+## 6.5 Externe consultancy-referenties: McKinsey / BCG
+
+### Laag 1 — Hardcoded
+
+| # | Locatie | Context |
+|---|---|---|
+| 1 | `src/features/admin/AdminPage.jsx:33` | dropdown-desc: `"Herschrijf-presets (McKinsey, beknopter, financieel…)"` |
+| 2 | `api/improve.js:10` | hardcoded preset: `mckinsey: "Herschrijf de tekst in een strakke, analytische McKinsey/BCG stijl..."` |
+| 3 | `src/features/canvas/components/TipsModal.jsx:27` | NL-tekst: `"BCG-matrix"` (hulpmiddel-vermelding in tips-content) |
+| 4 | `src/features/canvas/components/TipsModal.jsx:105` | EN-tekst: `"BCG matrix"` |
+| 5 | `api/magic.js:37` | `SYSTEM_HEAVY` constant: `"...Senior Strategie Consultant op McKinsey/BCG-niveau..."` |
+| 6 | `src/features/strategie/StrategieWerkblad.jsx:61` | UI-tekst: `"McKinsey-kwaliteit benchmarken tegen eigen targets…"` |
+| 7 | `src/features/strategie/StrategieWerkblad.jsx:402` | preset-label: `{ key: "mckinsey", icon: "📊", label: "McKinsey-stijl" }` |
+| 8 | `api/strategy.js:51` | `rawSystem`-fallback: `"...Senior Strategie Consultant op McKinsey/BCG-niveau..."` |
+
+### Laag 2 — Configureerbaar (live DB)
+
+| Locatie | Key | Live waarde bevat |
+|---|---|---|
+| `app_config` | `prompt.improve.mckinsey` | `"McKinsey/BCG"` (preset-tekst) |
+| `app_config` | `prompt.magic.system_heavy` | `"McKinsey/BCG-niveau"` |
+
+### Laag 3 — Documentatie
+
+| Locatie | Context |
+|---|---|
+| `docs/audit/2026-05-01/04-prompts.md` D.2 | "McKinsey/BCG-stijl: 2 prompts (`improve.mckinsey`, `magic.system_heavy`) — Style-referentie, niet methode" |
+
+**Karakter:** externe consultancy-merken als style-referentie, geen methode-claim. Voor IP-defensie wel relevant als "branche-cultureel signaal" — geen claim van eigendom maar wel positionering.
+
+---
+
 ## 7. Branche-specifieke termen: HNW / wealth / verzekering / financial services / insurance / Aegon
 
 ### Laag 1 — Hardcoded
