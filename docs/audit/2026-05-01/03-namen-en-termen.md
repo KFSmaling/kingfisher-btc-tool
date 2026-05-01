@@ -258,7 +258,7 @@ Geen voorkomens in code (`src/`, `api/`, `public/`, migraties).
 
 ---
 
-## 6. Klant-cases / projectnamen: TLB, MAG, ACE, Spain, BTP
+## 6. Klant-cases / projectnamen: TLB, MAG, ACE, Spain, BTP, Santander, GTS
 
 ### Laag 1 — Hardcoded
 
@@ -267,11 +267,15 @@ Geen voorkomens in code (`src/`, `api/`, `public/`, migraties).
 | 1 | `src/prompts/btcPrompts.js:4` | comment: `Based on: BTC book (Beijen/Heetebrij/Tigchelaar), ACE, TLB, Spain, MAG cases` |
 | 2 | `src/prompts/btcPrompts.js:142` | prompt-tekst: `Examples from real Kingfisher cases (Spain, TLB, MAG):` |
 | 3 | `src/prompts/btcPrompts.js:143` | prompt-tekst: `Good: "Segment HNW (1M-3M wealth): broker channel, value prop = estate planning + exceptional service, NPS target +20"` |
-| 4 | `src/prompts/btcPrompts.js:220` | prompt-tekst: `Examples from real Kingfisher cases (TLB, MAG, ACE):` |
-| 5 | `src/prompts/btcPrompts.js:260` | prompt-tekst: `Examples from real Kingfisher cases (TLB, ACE, MAG, Spain):` |
-| 6 | `src/prompts/btcPrompts.js:300` | prompt-tekst: `Examples from real Kingfisher cases (ACE, TLB, MAG):` |
-| 7 | `src/prompts/btcPrompts.js:304` | prompt-tekst: `Good: "Theme 5 (ACE): Digital business processes — Supportive role — target 20% efficiency gain — Owner: COO"` |
-| 8 | `tests/example.spec.js:41` | bestandsnaam in upload-test: `Work in progress BTP MAG Final Version-1.pptx` (BTP = Business Transformation Project? — context-specifiek) |
+| 4 | `src/prompts/btcPrompts.js:144` | prompt-tekst: `Good: "Bancassurance (Santander): omnichannel journey, separate CX from direct channel, cross-sell via data"` |
+| 5 | `src/prompts/btcPrompts.js:183` | prompt-tekst: `Good: "Outsource IT infrastructure to GTS — retain architecture and demand management in-house"` |
+| 6 | `src/prompts/btcPrompts.js:220` | prompt-tekst: `Examples from real Kingfisher cases (TLB, MAG, ACE):` |
+| 7 | `src/prompts/btcPrompts.js:260` | prompt-tekst: `Examples from real Kingfisher cases (TLB, ACE, MAG, Spain):` |
+| 8 | `src/prompts/btcPrompts.js:300` | prompt-tekst: `Examples from real Kingfisher cases (ACE, TLB, MAG):` |
+| 9 | `src/prompts/btcPrompts.js:304` | prompt-tekst: `Good: "Theme 5 (ACE): Digital business processes — Supportive role — target 20% efficiency gain — Owner: COO"` |
+| 10 | `tests/example.spec.js:41` | bestandsnaam in upload-test: `Work in progress BTP MAG Final Version-1.pptx` (BTP = Business Transformation Project? — context-specifiek) |
+
+**Opmerking:** alle klant-cases zitten in dood code (`src/prompts/btcPrompts.js` wordt nergens geïmporteerd — zie document E §5.1) en in een test-asset-bestand (test-suite uitgeschakeld via `playwright.yml.disabled`). Geen actieve productie-aanroep van deze prompts in de huidige code-base. Komen wel direct terug bij re-import van `BLOCK_PROMPTS`.
 
 ### Laag 2 — Configureerbaar
 
