@@ -56,69 +56,70 @@ Bugs, security-issues, broken features en duidelijke fouten die tijdens de scan 
 | 10 | 5× productie-`console.log` met user-data (canvas-content, autosave-data, embedding-stats) — gaat letterlijk naar browser-console / Vercel-runtime-logs | `canvas.service.js:48,64,98`, `embedding.service.js:156`, `api/magic.js:65` |
 | 11 | RLS-policy hardcodet e-mailadres i.p.v. rol-check (`auth.email() = 'smaling.kingfisher@icloud.com'`) | `supabase/migrations/20260420150000:10-11` |
 | 12 | Eerdere admin-mail (`keessmaling@gmail.com`) staat nog in een oudere migratie — niet in productie maar in versie-historiek zichtbaar | `supabase/migrations/20260420140000:9-10` |
+| 13 | Klant-PPTX in `tests/assets/` — bestandsnaam `Work in progress BTP MAG Final Version-1.pptx` toont klant-context (MAG = klant-acroniem, BTP = projectcode) zonder dat bestand zelf hoeft te worden geïnspecteerd. Vergelijkbare bestanden mogelijk aanwezig — niet uitputtend gescand in deze pass. | `tests/assets/` |
 
 ### A.3 — Audit-trail-gaten (productie ≠ versie-controle)
 
 | # | Item | Locatie |
 |---|---|---|
-| 13 | Live `prompt.strategy.analysis` bevat letterlijk `Je bent gespecialiseerd in het Business Transformatie Canvas en Novius model.` — deze claim staat **niet** in migratie `20260425000000_inzichten_sprint_a.sql`. Handmatig aangepast via Admin-UI of direct SQL UPDATE buiten migraties om | DB live ↔ migratie |
-| 14 | `prompt.strategy.analysis` code-versie heeft BEKNOPTHEID-instructies (max 80/60 woorden) die DB-versie mist | `api/strategy.js:230-273` ↔ DB |
-| 15 | `prompt.magic.system_standard` DB-versie heeft markdown-opmaak-regel die code-fallback mist | DB ↔ `api/magic.js:14-23` |
-| 16 | `prompt.validate` code heeft uitgebreide CRITERIA-PER-BLOK sectie die DB-versie mist | `api/validate.js:7-40` ↔ DB |
+| 14 | Live `prompt.strategy.analysis` bevat letterlijk `Je bent gespecialiseerd in het Business Transformatie Canvas en Novius model.` — deze claim staat **niet** in migratie `20260425000000_inzichten_sprint_a.sql`. Handmatig aangepast via Admin-UI of direct SQL UPDATE buiten migraties om | DB live ↔ migratie |
+| 15 | `prompt.strategy.analysis` code-versie heeft BEKNOPTHEID-instructies (max 80/60 woorden) die DB-versie mist | `api/strategy.js:230-273` ↔ DB |
+| 16 | `prompt.magic.system_standard` DB-versie heeft markdown-opmaak-regel die code-fallback mist | DB ↔ `api/magic.js:14-23` |
+| 17 | `prompt.validate` code heeft uitgebreide CRITERIA-PER-BLOK sectie die DB-versie mist | `api/validate.js:7-40` ↔ DB |
 
 ### A.4 — Schema-drift / inconsistenties DB ↔ code
 
 | # | Item | Locatie |
 |---|---|---|
-| 17 | `block_definitions` keys (`guidelines`, `roadmap`) komen niet overeen met `BLOCKS`-array keys (`principles`, `portfolio`) | DB ↔ `BlockCard.jsx` |
-| 18 | `block_definitions` tabel bestaat live, gebruikt door admin (4e tab "Blok Titels"), maar staat niet in `DATABASE.md` | DB ↔ `DATABASE.md` |
-| 19 | `DATABASE.md` (gedateerd 2026-04-22) mist multi-tenancy (`tenants`, `user_profiles`, RLS-helpers, `canvases.tenant_id`) en `strategy_core.insights`-kolom (Sprint A) | `DATABASE.md` |
-| 20 | `strategy_core.analysis`-kolom is niet gedropt na Sprint A — dode JSONB-kolom; UI-code leest alleen nog uit `insights` | DB |
-| 21 | `schema.sql` is 0 bytes, staat in repo én in `.gitignore` (inconsistent) | repo-root + `.gitignore` |
+| 18 | `block_definitions` keys (`guidelines`, `roadmap`) komen niet overeen met `BLOCKS`-array keys (`principles`, `portfolio`) | DB ↔ `BlockCard.jsx` |
+| 19 | `block_definitions` tabel bestaat live, gebruikt door admin (4e tab "Blok Titels"), maar staat niet in `DATABASE.md` | DB ↔ `DATABASE.md` |
+| 20 | `DATABASE.md` (gedateerd 2026-04-22) mist multi-tenancy (`tenants`, `user_profiles`, RLS-helpers, `canvases.tenant_id`) en `strategy_core.insights`-kolom (Sprint A) | `DATABASE.md` |
+| 21 | `strategy_core.analysis`-kolom is niet gedropt na Sprint A — dode JSONB-kolom; UI-code leest alleen nog uit `insights` | DB |
+| 22 | `schema.sql` is 0 bytes, staat in repo én in `.gitignore` (inconsistent) | repo-root + `.gitignore` |
 
 ### A.5 — API-rommel / model-inconsistenties
 
 | # | Item | Locatie |
 |---|---|---|
-| 22 | Twee Sonnet-model-aliases gemengd in productie: `claude-sonnet-4-5` (strategy, guidelines, magic.heavy) ↔ `claude-sonnet-4-20250514` (extract, validate) | `api/*.js` |
-| 23 | `api/validate.js` comment-header zegt "Gebruikt claude-haiku voor snelle, goedkope pre-flight check" maar code gebruikt feitelijk `claude-sonnet-4-20250514` | `api/validate.js:4 vs 61` |
+| 23 | Twee Sonnet-model-aliases gemengd in productie: `claude-sonnet-4-5` (strategy, guidelines, magic.heavy) ↔ `claude-sonnet-4-20250514` (extract, validate) | `api/*.js` |
+| 24 | `api/validate.js` comment-header zegt "Gebruikt claude-haiku voor snelle, goedkope pre-flight check" maar code gebruikt feitelijk `claude-sonnet-4-20250514` | `api/validate.js:4 vs 61` |
 
 ### A.6 — Documentatie / metadata-drift
 
 | # | Item | Locatie |
 |---|---|---|
-| 24 | `README.md` is CRA-default boilerplate — nooit aangepast naar project-info | `README.md` |
-| 25 | `public/manifest.json` heeft `"name": "Create React App Sample"`, `"short_name": "React App"` — nooit aangepast | `public/manifest.json` |
-| 26 | `package.json` bevat alleen minimaal `name: "btc-tool"`, geen `description`, `repository`, `author`, `license`, `engines` | `package.json` |
-| 27 | Drie product-name bronnen actief tegelijk: `<title>Strategy Platform</title>` / `appLabel("app.title")="Business Transformation Canvas"` / `theme_config.product_name="Strategy Platform"` | `public/index.html`, `app_config`, `tenants` |
+| 25 | `README.md` is CRA-default boilerplate — nooit aangepast naar project-info | `README.md` |
+| 26 | `public/manifest.json` heeft `"name": "Create React App Sample"`, `"short_name": "React App"` — nooit aangepast | `public/manifest.json` |
+| 27 | `package.json` bevat alleen minimaal `name: "btc-tool"`, geen `description`, `repository`, `author`, `license`, `engines` | `package.json` |
+| 28 | Drie product-name bronnen actief tegelijk: `<title>Strategy Platform</title>` / `appLabel("app.title")="Business Transformation Canvas"` / `theme_config.product_name="Strategy Platform"` | `public/index.html`, `app_config`, `tenants` |
 
 ### A.7 — Dood code
 
 | # | Item | Locatie |
 |---|---|---|
-| 28 | `src/prompts/btcPrompts.js` (323 regels) — niet meer geïmporteerd in `src/` of `api/`. Bevat 6 klant-namen + insurance-jargon | `src/prompts/btcPrompts.js` |
-| 29 | 3 backwards-compat barrels niet meer gebruikt: `authContext.js`, `supabaseClient.js`, `btcValidator.js` | `src/services/` |
+| 29 | `src/prompts/btcPrompts.js` (323 regels) — niet meer geïmporteerd in `src/` of `api/`. Bevat 6 klant-namen + insurance-jargon | `src/prompts/btcPrompts.js` |
+| 30 | 3 backwards-compat barrels niet meer gebruikt: `authContext.js`, `supabaseClient.js`, `btcValidator.js` | `src/services/` |
 
 ### A.8 — UX/i18n-mismatch
 
 | # | Item | Locatie |
 |---|---|---|
-| 30 | Taal-toggle (`useLang().lang`/`t()`) en DB-driven `appLabel`-labels niet gesynced — bij switch naar EN blijven alle DB-driven labels in NL — gemengde-taal-UX | `i18n.js` ↔ `app_config` |
-| 31 | `LoginScreen.js` is volledig hardcoded NL (geen `t()` of `appLabel`-aanroepen) | `src/LoginScreen.js` |
-| 32 | `ProjectInfoSidebar.jsx` gebruikt geen `appLabel` — hardcoded NL voor alle veldnamen, opties en placeholder-teksten | `src/features/canvas/components/ProjectInfoSidebar.jsx` |
+| 31 | Taal-toggle (`useLang().lang`/`t()`) en DB-driven `appLabel`-labels niet gesynced — bij switch naar EN blijven alle DB-driven labels in NL — gemengde-taal-UX | `i18n.js` ↔ `app_config` |
+| 32 | `LoginScreen.js` is volledig hardcoded NL (geen `t()` of `appLabel`-aanroepen) | `src/LoginScreen.js` |
+| 33 | `ProjectInfoSidebar.jsx` gebruikt geen `appLabel` — hardcoded NL voor alle veldnamen, opties en placeholder-teksten | `src/features/canvas/components/ProjectInfoSidebar.jsx` |
 
 ### A.9 — Spec-schendingen
 
 | # | Item | Locatie |
 |---|---|---|
-| 33 | `docs/architecture-spec.md` regel 69 schrijft voor: "De naam van de initiële launch customer mag nergens in de codebase voorkomen ... Hetzelfde voor branche-specifieke termen (verzekering, financial services)". Deze regel wordt nu **actief geschonden** door: `BlockCard.jsx EXAMPLE_BULLETS` (HNW/wealth/LifePro), `api/magic.js SYSTEM_HEAVY` ("financiële en verzekeringssector"), live `prompt.magic.system_heavy` (idem), en 54+ Kingfisher-vermeldingen door de codebase | meerdere |
+| 34 | `docs/architecture-spec.md` regel 69 schrijft voor: "De naam van de initiële launch customer mag nergens in de codebase voorkomen ... Hetzelfde voor branche-specifieke termen (verzekering, financial services)". Deze regel wordt nu **actief geschonden** door: `BlockCard.jsx EXAMPLE_BULLETS` (HNW/wealth/LifePro), `api/magic.js SYSTEM_HEAVY` ("financiële en verzekeringssector"), live `prompt.magic.system_heavy` (idem), en 54+ Kingfisher-vermeldingen door de codebase | meerdere |
 
 ### A.10 — Code-smell
 
 | # | Item | Locatie |
 |---|---|---|
-| 34 | Typo `ambtieuzer` (moet `ambitieuzer`) in live `prompt.improve.inspirerender` én in code-fallback | `api/improve.js:9` + DB |
-| 35 | Inline overlay in Richtlijnen-werkblad heeft eigen "Analyseer richtlijnen"-knop die hetzelfde `handleAnalyze` triggert als werkblad-shell — redundant sinds Sprint C | `src/features/richtlijnen/RichtlijnenWerkblad.jsx:830` |
+| 35 | Typo `ambtieuzer` (moet `ambitieuzer`) in live `prompt.improve.inspirerender` én in code-fallback | `api/improve.js:9` + DB |
+| 36 | Inline overlay in Richtlijnen-werkblad heeft eigen "Analyseer richtlijnen"-knop die hetzelfde `handleAnalyze` triggert als werkblad-shell — redundant sinds Sprint C | `src/features/richtlijnen/RichtlijnenWerkblad.jsx:830` |
 
 ---
 
@@ -179,7 +180,7 @@ Ideeën, structurele opmerkingen, design-vragen die tijdens scannen opkwamen. **
 - **Git-history vóór 2026-04** — repo-history begint 2026-04-09 (commit `6833430` "Add BTC Tool v1 - Kingfisher huisstijl"); geen pre-2026 commits beschikbaar.
 - **Vercel-side env-vars en runtime-logs** — niet via Vercel-API gevalideerd, alleen via deploy-script-output afgeleid.
 - **Custom domains buiten Vercel-defaults** — niet via Vercel-API gevalideerd.
-- **`tests/assets/` werkelijke bestanden** — bestandsnaam wijst op klant-PPTX (`Work in progress BTP MAG Final Version-1.pptx`); niet zelf geïnspecteerd of het in git zit.
+- **`tests/assets/` werkelijke bestanden** — bestandsnaam wijst op klant-PPTX (`Work in progress BTP MAG Final Version-1.pptx`); niet zelf geïnspecteerd of het in git zit. → bestandsnaam zelf opgenomen in A.2 #13.
 - **GitHub Issue-bodies en PR-comments** — alleen titel-overzicht via `gh issue list`. Issue-bodies kunnen klant-namen of branche-context bevatten.
 - **Volledige reads van alle API-endpoints** — `api/strategy.js`, `api/_auth.js`, `api/magic.js`, `api/improve.js`, `api/guidelines.js`, `api/validate.js`, `api/extract.js` integraal gelezen. `api/embed.js` (top 25), `api/parse.js` (top 10) niet integraal — geen prompt-content verwacht.
 - **`node_modules/`** — uit principe niet gescand.
