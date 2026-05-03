@@ -6,7 +6,7 @@
  *
  * Gebruik:
  *   const { label, prompt, refresh } = useAppConfig();
- *   label("app.title")                    → "Business Transformation Canvas"
+ *   label("app.title")                    → "Strategy Platform"
  *   prompt("magic.system_standard")       → "Je bent een Senior Strategie..."
  */
 
@@ -16,9 +16,9 @@ import { supabase } from "../services/supabase.client";
 // ── Hardcoded fallbacks (veiligheidsnet als DB onbereikbaar is) ──────────────
 const LABEL_FALLBACKS = {
   // Applicatie (header + footer)
-  "app.title":                      "Business Transformation Canvas",
+  "app.title":                      "Strategy Platform",
   "app.subtitle":                   "From strategy to execution",
-  "footer.tagline":                 "Kingfisher & Partners · From strategy to execution",
+  "footer.tagline":                 "From strategy to execution",
   // Werkblad namen
   "werkblad.strategie":             "Strategie Werkblad",
   "werkblad.richtlijnen":           "Richtlijnen & Leidende Principes",

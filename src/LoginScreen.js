@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "./shared/services/auth.service";
+import { useTheme } from "./shared/hooks/useTheme";
+import { useAppConfig } from "./shared/context/AppConfigContext";
 import LogoBrand from "./shared/components/LogoBrand";
 
 export default function LoginScreen() {
   const { signIn, signUp, resetPassword } = useAuth();
+  const { brandName } = useTheme();
+  const { label: appLabel } = useAppConfig();
   const [mode, setMode]       = useState("login");   // "login" | "register" | "reset"
   const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
@@ -81,8 +85,8 @@ export default function LoginScreen() {
           </div>
         </div>
         <div className="px-6">
-          <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-white leading-none">Business Transformation Canvas</h1>
-          <p className="text-[10px] tracking-[0.12em] text-[var(--color-accent)] mt-1.5 uppercase font-semibold">From strategy to execution</p>
+          <h1 className="text-[13px] font-bold tracking-[0.16em] uppercase text-white leading-none">{appLabel("app.title", "Strategy Platform")}</h1>
+          <p className="text-[10px] tracking-[0.12em] text-[var(--color-accent)] mt-1.5 uppercase font-semibold">{appLabel("app.subtitle", "From strategy to execution")}</p>
         </div>
       </header>
 
@@ -98,7 +102,7 @@ export default function LoginScreen() {
                 {titles[mode]}
               </h2>
               <p className="text-white/40 text-[11px] mt-1 uppercase tracking-wider">
-                Kingfisher &amp; Partners — intern gebruik
+                {brandName} — {appLabel("login.internal_use", "intern gebruik")}
               </p>
             </div>
 
@@ -127,7 +131,7 @@ export default function LoginScreen() {
                   onChange={e => setEmail(e.target.value)}
                   required
                   autoFocus
-                  placeholder="naam@kingfisher.nl"
+                  placeholder={appLabel("login.email_placeholder", "naam@example.com")}
                   className="w-full border border-slate-200 rounded-sm px-4 py-3 text-sm text-slate-800 outline-none focus:border-[var(--color-analysis)] transition-colors bg-slate-50"
                 />
               </div>
@@ -204,7 +208,7 @@ export default function LoginScreen() {
           </div>
 
           <p className="text-center text-[10px] text-slate-400 mt-6 uppercase tracking-widest">
-            Kingfisher &amp; Partners · Vertrouwelijk
+            {brandName} · {appLabel("login.confidential", "Vertrouwelijk")}
           </p>
         </div>
       </div>

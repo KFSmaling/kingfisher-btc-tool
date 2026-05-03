@@ -1,6 +1,5 @@
 /**
  * apiClient.js — geauthenticeerde fetch wrapper voor alle /api/* calls
- * Kingfisher & Partners — April 2026
  *
  * GEBRUIK — altijd apiFetch ipv fetch() voor /api/* endpoints:
  *

@@ -1,8 +1,10 @@
 /**
  * ErrorBoundary — voorkomt wit scherm bij onverwachte crashes
  *
- * React vereist een class component voor error boundaries.
- * Toont een Kingfisher-huisstijl fallback met hersteloptie.
+ * React vereist een class component voor error boundaries; daarom geen hooks
+ * (geen useTheme, geen useAppConfig). De error-state toont generieke fallback-
+ * tekst zonder tenant-specifieke labels. LogoBrand zelf is een function-
+ * component en haalt brand wel correct op via useTheme.
  */
 
 import React from "react";
@@ -65,7 +67,7 @@ class ErrorBoundary extends React.Component {
             </button>
 
             <p className="text-[10px] text-slate-300 uppercase tracking-widest">
-              Kingfisher & Partners · Business Transformation Canvas
+              Strategy Platform
             </p>
           </div>
         </div>

@@ -1,6 +1,5 @@
 /**
  * BTC Validator Service — Client
- * Kingfisher & Partners — April 2026
  */
 
 import { apiFetch } from "../services/apiClient";

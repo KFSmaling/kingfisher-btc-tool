@@ -1,6 +1,5 @@
 /**
  * BTC Validator — Serverless Function
- * Kingfisher & Partners — April 2026
  * Gebruikt claude-haiku voor snelle, goedkope pre-flight check.
  */
 

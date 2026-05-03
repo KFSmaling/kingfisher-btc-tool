@@ -1,6 +1,5 @@
 /**
  * i18n — NL / EN vertaalbestand
- * Kingfisher BTC Tool — April 2026
  * Gebruik: const { t } = useLang();  t("key")
  */
 
@@ -107,11 +106,11 @@ const TRANSLATIONS = {
 
     // Tips modal
     "tips.title":            "Tips & werkwijze",
-    "tips.subtitle":         "Gebaseerd op het boek Business Transformatie Canvas",
+    "tips.subtitle":         "Tips voor strategie & business-transformatie",
     "tips.general":          "Algemeen",
     "tips.prev":             "← Vorige",
     "tips.next":             "Volgende →",
-    "tips.footer":           "Beijen, Heetebrij & Tigchelaar — Business Transformatie Canvas",
+    "tips.footer":           "",
     "tips.panel.button":     "Tips voor dit blok",
 
     // Consistency issues
@@ -224,11 +223,11 @@ const TRANSLATIONS = {
 
     // Tips modal
     "tips.title":            "Tips & approach",
-    "tips.subtitle":         "Based on the Business Transformation Canvas book",
+    "tips.subtitle":         "Tips for strategy & business transformation",
     "tips.general":          "General",
     "tips.prev":             "← Previous",
     "tips.next":             "Next →",
-    "tips.footer":           "Beijen, Heetebrij & Tigchelaar — Business Transformation Canvas",
+    "tips.footer":           "",
     "tips.panel.button":     "Tips for this block",
 
     // Consistency issues

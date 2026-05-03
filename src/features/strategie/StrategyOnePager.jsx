@@ -13,6 +13,8 @@ import React, { useState, useEffect } from "react";
 import { X, Printer, LayoutGrid, Target, TrendingUp } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
 import { supabase } from "../../shared/services/supabase.client";
+import { useTheme } from "../../shared/hooks/useTheme";
+import { useAppConfig } from "../../shared/context/AppConfigContext";
 
 // ── Kleurendefinities ────────────────────────────────────────────────────────
 const C = {
@@ -56,15 +58,17 @@ function today() {
 
 // ── Gedeelde header & footer ────────────────────────────────────────────────
 function PageHeader({ canvasName, subtitle }) {
+  const { brandName } = useTheme();
+  const { label: appLabel } = useAppConfig();
   return (
     <div style={{ background: C.navy, color: "white", padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <div>
-        <div style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", opacity: 0.55 }}>Kingfisher &amp; Partners</div>
+        <div style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", opacity: 0.55 }}>{brandName}</div>
         <div style={{ fontSize: "15px", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "1px" }}>{subtitle}</div>
       </div>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: "13px", fontWeight: 700, color: C.green }}>{canvasName || "Canvas"}</div>
-        <div style={{ fontSize: "7px", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>Business Transformation Canvas</div>
+        <div style={{ fontSize: "7px", color: "rgba(255,255,255,0.45)", marginTop: "2px" }}>{appLabel("app.title", "Strategy Platform")}</div>
       </div>
       <div style={{ textAlign: "right", fontSize: "8px", opacity: 0.5 }}>{today()}</div>
     </div>
@@ -72,10 +76,12 @@ function PageHeader({ canvasName, subtitle }) {
 }
 
 function PageFooter() {
+  const { brandName } = useTheme();
+  const { label: appLabel } = useAppConfig();
   return (
     <div style={{ background: C.navy, padding: "5px 20px", display: "flex", justifyContent: "space-between" }}>
-      <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em" }}>Kingfisher &amp; Partners — Vertrouwelijk</span>
-      <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.4)" }}>From strategy to execution</span>
+      <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em" }}>{brandName} — {appLabel("onepager.confidential", "Vertrouwelijk")}</span>
+      <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.4)" }}>{appLabel("app.subtitle", "From strategy to execution")}</span>
     </div>
   );
 }

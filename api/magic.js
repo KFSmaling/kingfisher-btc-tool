@@ -1,6 +1,5 @@
 /**
  * Magic Staff — RAG AI suggestie per BTC-veld
- * Kingfisher & Partners — April 2026
  *
  * Input:  { field, chunks, existingText, isArray, heavy }
  *   chunks: [{ content, file_name, page_number }]  (van Supabase RPC)
