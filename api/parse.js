@@ -1,6 +1,5 @@
 /**
  * BTC Parser — Serverless Function (PDF only)
- * Kingfisher & Partners — April 2026
  */
 
 const { requireAuth } = require("./_auth");

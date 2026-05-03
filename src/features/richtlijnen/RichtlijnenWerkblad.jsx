@@ -1,6 +1,5 @@
 /**
  * RichtlijnenWerkblad — Premium swimlane dashboard voor Leidende Principes
- * Kingfisher & Partners — April 2026
  *
  * Vier verticale swimlanes · sticky headers · column-scroll
  * AI generatie per segment · Advies modal · Portrait onepager

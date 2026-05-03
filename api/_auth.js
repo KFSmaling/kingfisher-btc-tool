@@ -1,6 +1,5 @@
 /**
  * _auth.js — gedeelde JWT-validatie middleware voor alle API endpoints
- * Kingfisher & Partners — April 2026
  *
  * Gebruik:
  *   const { requireAuth } = require('./_auth');

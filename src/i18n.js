@@ -1,6 +1,5 @@
 /**
  * i18n — NL / EN vertaalbestand
- * Kingfisher BTC Tool — April 2026
  * Gebruik: const { t } = useLang();  t("key")
  */
 

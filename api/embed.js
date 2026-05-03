@@ -1,6 +1,5 @@
 /**
  * OpenAI Embedding Proxy — Sprint 3B
- * Kingfisher & Partners — April 2026
  *
  * Accepteert een batch teksten, retourneert embeddings via OpenAI text-embedding-3-small.
  * Model: text-embedding-3-small (1536 dimensies) — goedkoop, snel, geschikt voor RAG.

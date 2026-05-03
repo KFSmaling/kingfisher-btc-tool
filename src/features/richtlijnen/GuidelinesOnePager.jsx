@@ -1,6 +1,5 @@
 /**
  * GuidelinesOnePager — Portrait A4 2×2 grid print-export
- * Kingfisher & Partners — April 2026
  *
  * Layout:
  *   ┌────────────┬────────────┐

@@ -1,6 +1,5 @@
 /**
  * Guidelines AI — Leidende Principes generatie & analyse
- * Kingfisher & Partners — April 2026
  *
  * mode = "generate"     → genereert principes voor één segment (3-5 stuks)
  * mode = "advies"       → analyseert alle principes op coherentie & dekking

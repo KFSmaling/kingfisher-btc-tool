@@ -1,6 +1,5 @@
 /**
  * Strategy AI — Thema's + KSF/KPI generatie
- * Kingfisher & Partners — April 2026
  *
  * mode = "themes"  → genereert max 7 strategische thema's
  * mode = "ksf_kpi" → genereert 3 KSF + 3 KPI voor één thema
