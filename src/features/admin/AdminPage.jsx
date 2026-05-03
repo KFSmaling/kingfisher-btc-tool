@@ -312,7 +312,7 @@ const TABS = [
 // Dit is de enige bron van waarheid voor label-defaults; migrations zijn een backup.
 const DEFAULT_LABELS = [
   // Applicatie
-  { key: "label.app.title",                    description: "App-titel in de header",                        value: "Business Transformation Canvas"                  },
+  { key: "label.app.title",                    description: "App-titel in de header",                        value: "Strategy Platform"                                },
   { key: "label.app.subtitle",                 description: "App-subtitel in de header",                     value: "From strategy to execution"                      },
   { key: "label.footer.tagline",               description: "Voettekst onderaan het canvas",                 value: "From strategy to execution"                       },
   // Werkblad namen

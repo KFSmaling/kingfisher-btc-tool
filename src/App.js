@@ -92,7 +92,7 @@ function AppInner() {
           </div>
           <div className="px-6 border-r border-white/10 h-full flex flex-col justify-center">
             <h1 className="text-[15px] font-bold tracking-[0.14em] uppercase text-white leading-none">
-              {appLabel("app.title", "Business Transformation Canvas")}
+              {appLabel("app.title", "Strategy Platform")}
             </h1>
             <p className="text-[10px] tracking-[0.12em] text-[var(--color-accent)] mt-1.5 uppercase font-semibold">
               {appLabel("app.subtitle", "From strategy to execution")}
