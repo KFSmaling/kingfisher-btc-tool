@@ -8,7 +8,7 @@ const TIPS_DATA = {
   nl: {
     algemeen: {
       title: "Algemeen", icon: Lightbulb,
-      intro: "Op basis van het boek Business Transformatie Canvas van Marc Beijen, Ruben Heetebrij en Roos Tigchelaar.",
+      intro: "Algemene tips voor strategie-formulering en business-transformatie.",
       tips: [
         { kop: "Gebruik het als kapstok, niet als kookboek", tekst: "Het canvas is een framework om een aanpak op maat te maken, geen rigide stappenplan dat blind gevolgd moet worden." },
         { kop: "Focus op samenhang", tekst: "De kracht van het canvas zit in de verbinding tussen de bouwstenen (horizontale samenhang) en de vertaling van strategie naar uitvoering (verticale samenhang)." },
@@ -86,7 +86,7 @@ const TIPS_DATA = {
   en: {
     algemeen: {
       title: "General", icon: Lightbulb,
-      intro: "Based on the book Business Transformation Canvas by Marc Beijen, Ruben Heetebrij and Roos Tigchelaar.",
+      intro: "General tips for strategy formulation and business transformation.",
       tips: [
         { kop: "Use it as a coat rack, not a cookbook", tekst: "The canvas is a framework for crafting a tailored approach — not a rigid step-by-step plan to follow blindly." },
         { kop: "Focus on coherence", tekst: "The power of the canvas lies in the connections between building blocks (horizontal coherence) and the translation from strategy to execution (vertical coherence)." },
