@@ -608,6 +608,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
           mode: "link_themes",
           guidelines: guidelines.map(g => ({ id: g.id, title: g.title, description: g.description, segment: g.segment })),
           themas: themas.map(th => ({ id: th.id, title: th.title })),
+          systemPromptLinkThemes: appPrompt("guideline.link_themes") || undefined,
           languageInstruction: t("ai.language"),
         }),
       });
@@ -629,7 +630,7 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     } finally {
       setLinkingThemes(false);
     }
-  }, [guidelines, themas, t, scheduleDbSave]);
+  }, [guidelines, themas, t, appPrompt, scheduleDbSave]);
 
   // ── Per-segment memoized handlers ─────────────────────────────────────────
   const segmentHandlers = useMemo(() =>

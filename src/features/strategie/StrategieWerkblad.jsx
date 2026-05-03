@@ -649,6 +649,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         field: fieldKey, chunks: [], isArray, heavy: false,
         useGeneralKnowledge: true,
         organizationContext,
+        systemPromptGeneralKnowledge: appPrompt("magic.system_general_knowledge") || undefined,
         languageInstruction: t("ai.language"),
         fieldInstruction: resolvedFieldInstruction,
       }),
@@ -696,6 +697,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           field: fieldKey, chunks, isArray, heavy: isHeavy,
           languageInstruction: t("ai.language"),
           fieldInstruction: resolvedFieldInstruction,
+          systemPromptStandard: appPrompt("magic.system_standard") || undefined,
+          systemPromptHeavy: appPrompt("magic.system_heavy") || undefined,
         }),
       });
       const magicData = await magicRes.json();
