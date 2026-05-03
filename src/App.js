@@ -276,7 +276,7 @@ function AppInner() {
               </button>
             ) : <div />}
             <p className="text-[9px] text-slate-300 uppercase tracking-widest">
-              {appLabel("footer.tagline", "Kingfisher & Partners · From strategy to execution")}
+              {appLabel("footer.tagline", "From strategy to execution")}
             </p>
           </div>
         </main>

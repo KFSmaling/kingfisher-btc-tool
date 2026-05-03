@@ -18,7 +18,7 @@ const LABEL_FALLBACKS = {
   // Applicatie (header + footer)
   "app.title":                      "Business Transformation Canvas",
   "app.subtitle":                   "From strategy to execution",
-  "footer.tagline":                 "Kingfisher & Partners · From strategy to execution",
+  "footer.tagline":                 "From strategy to execution",
   // Werkblad namen
   "werkblad.strategie":             "Strategie Werkblad",
   "werkblad.richtlijnen":           "Richtlijnen & Leidende Principes",

@@ -12,6 +12,8 @@
 
 import React, { useEffect } from "react";
 import { X, Printer } from "lucide-react";
+import { useTheme } from "../../shared/hooks/useTheme";
+import { useAppConfig } from "../../shared/context/AppConfigContext";
 
 const SEGMENTS = [
   { key: "generiek",    label: "Generiek",     sublabel: "Strategie & Governance",  color: "var(--color-primary)", lightColor: "#eef2ff" },
@@ -100,6 +102,8 @@ function PrintQuadrant({ segment, guidelines, themas }) {
 }
 
 export default function GuidelinesOnePager({ guidelines, themas, core, canvasName, onClose }) {
+  const { brandName } = useTheme();
+  const { label: appLabel } = useAppConfig();
   // Inject print CSS: hide everything except this component when printing
   useEffect(() => {
     const style = document.createElement("style");
@@ -189,7 +193,7 @@ export default function GuidelinesOnePager({ guidelines, themas, core, canvasNam
 
           {/* Footer */}
           <div className="px-8 py-2 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[6px] text-slate-300 uppercase tracking-widest">Kingfisher & Partners · Richtlijnen & Leidende Principes</span>
+            <span className="text-[6px] text-slate-300 uppercase tracking-widest">{brandName} · {appLabel("guidelines.title", "Richtlijnen & Leidende Principes")}</span>
             <span className="text-[6px] text-slate-300">{new Date().toLocaleDateString("nl-NL")}</span>
           </div>
         </div>

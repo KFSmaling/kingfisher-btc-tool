@@ -314,7 +314,7 @@ const DEFAULT_LABELS = [
   // Applicatie
   { key: "label.app.title",                    description: "App-titel in de header",                        value: "Business Transformation Canvas"                  },
   { key: "label.app.subtitle",                 description: "App-subtitel in de header",                     value: "From strategy to execution"                      },
-  { key: "label.footer.tagline",               description: "Voettekst onderaan het canvas",                 value: "Kingfisher & Partners · From strategy to execution"},
+  { key: "label.footer.tagline",               description: "Voettekst onderaan het canvas",                 value: "From strategy to execution"                       },
   // Werkblad namen
   { key: "label.werkblad.strategie",           description: "Naam van het Strategie Werkblad",               value: "Strategie Werkblad"                               },
   { key: "label.werkblad.richtlijnen",         description: "Naam van het Richtlijnen Werkblad",             value: "Richtlijnen & Leidende Principes"                 },
