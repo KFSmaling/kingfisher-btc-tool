@@ -35,34 +35,34 @@ const eb  = (texts, source) => texts.map(text => ({ text, source }));
 const ebs = (texts, source, subtab) => texts.map(text => ({ text, source, subtab }));
 
 const EXAMPLE_BULLETS = {
-  strategy:   eb(["Vision: Best HNW Global insurer, excelling in customer service","Pivot: from Maintain & Sell to Invest & Grow","Driver A: Customer & partner centricity — omnichannel excellence","Driver B: Product differentiation — new propositions in 6 months","Goal: Double value creation by 2028"], "example-strategy.pdf"),
+  strategy:   eb(["Vision: marktleider in segment X tegen 2030","Pivot: van product-gedreven naar klant-gedreven model","Driver A: klantgerichtheid — consistente ervaring over alle kanalen","Driver B: product-differentiatie — nieuwe proposities binnen 6 maanden","Goal: verdubbeling van waarde-creatie binnen 5 jaar"], "example-strategy.pdf"),
   principles: [
-    ...ebs(["Customer focus: treat HNWI by CLV — no one-size-fits-all","Omnichannel consistency — same request, same outcome across channels"], "example-principles.pdf", "customers"),
-    ...ebs(["Standardise supporting processes, customise the differentiating 20%","Agile by default — multidisciplinary squads over functional silos"], "example-principles.pdf", "processes"),
-    ...ebs(["Digital savviness is a baseline requirement, not an option","Talent is grown from within before sourcing externally"], "example-principles.pdf", "people"),
-    ...ebs(["API-first: no point solutions that cannot connect","Data is a shared asset — no departmental data islands"], "example-principles.pdf", "technology"),
+    ...ebs(["Klant centraal: segmenteren op klantwaarde, geen one-size-fits-all","Consistentie over kanalen — zelfde vraag, zelfde uitkomst, ongeacht ingang"], "example-principles.pdf", "customers"),
+    ...ebs(["Standaardiseer ondersteunende processen, maatwerk op onderscheidende 20%","Agile by default — multidisciplinaire teams boven functionele silo's"], "example-principles.pdf", "processes"),
+    ...ebs(["Digitale vaardigheid is basis-eis, geen optie","Talent intern ontwikkelen voor extern werven"], "example-principles.pdf", "people"),
+    ...ebs(["API-first: geen point solutions die niet kunnen verbinden","Data is een gedeeld asset — geen afdelings-eilanden"], "example-principles.pdf", "technology"),
   ],
   customers: [
-    ...ebs(["Segment Affluent+/HNW: 750K–1M wealth, 85% of policies","Channel: International brokers (primary, fed by private banks)"], "example-customers.pdf", "current"),
-    ...ebs(["Omnichannel proposition: broker + direct + private bank","Geography expansion: DIFC hub as Middle East entry point"], "example-customers.pdf", "tobe"),
-    ...ebs(["Customer journey redesign for HNW+ segment","Launch broker portal uplift H1 2025"], "example-customers.pdf", "change"),
+    ...ebs(["Hoofdsegment levert 70% van omzet — focus op behoud en uitbouw","Distributie via 3 hoofdkanalen (direct, partner, indirect)"], "example-customers.pdf", "current"),
+    ...ebs(["Omnichannel-propositie: naadloze overgang tussen kanalen","Uitbreiding naar nieuwe geografische markt of nieuw klant-segment"], "example-customers.pdf", "tobe"),
+    ...ebs(["Klantreis-redesign voor hoofdsegment","Lancering verbeterd partner-portaal in H1"], "example-customers.pdf", "change"),
   ],
   processes: [
-    ...ebs(["Manual underwriting: 60% of cases still paper-based","Siloed front/back office — no real-time case view"], "example-processes.pdf", "current"),
-    ...ebs(["Straight-through processing for standard cases","Agile operating model: multidisciplinary squads"], "example-processes.pdf", "tobe"),
-    ...ebs(["Standardise and automate: AI, OCR, chatbots rollout","Decouple front (CX) from back (admin) systems"], "example-processes.pdf", "change"),
+    ...ebs(["Handmatige verwerking: 60% van zaken nog papier-gebaseerd","Gescheiden front-/back-office — geen real-time zicht op zaak-status"], "example-processes.pdf", "current"),
+    ...ebs(["Straight-through processing voor standaard-zaken","Agile operating model: multidisciplinaire squads"], "example-processes.pdf", "tobe"),
+    ...ebs(["Standaardiseer en automatiseer: AI, OCR, workflow-tooling","Ontkoppel front (klantbeleving) van back (administratie)"], "example-processes.pdf", "change"),
   ],
   people: [
-    ...ebs(["Performance management: inconsistent across BUs","Digital skills gap: limited AI/data literacy"], "example-people.pdf", "current"),
-    ...ebs(["Clear accountability model, goals-based culture","Digital-savvy workforce across all levels"], "example-people.pdf", "tobe"),
-    ...ebs(["Talent management programme + succession planning","Digital literacy uplift: AI/data training for all staff"], "example-people.pdf", "change"),
+    ...ebs(["Performance-management: inconsistent tussen business-units","Digital skills gap: beperkte AI- en data-geletterdheid"], "example-people.pdf", "current"),
+    ...ebs(["Helder accountability-model, doel-gedreven cultuur","Digitaal-vaardig personeel op alle niveaus"], "example-people.pdf", "tobe"),
+    ...ebs(["Talent-programma + opvolgingsplanning","Digital-literacy-traject: AI/data-training voor alle medewerkers"], "example-people.pdf", "change"),
   ],
   technology: [
-    ...ebs(["Legacy policy admin: LifePro, limited API surface","Fragmented data landscape — no 360° customer view"], "example-technology.pdf", "current"),
-    ...ebs(["Cloud-native platform: modular, API-first, scalable","Single customer data platform across distribution, UW, claims"], "example-technology.pdf", "tobe"),
-    ...ebs(["LifePro upgrade + API wrapper phase 1","CRM platform rollout — Phase 1 HK/Singapore"], "example-technology.pdf", "change"),
+    ...ebs(["Legacy core-systeem: beperkte API-toegang","Versnipperd data-landschap — geen 360°-klantbeeld"], "example-technology.pdf", "current"),
+    ...ebs(["Cloud-native platform: modulair, API-first, schaalbaar","Eén klant-data-platform over alle business-functies"], "example-technology.pdf", "tobe"),
+    ...ebs(["Core-systeem upgrade + API-laag fase 1","CRM-platform uitrol — fase 1 in primaire markt"], "example-technology.pdf", "change"),
   ],
-  portfolio:  eb(["Hygiene: Brand and presence, pricing benchmark, LifePro upgrade","Scenario I: WOL launch HK/Bermuda, broker portal uplift","Scenario I: Global sales build-out, customer journey redesign","Scenario II: DIFC hub, FA proposition Singapore, CRM platform"], "example-portfolio.pdf"),
+  portfolio:  eb(["Hygiene: merk-positionering, prijs-benchmark, core-systeem upgrade","Scenario I: lancering nieuwe propositie in primaire markt","Scenario I: uitbouw verkoop-organisatie, klantreis-redesign","Scenario II: nieuwe regio betreden, CRM-platform invoeren"], "example-portfolio.pdf"),
 };
 
 // ── Local scoring engine ─────────────────────────────────────────────────────
