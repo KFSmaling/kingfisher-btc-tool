@@ -396,12 +396,8 @@ function AuthGate() {
     return <AdminPage user={session.user} onSignOut={signOut} />;
   }
 
-  // Normale app — met config provider
-  return (
-    <AppConfigProvider>
-      <AppInner />
-    </AppConfigProvider>
-  );
+  // Normale app
+  return <AppInner />;
 }
 
 export default function App() {
@@ -410,7 +406,9 @@ export default function App() {
       <AuthProvider>
         <ThemeProvider>
           <LangProvider>
-            <AuthGate />
+            <AppConfigProvider>
+              <AuthGate />
+            </AppConfigProvider>
           </LangProvider>
         </ThemeProvider>
       </AuthProvider>
