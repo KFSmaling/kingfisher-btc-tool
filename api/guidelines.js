@@ -7,6 +7,7 @@
  */
 
 const { requireAuth } = require("./_auth");
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
 
 const MODEL   = "claude-sonnet-4-5";
 const HEADERS = (key) => ({
@@ -56,11 +57,11 @@ ${themasCtx}`;
 }
 
 // ── MODE: GENERATE ────────────────────────────────────────────────────────────
-async function generateForSegment(segment, core, items, themas, apiKey, systemOverride, languageInstruction) {
+async function generateForSegment(segment, core, items, themas, apiKey, systemOverride, languageInstruction, tenantVars = {}) {
   const segCtx  = SEGMENT_CONTEXT[segment] || segment;
   const context = buildStrategyContext(core, items, themas);
 
-  const rawSystem = systemOverride || `Je bent een Senior Organisatieadviseur gespecialiseerd in bedrijfstransformaties. Je genereert Leidende Principes die de strategie vertalen naar concreet gedrag.
+  const rawSystemRaw = systemOverride || `Je bent een Senior Organisatieadviseur gespecialiseerd in bedrijfstransformaties. Je genereert Leidende Principes die de strategie vertalen naar concreet gedrag.
 
 SEGMENT: ${segCtx}
 
@@ -89,6 +90,7 @@ OUTPUT FORMAT: Exact JSON, geen uitleg erbuiten:
 
 Genereer 3-5 principes voor het segment ${segment.toUpperCase()}.`;
 
+  const rawSystem = renderPrompt(rawSystemRaw, tenantVars);
   const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
   const user   = `Genereer Leidende Principes voor segment "${segment.toUpperCase()}".\n\n${context}`;
 
@@ -104,7 +106,7 @@ Genereer 3-5 principes voor het segment ${segment.toUpperCase()}.`;
 }
 
 // ── MODE: ADVIES ──────────────────────────────────────────────────────────────
-async function generateAdvies(guidelines, themas, core, apiKey, systemOverride, languageInstruction) {
+async function generateAdvies(guidelines, themas, core, apiKey, systemOverride, languageInstruction, tenantVars = {}) {
   const segments = ["generiek", "klanten", "organisatie", "it"];
   const guidelinesCtx = segments.map(seg => {
     const gs = guidelines.filter(g => g.segment === seg);
@@ -137,7 +139,7 @@ OUTPUT FORMAT: Exact JSON, 4-6 aanbevelingen:
 
 type waarden: warning = urgent verbeterpunt, info = aandachtspunt/kans, success = sterkte`;
 
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
   const user   = `Analyseer de Leidende Principes en geef 4-6 prioritaire aanbevelingen.
 
 AMBITIE: ${core.ambitie || "(niet ingevuld)"}
@@ -159,7 +161,7 @@ ${guidelinesCtx}`;
 }
 
 // ── MODE: IMPLICATIONS ────────────────────────────────────────────────────────
-async function generateImplications(title, description, context, apiKey, systemOverride, languageInstruction) {
+async function generateImplications(title, description, context, apiKey, systemOverride, languageInstruction, tenantVars = {}) {
   const rawSystem = systemOverride || `Je genereert Stop/Start/Continue acties voor een Leidend Principe.
 
 STOP: Concreet gedrag dat gestopt moet worden om dit principe te leven (1-2 zinnen).
@@ -171,7 +173,7 @@ CONTINUE: Bestaand gedrag dat aansluit bij dit principe en versterkt moet worden
 OUTPUT FORMAT: Exact JSON:
 { "stop": "...", "start": "...", "continue": "..." }`;
 
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
   const user   = `Principe: "${title}"${description ? `\nToelichting: ${description}` : ""}${context ? `\nStrategische context: ${context}` : ""}`;
 
   const res  = await fetch("https://api.anthropic.com/v1/messages", {
@@ -188,7 +190,7 @@ OUTPUT FORMAT: Exact JSON:
 // Stuurt alle principes + thema's naar Claude; vraagt welke thema-indices
 // duidelijk bij welk principe horen. Twijfelgevallen → lege array.
 // Gebruikt indices (niet UUIDs) om hallucination te voorkomen.
-async function linkThemes(guidelines, themas, apiKey, systemOverride, languageInstruction) {
+async function linkThemes(guidelines, themas, apiKey, systemOverride, languageInstruction, tenantVars = {}) {
   if (!themas.length || !guidelines.length) return {};
 
   const themasCtx     = themas.map((t, i) => `${i}. "${t.title}"`).join("\n");
@@ -208,7 +210,7 @@ REGELS:
 OUTPUT: Exact JSON — één entry per principe (ook als de array leeg is):
 {"links":{"<principe-index>":[<thema-index>, ...]}}`;
 
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction || "");
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction || "");
 
   const userMsg = `STRATEGISCHE THEMA'S:\n${themasCtx}\n\nLEIDENDE PRINCIPES:\n${guidelinesCtx}\n\nKoppel de principes aan de meest passende thema's.`;
 
@@ -261,26 +263,29 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
+  // Stap-7 fase-4: tenant-vars ophalen één keer per request
+  const tenantVars = await getTenantVars(userScopedClient(req));
+
   try {
     if (mode === "generate") {
       if (!segment) return res.status(400).json({ error: "Missing segment" });
-      const result = await generateForSegment(segment, core, items, themas, apiKey, systemPromptGenerate, languageInstruction);
+      const result = await generateForSegment(segment, core, items, themas, apiKey, systemPromptGenerate, languageInstruction, tenantVars);
       return res.status(200).json({ guidelines: result });
     }
 
     if (mode === "advies") {
-      const result = await generateAdvies(guidelines, themas, core, apiKey, systemPromptAdvies, languageInstruction);
+      const result = await generateAdvies(guidelines, themas, core, apiKey, systemPromptAdvies, languageInstruction, tenantVars);
       return res.status(200).json(result);
     }
 
     if (mode === "implications") {
       if (!title) return res.status(400).json({ error: "Missing title" });
-      const result = await generateImplications(title, description, context, apiKey, systemPromptImplications, languageInstruction);
+      const result = await generateImplications(title, description, context, apiKey, systemPromptImplications, languageInstruction, tenantVars);
       return res.status(200).json(result);
     }
 
     if (mode === "link_themes") {
-      const result = await linkThemes(guidelines, themas, apiKey, systemPromptLinkThemes, languageInstruction);
+      const result = await linkThemes(guidelines, themas, apiKey, systemPromptLinkThemes, languageInstruction, tenantVars);
       return res.status(200).json({ links: result });
     }
 
