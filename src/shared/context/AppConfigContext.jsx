@@ -98,9 +98,11 @@ export function AppConfigProvider({ children }) {
   const loadConfig = useCallback(async () => {
     if (!supabase) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("app_config")
-      .select("key, value, category, description");
+    // Stap-7 fase-6: tenant-scoped lookup via RPC.
+    // Server-side DISTINCT ON kiest per key precies één rij — tenant-override
+    // boven globale baseline. Pre-login (anon role) krijgt 0 rijen → frontend
+    // valt terug op LABEL_FALLBACKS (zie label/prompt/setting hieronder).
+    const { data, error } = await supabase.rpc("get_app_config_for_tenant");
 
     if (!error && data) {
       const map = {};
