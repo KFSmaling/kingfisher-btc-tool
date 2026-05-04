@@ -44,10 +44,10 @@ ${zwaktes}
 }
 
 // ── MODE: THEMES ──────────────────────────────────────────────────────────────
-async function generateThemes(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+async function generateThemes(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.", tenantVars = {}) {
   const context = buildSwotContext(core, items);
 
-  const rawSystem = systemOverride || `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
+  const rawSystemRaw = systemOverride || `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau. Je formuleert strategische thema's die de koers van een organisatie bepalen voor de komende 3-5 jaar.
 
 REGELS:
 - Maximaal 7 thema's
@@ -58,7 +58,7 @@ REGELS:
 - {taal_instructie}
 - Geen nummering, bullets, uitleg of toelichting — één thema per regel
 - Als data ontbreekt: formuleer op basis van missie/visie/ambitie`;
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystemRaw, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
 
   const user = `Genereer maximaal 7 strategische thema's voor deze organisatie. De thema's vormen samen de strategische agenda — elke koersrichting krijgt één thema.
 
@@ -82,7 +82,7 @@ ${context}`;
 }
 
 // ── MODE: KSF_KPI ─────────────────────────────────────────────────────────────
-async function generateKsfKpi(themaTitle, core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+async function generateKsfKpi(themaTitle, core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.", tenantVars = {}) {
   const context = buildSwotContext(core, items);
 
   const rawSystem = systemOverride || `Je bent een Senior Strategie Consultant én Balanced Scorecard-expert. Je formuleert KSF's (Kritieke Succesfactoren) en KPI's (Key Performance Indicators) voor strategische thema's.
@@ -119,7 +119,7 @@ REGELS:
 - KPI target_value: ambitieus maar haalbaar in 2-3 jaar ("60%", ">50")
 - {taal_instructie}
 - Geen markdown, geen uitleg buiten de JSON`;
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
 
   const user = `Formuleer 3 KSF's en 3 KPI's voor het strategisch thema: "${themaTitle}"
 
@@ -296,7 +296,7 @@ async function generateAnalysis(core, items, themas, apiKey, systemOverride, lan
 }
 
 // ── MODE: SAMENVATTING ────────────────────────────────────────────────────────
-async function generateSamenvatting(core, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+async function generateSamenvatting(core, themas, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.", tenantVars = {}) {
   const themasCtx = themas.length > 0
     ? themas.map(t => t.title).filter(Boolean).join(", ")
     : "(geen thema's)";
@@ -313,7 +313,7 @@ REGELS:
 
 Antwoord met ALLEEN de samenvatting — geen uitleg, geen aanhalingstekens.`;
 
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
   const user = `Missie: ${core.missie || "(niet ingevuld)"}
 Visie: ${core.visie || "(niet ingevuld)"}
 Ambitie: ${core.ambitie || "(niet ingevuld)"}
@@ -342,7 +342,7 @@ Schrijf een strategische samenvatting van maximaal 2 zinnen.`;
 // Extern → kans | bedreiging | (overslaan)
 // Intern → sterkte | zwakte | (overslaan)
 // Gebruikt indices (niet UUIDs) om hallucination te voorkomen.
-async function autoTag(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.") {
+async function autoTag(core, items, apiKey, systemOverride, languageInstruction = "Schrijf ALTIJD in het Nederlands.", tenantVars = {}) {
   const untagged = items.filter(i => !i.tag || i.tag === "niet_relevant");
   if (untagged.length === 0) return {};
 
@@ -379,7 +379,7 @@ OUTPUT: Exact JSON — alleen items waar je zeker van bent. Laat twijfelgevallen
   "intern": { "<index>": "sterkte" | "zwakte", ... }
 }`;
 
-  const system = rawSystem.replace(/\{taal_instructie\}/g, languageInstruction);
+  const system = renderPrompt(rawSystem, tenantVars).replace(/\{taal_instructie\}/g, languageInstruction);
   const user = `ORGANISATIE-IDENTITEIT:
 ${identityCtx}
 
@@ -438,29 +438,29 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
+  // Stap-7 fase-4: tenant-vars ophalen één keer per request (alle 5 modes)
+  const tenantVars = await getTenantVars(userScopedClient(req));
+
   try {
     if (mode === "themes") {
-      const themes = await generateThemes(core, items, apiKey, systemPromptThemes, languageInstruction);
+      const themes = await generateThemes(core, items, apiKey, systemPromptThemes, languageInstruction, tenantVars);
       return res.status(200).json({ themes });
     }
     if (mode === "ksf_kpi") {
       if (!thema) return res.status(400).json({ error: "Missing thema" });
-      const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi, languageInstruction);
+      const result = await generateKsfKpi(thema, core, items, apiKey, systemPromptKsfKpi, languageInstruction, tenantVars);
       return res.status(200).json(result);
     }
     if (mode === "analysis") {
-      // Stap-7 fase-3 pilot: tenant-vars ophalen via user-scoped client (RLS — Path 2)
-      const supabaseClient = userScopedClient(req);
-      const tenantVars = await getTenantVars(supabaseClient);
       const result = await generateAnalysis(core, items, themas, apiKey, systemPromptAnalysis, languageInstruction, tenantVars);
       return res.status(200).json(result);
     }
     if (mode === "samenvatting") {
-      const samenvatting = await generateSamenvatting(core, themas, apiKey, systemPromptSamenvatting, languageInstruction);
+      const samenvatting = await generateSamenvatting(core, themas, apiKey, systemPromptSamenvatting, languageInstruction, tenantVars);
       return res.status(200).json({ samenvatting });
     }
     if (mode === "auto_tag") {
-      const tags = await autoTag(core, items, apiKey, systemPromptAutoTag, languageInstruction);
+      const tags = await autoTag(core, items, apiKey, systemPromptAutoTag, languageInstruction, tenantVars);
       return res.status(200).json({ tags });
     }
     return res.status(400).json({ error: `Onbekende mode: ${mode}` });
