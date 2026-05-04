@@ -21,7 +21,7 @@ WERKWIJZE:
 6. Geen preamble of uitleg — alleen het voorstel zelf.
 7. Bij lijstvelden: één item per regel, zonder nummering, bullets of streepjes.`;
 
-const SYSTEM_GENERAL_KNOWLEDGE = `Je bent een Senior Strategie Consultant bij Kingfisher & Partners, gespecialiseerd in business transformatie.
+const SYSTEM_GENERAL_KNOWLEDGE = `Je bent een Senior Strategie Consultant{{brand_clause}}, gespecialiseerd in business transformatie.
 
 Het Dossier bevat onvoldoende informatie voor dit veld. Genereer op basis van jouw brede kennis van businessstrategie, marktdynamiek en sectortrends een gefundeerd voorstel.
 
