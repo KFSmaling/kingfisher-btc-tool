@@ -71,6 +71,7 @@ function buildContext(chunks) {
 }
 
 const { requireAuth } = require("./_auth");
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -90,9 +91,13 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
+  // Stap-7 fase-4: tenant-vars ophalen voor template-render van system-prompts
+  const tenantVars = await getTenantVars(userScopedClient(req));
+
   // ── General Knowledge modus ──────────────────────────────────────────────────
   if (useGeneralKnowledge) {
-    const systemPrompt = systemPromptGeneralKnowledge || SYSTEM_GENERAL_KNOWLEDGE;
+    const rawSystemPrompt = systemPromptGeneralKnowledge || SYSTEM_GENERAL_KNOWLEDGE;
+    const systemPrompt = renderPrompt(rawSystemPrompt, tenantVars);
     const model = "claude-haiku-4-5-20251001";
 
     const userParts = [];
@@ -129,9 +134,10 @@ module.exports = async function handler(req, res) {
 
   // ── Normale RAG modus ────────────────────────────────────────────────────────
   const context = buildContext(chunks);
-  const systemPrompt = heavy
+  const rawSystemPrompt = heavy
     ? (systemPromptHeavy    || SYSTEM_HEAVY)
     : (systemPromptStandard || SYSTEM_STANDARD);
+  const systemPrompt = renderPrompt(rawSystemPrompt, tenantVars);
   const model = heavy ? "claude-sonnet-4-5" : "claude-haiku-4-5-20251001";
   const maxTokens = heavy ? 1500 : 600;
 
