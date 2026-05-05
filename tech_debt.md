@@ -2,7 +2,7 @@
 
 > Levend document. Update de status zodra iets gefixt is.  
 > Gekoppeld aan `CLAUDE.md` sectie 4.6 en 10.  
-> Laatste update: 2026-04-22
+> Laatste update: 2026-05-05
 
 ---
 
@@ -187,6 +187,82 @@ ruis tot ze opgeruimd zijn.
 Fases 2-4 relevant zodra demo-sessies gepland worden.
 
 **Effort:** ~3 uur, verdeeld over fases 2-4.
+
+---
+
+## P3 — `prompt.improve.system` ontbreekt als DB-key
+
+`api/improve.js` heeft een werkende fallback-prompt in de handler-code (post-stap-7
+ook met `{{token}}`-substitutie via `renderPrompt`), maar er is geen rij in
+`app_config` voor `prompt.improve.system`. Gevolg: admin-UI kan deze prompt niet
+bewerken via de prompt-manager.
+
+**Fix:** migratie aanmaken die `prompt.improve.system` insert met dezelfde tekst
+als de fallback in `api/improve.js`, en de fallback laten staan voor robuustheid.
+
+**Bron:** B1 in fase-4 result-file (gearchiveerd `2026-05-04-1556`); expliciet
+open backlog uit instruction `2026-05-04-2145`.
+
+**Urgentie:** medium. Geen runtime-bug; wel een gat in admin-bewerking-discipline.
+
+**Effort:** 30 min (migratie + verifiëren admin-UI toont rij).
+
+---
+
+## P4 — i18n-architectuur-mismatch (F-18 fase-2 audit; P11 in masterplan)
+
+~20 `appLabel`-calls in Strategie-Werkblad + Richtlijnen werkbladen schakelen
+niet tussen NL/EN. Architectuur-mismatch: `appLabel(key, fallback)` is
+monolinguaal-by-design (`app_config.value` is één string per key, geen NL/EN-
+onderscheid), terwijl `useLang().t(key)` bilinguaal is (TRANSLATIONS-object met
+NL+EN per key). Werkbladen mixen beide; alleen het `t()`-deel switcht.
+
+Canvas-componenten gebruiken uitsluitend `t()` → switchen volledig. Strategie/
+Richtlijnen werkbladen gebruiken vooral `appLabel` → switchen niet. Dit is geen
+regressie van stap 7 — bestaat sinds april 2026 toen `appLabel` werd
+geïntroduceerd voor werkblad-labels.
+
+**Twee paden** (uit i18n-bug-diagnose-result, gearchiveerd `2026-05-05-1437`):
+
+1. **Schema-uitbreiding**: `app_config.value_en` kolom of `app_config_translations`-
+   tabel; `appLabel(key, fallback, lang)`-signatuur uitbreiden. Per-tenant ook
+   overridable. Architectureel correct, grootste werk.
+2. **Migreer `appLabel`-calls in werkbladen naar `t()`-calls** met NL+EN in
+   TRANSLATIONS. Verlies tenant-overridability voor die specifieke labels.
+   Praktisch, maar niet schaalbaar voor enterprise-tenant met eigen terminologie.
+
+Vereist ontwerp-discussie vóór implementatie — vooral met het oog op TLB en
+toekomstige enterprise-tenants die mogelijk eigen terminologie willen
+overschrijven.
+
+**Urgentie:** medium. Geen blocker voor productie (visueel bug-rapport van Kees
+4 mei was visuele check, geen klant-impact). Wel hinderlijk voor demo's met
+EN-sprekende prospects.
+
+**Effort:** schema-uitbreiding ~1 dag; t()-migratie ~halve dag — afhankelijk van
+gekozen pad.
+
+---
+
+## P4 — TLB-branding-finetune (P12 in masterplan)
+
+TLB-tenant is geseed met geguessde tints + de officiële TLB-SVG voor beide logo-
+varianten (geen aparte witte). Drie open punten:
+
+| Item | Status |
+|---|---|
+| `accent_hover_color` (`#885B33`) en `accent_light_color` (`#F5E8D4`) | Gegokte tints — geen TLB-officiële spec |
+| Logo-contrast WCAG-ratio | 3.4 (gold op warm-black) — onder WCAG-AA-drempel 4.5 |
+| Witte logo-variant | Ontbreekt; SVG-fallback naar tekst werkt wel |
+
+**Fix:** definitieve TLB-brandbook opvragen of bij Kees afstemmen wat acceptabel
+is voor demo-doeleinden (TLB is enterprise-test-tenant, geen betalende klant).
+
+**Urgentie:** low. Demo-cosmetiek; LogoBrand fallback naar tekst werkt al als
+SVG-render faalt op donkere achtergrond.
+
+**Effort:** ~1 uur na ontvangst brandbook.
+
 ## Done log
 
 - 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
@@ -204,6 +280,7 @@ Fases 2-4 relevant zodra demo-sessies gepland worden.
 - 2026-04-26 — #69 Sprint C drie-knoppen-patroon — `WerkbladActieknoppen` shared component, Strategie + Richtlijnen gemigreerd, overlay-sluit naar "Terug naar werkblad". Commit: `d4f7af2`
 - 2026-04-26 — P1 4.3 — `useCanvasState.handleSelectCanvas` race-guard via `latestSelectRef`. Sluit hele P1-categorie. CLAUDE.md §4.6 4.3 → ✅. Commit: `446bb8b`
 - 2026-04-26 — P4 Label-discipline tooling — ESLint `react/jsx-no-literals` op warn-level in `package.json` met allow-list. 220 legacy-violations gedetecteerd → sweep-item is nu uitvoerbaar. Commit: `245b562`
+- 2026-05-05 — Stap 7 Tenant-content-laag (ADR-002 niveau 1). 19 commits + 11 migraties + 21 files (+659/-46). Template-engine `api/_template.js`; `tenants.tenant_content jsonb` per-tenant tokens; `app_config(tenant_id, key)` met UNIQUE NULLS NOT DISTINCT; 2 RPC-functies voor DISTINCT ON / NULLS LAST tenant-lookup; alle 5 endpoints geïntegreerd; 22 prompts BTC/KF/Novius-vrij; KF-tenant 1-op-1 ge-templated zonder regressie; TLB enterprise-tenant + cross-tenant RLS-isolatie bewezen. Master-merge `92ccb24`, production-deploy `dpl_98g5xKetKXMp3hPJ5oZRVPfB6NFe`.
 
 ---
 

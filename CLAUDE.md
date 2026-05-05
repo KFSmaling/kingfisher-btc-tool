@@ -188,10 +188,11 @@ componenten. Fallbacks staan als `:root` defaults in `src/index.css`.
 
 ### Tenants in productie
 
-| Tenant | ID | `primary_color` | `accent_color` | Logo |
-|---|---|---|---|---|
-| Kingfisher | `...0002` | `#1a365d` | `#8dc63f` | `kf-logo.png` (donker), wit: null → tekst |
-| Platform | `...0001` | `#0f172a` | `#f97316` | Beide null → toont brandName-tekst |
+| Tenant | Slug | `tenant_type` | `primary_color` | `accent_color` | Logo |
+|---|---|---|---|---|---|
+| Platform | `platform` | `internal` | `#0f172a` | `#f97316` | Beide null → toont brandName-tekst |
+| Kingfisher | `kingfisher` | `consultancy` | `#1a365d` | `#8dc63f` | `kf-logo.png` (donker), wit: null → tekst |
+| TLB | `tlb-test` | `enterprise` | `#281805` | `#A06B3C` | TLB-SVG voor beide variants |
 
 ---
 
@@ -228,6 +229,90 @@ gebruikers AI-features herkennen en zien.
 - Inline binnen bestaand button-frame (om button-styling te behouden) → gebruik `<AiIcon>`. Default kleur is canonical accent; override via `colorClass` alleen bij donkere achtergrond of expliciet design-besluit.
 - Loading-spinners (full-size pulserende `Wand2` size 28 in lege werkbladen) blijven als losse `<Wand2 animate-pulse>` — dat is een aparte feedback-rol, geen affordance.
 - Iconen-formaat: 9–13 px in compacte knoppen, 28 px voor loading-states.
+
+---
+
+## 3C. TENANT-CONTENT & TEMPLATING (ADR-002 niveau 1, geïmplementeerd 2026-05-05)
+
+Prompts en (toekomstig) labels zijn methode-/merk-/branche-vrij gemaakt en
+worden per request gerenderd met tenant-specifieke waarden. Eén globale prompt-
+of label-rij wordt door alle tenants gedeeld; tenant-specifieke variatie zit in
+`tenants.tenant_content` jsonb. Per-tenant override van een hele rij is óók
+mogelijk via `app_config(tenant_id, key)`, maar wordt pas gebruikt als een
+tenant écht een eigen versie van een prompt of label nodig heeft.
+
+### Database-structuur
+
+| Tabel/kolom | Rol |
+|---|---|
+| `tenants.tenant_content jsonb` | Per-tenant token-waarden (brand_name, framework_name, brand_clause, framework_clause, industry_clause, example_segments_clause). Geseed in `20260504020000`. |
+| `app_config.id uuid PK` | Synthetische PK (was: PK op `key`). |
+| `app_config.tenant_id uuid NULL` | NULL = globale rij, ingevuld = tenant-override. |
+| `app_config UNIQUE NULLS NOT DISTINCT (tenant_id, key)` | Eén rij per (tenant, key); NULL-tenant telt als één unieke waarde. |
+| `block_definitions.tenant_id uuid NULL` | Idem patroon (zie `20260504010300`). |
+
+### RPC-lookup-flow
+
+Twee `SECURITY DEFINER` RPC's doen DISTINCT ON met NULLS LAST: tenant-override
+wint, anders globale rij. Migratie: `20260504030000_fase6_tenant_lookup_rpc.sql`.
+
+| RPC | Vervangt | Gebruikt door |
+|---|---|---|
+| `get_app_config_for_tenant()` | `from("app_config").select(...)` | `AppConfigContext.loadConfig()` |
+| `get_block_definitions_for_tenant()` | `from("block_definitions").select(...)` | `canvas.service.fetchBlockDefinitions()` |
+
+Frontend roept altijd via `supabase.rpc(...)` aan — directe `.from("app_config")`
+selecties op deze tabellen zijn nu fout (zou tenant-overrides missen).
+
+### Template-engine
+
+`api/_template.js` (CommonJS, gebruikt door alle 5 endpoints):
+
+| Export | Doel |
+|---|---|
+| `renderPrompt(template, vars)` | Substitueert `{{var}}`-tokens (Mustache-style, geen partials/conditionals). Onbekende tokens blijven letterlijk staan zodat ze opvallen in output. |
+| `getTenantVars(supabaseClient)` | Leest `tenants.tenant_content` voor de huidige user-context (via `auth.uid()` → `user_profiles.tenant_id`). Levert `{}` voor anonymous/onbekende tenant; render valt dan terug op token-letterlijk. |
+| `userScopedClient(req)` | Bouwt een Supabase-client met de user's JWT zodat RLS in serverless-functies werkt. |
+
+**Endpoint-pattern** (alle 5: `magic.js`, `strategy.js`, `validate.js`, `improve.js`, `guidelines.js`):
+
+```js
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
+const supabase = userScopedClient(req);
+const tenantVars = await getTenantVars(supabase);
+const systemPrompt = renderPrompt(rawPromptFromDb, tenantVars);
+```
+
+### Token-vocabulair
+
+Twee vormen — gebruik consequent:
+
+| Token | Vorm | Voorbeeld KF | Voorbeeld TLB |
+|---|---|---|---|
+| `{{brand_name}}` | naked | `Kingfisher & Partners` | `TLB` |
+| `{{framework_name}}` | naked | `het Business Transformatie Canvas (BTC)` | `het strategische raamwerk` |
+| `{{brand_clause}}` | leading-space, eindigt zonder punt | ` bij Kingfisher & Partners` | ` bij TLB` |
+| `{{framework_clause}}` | leading-space, eindigt op punt; mag leeg | ` Je bent gespecialiseerd in het Business Transformatie Canvas.` | `""` |
+| `{{industry_clause}}` | leading-space, geen punt | ` voor de financiële en verzekeringssector` | ` voor HNW financial services` |
+| `{{example_segments_clause}}` | leading-space, voor opsommingen; mag leeg | `""` | `""` |
+
+**Regel**: clause-vorm bevat zelf de leading-space en (waar nodig) de eindpunt
+zodat de omringende prompt-tekst niet hoeft te kennen of de clause leeg is.
+Lege clauses verdwijnen schoon uit de output.
+
+### Wanneer schrijf je een nieuwe prompt of label?
+
+1. Schrijf de globale rij (`tenant_id IS NULL`) met `{{token}}`-substituties voor brand/framework/industry — geen hardcoded merknamen.
+2. Voeg waar nodig nieuwe tokens toe aan `tenants.tenant_content` voor alle 3 actieve tenants in dezelfde migratie.
+3. Endpoints/UI roepen via de RPC-lookup; de template-engine doet de rest.
+4. Per-tenant override van de hele rij alleen als één tenant écht een eigen prompt/label nodig heeft (zelden).
+
+### Niet-doen
+
+- Geen hardcoded merknaam, framework-naam, of branche-aanduiding in een nieuwe prompt of label — gebruik altijd een token.
+- Geen direct `from("app_config").select(...)` voor labels of prompts; gebruik `supabase.rpc("get_app_config_for_tenant")`.
+- Geen `app_config`-INSERT zonder `tenant_id` (NULL is expliciet — niet weglaten).
+- Geen nieuwe template-engine of token-vocabulair introduceren — gebruik `renderPrompt`.
 
 ---
 
@@ -451,3 +536,9 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
 - Inzichten-patroon vastgelegd in `INZICHTEN_DESIGN.md` — generiek analyse-
   component voor alle werkbladen. Vervangt huidige "Strategisch Advies" /
   "Richtlijnen Advies" overlays. Zie TECH_DEBT.md P4.
+- Tenant-content-laag (ADR-002 niveau 1) — ✅ live per 2026-05-05 (master
+  `92ccb24`). Sectie 3C beschrijft de huidige werking. Open subitems: 
+  `prompt.improve.system` ontbreekt nog als DB-key (fallback in
+  `api/improve.js` werkt wél met tokens), i18n-mismatch op werkbladen 
+  (`appLabel` is monolinguaal-by-design — F-18, P11), en TLB-branding-
+  finetune (P12). Zie `TECH_DEBT.md`.
