@@ -3,8 +3,8 @@
  * Gebruikt claude-haiku voor snelle, goedkope pre-flight check.
  */
 
-const VALIDATION_PROMPT = `Je bent een senior auditor bij Kingfisher & Partners.
-Beoordeel de tekst op bruikbaarheid voor het Business Transformatie Canvas (BTC).
+const VALIDATION_PROMPT = `Je bent een senior auditor{{brand_clause}}.
+Beoordeel de tekst op bruikbaarheid voor {{framework_name}}.
 
 ANTWOORD UITSLUITEND IN DIT JSON FORMAAT (geen markdown, alleen pure JSON):
 {
@@ -39,6 +39,7 @@ SCORES:
 isValid = true als minimaal één blok score >= 30 heeft.`;
 
 const { requireAuth } = require("./_auth");
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -47,6 +48,11 @@ module.exports = async function handler(req, res) {
 
   const { documentText, systemPrompt: systemPromptOverride } = req.body;
   if (!documentText) return res.status(400).json({ error: "Missing documentText" });
+
+  // Stap-7 fase-4: tenant-vars + template-render
+  const tenantVars = await getTenantVars(userScopedClient(req));
+  const rawPrompt = systemPromptOverride || VALIDATION_PROMPT;
+  const renderedPrompt = renderPrompt(rawPrompt, tenantVars);
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -61,7 +67,7 @@ module.exports = async function handler(req, res) {
         max_tokens: 1200,
         messages: [{
           role: "user",
-          content: (systemPromptOverride || VALIDATION_PROMPT) + "\n\nTE BEOORDELEN DOCUMENT:\n" + documentText.slice(0, 6000),
+          content: renderedPrompt + "\n\nTE BEOORDELEN DOCUMENT:\n" + documentText.slice(0, 6000),
         }],
       }),
     });

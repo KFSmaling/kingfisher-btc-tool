@@ -120,11 +120,14 @@ export async function loadCanvasById(id) {
  */
 export async function fetchBlockDefinitions() {
   if (!supabase) return { data: [], error: null };
-  return supabase
-    .from("block_definitions")
-    .select("key, label_nl, label_en, ai_prompt, sort_order")
-    .eq("is_active", true)
-    .order("sort_order");
+  // Stap-7 fase-6: tenant-scoped lookup via RPC. Server-side DISTINCT ON
+  // kiest tenant-override boven globale baseline; is_active-filter zit
+  // in de RPC zelf.
+  const { data, error } = await supabase.rpc("get_block_definitions_for_tenant");
+  if (error) return { data: [], error };
+  // RPC sorteert op key (DISTINCT ON-vereiste). Frontend verwacht sort_order — re-sort.
+  const sorted = (data || []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  return { data: sorted, error: null };
 }
 
 /**

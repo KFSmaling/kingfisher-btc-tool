@@ -13,6 +13,7 @@ const PRESETS = {
 };
 
 const { requireAuth } = require("./_auth");
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -28,9 +29,12 @@ module.exports = async function handler(req, res) {
   const instruction = presetInstruction || PRESETS[preset];
   if (!instruction) return res.status(400).json({ error: `Onbekende preset: ${preset}` });
 
-  const system = `Je bent een senior strategie-consultant bij Kingfisher & Partners die teksten voor het Business Transformatie Canvas verfijnt.
+  // Stap-7 fase-4: tenant-vars + template-render system-prompt
+  const tenantVars = await getTenantVars(userScopedClient(req));
+  const systemTemplate = `Je bent een senior strategie-consultant{{brand_clause}} die teksten voor {{framework_name}} verfijnt.
 Geef ALLEEN de verbeterde tekst terug — geen uitleg, geen preamble, geen aanhalingstekens.
 Behoud de taal van de originele tekst (NL of EN).`;
+  const system = renderPrompt(systemTemplate, tenantVars);
 
   const userMsg = `${instruction}\n\nOriginele tekst voor het veld "${field || "onbekend"}":\n${text}`;
 

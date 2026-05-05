@@ -10,18 +10,18 @@
  * Dit endpoint doet de Claude-aanroep met gestructureerde broncontext.
  */
 
-const SYSTEM_STANDARD = `Je bent een Senior Strategie Consultant bij Kingfisher & Partners, gespecialiseerd in business transformatie.
+const SYSTEM_STANDARD = `Je bent een Senior Strategie Consultant{{brand_clause}}, gespecialiseerd in business transformatie.
 
 WERKWIJZE:
 1. Analyseer de BRONDOCUMENTEN hieronder grondig voordat je een antwoord formuleert.
 2. Gebruik UITSLUITEND informatie die in de brondocumenten staat — citeer altijd het brondocument en paginanummer.
 3. Als er geen BRONDOCUMENTEN aanwezig zijn of de sectie leeg is: antwoord EXACT met "Geen relevante informatie gevonden in het Dossier voor dit veld."
 4. Als brondocumenten aanwezig zijn maar geen relevante informatie bevatten voor het gevraagde veld: antwoord EXACT met "Onvoldoende relevante informatie gevonden voor dit veld."
-5. Schrijf in de taal van de brondocumenten (NL of EN).
+5. Schrijf in de taal van de brondocumenten (NL of EN) en geen markdown-opmaak: geen **vet**, geen kopjes, geen streepjes. Alleen de tekst zelf.
 6. Geen preamble of uitleg — alleen het voorstel zelf.
 7. Bij lijstvelden: één item per regel, zonder nummering, bullets of streepjes.`;
 
-const SYSTEM_GENERAL_KNOWLEDGE = `Je bent een Senior Strategie Consultant bij Kingfisher & Partners, gespecialiseerd in business transformatie.
+const SYSTEM_GENERAL_KNOWLEDGE = `Je bent een Senior Strategie Consultant{{brand_clause}}, gespecialiseerd in business transformatie.
 
 Het Dossier bevat onvoldoende informatie voor dit veld. Genereer op basis van jouw brede kennis van businessstrategie, marktdynamiek en sectortrends een gefundeerd voorstel.
 
@@ -33,7 +33,7 @@ WERKWIJZE:
 5. Bij lijstvelden: één item per regel, zonder nummering, bullets of streepjes.
 6. Maximaal 8 items.`;
 
-const SYSTEM_HEAVY = `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau, gespecialiseerd in business transformatie voor de financiële en verzekeringssector bij Kingfisher & Partners.
+const SYSTEM_HEAVY = `Je bent een Senior Strategie Consultant op McKinsey/BCG-niveau, gespecialiseerd in business transformatie{{industry_clause}}{{brand_clause}}.
 
 WERKWIJZE — SYNTHESIS ANALYSE:
 
@@ -71,6 +71,7 @@ function buildContext(chunks) {
 }
 
 const { requireAuth } = require("./_auth");
+const { renderPrompt, getTenantVars, userScopedClient } = require("./_template");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -90,9 +91,13 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: "ANTHROPIC_API_KEY niet geconfigureerd" });
 
+  // Stap-7 fase-4: tenant-vars ophalen voor template-render van system-prompts
+  const tenantVars = await getTenantVars(userScopedClient(req));
+
   // ── General Knowledge modus ──────────────────────────────────────────────────
   if (useGeneralKnowledge) {
-    const systemPrompt = systemPromptGeneralKnowledge || SYSTEM_GENERAL_KNOWLEDGE;
+    const rawSystemPrompt = systemPromptGeneralKnowledge || SYSTEM_GENERAL_KNOWLEDGE;
+    const systemPrompt = renderPrompt(rawSystemPrompt, tenantVars);
     const model = "claude-haiku-4-5-20251001";
 
     const userParts = [];
@@ -129,9 +134,10 @@ module.exports = async function handler(req, res) {
 
   // ── Normale RAG modus ────────────────────────────────────────────────────────
   const context = buildContext(chunks);
-  const systemPrompt = heavy
+  const rawSystemPrompt = heavy
     ? (systemPromptHeavy    || SYSTEM_HEAVY)
     : (systemPromptStandard || SYSTEM_STANDARD);
+  const systemPrompt = renderPrompt(rawSystemPrompt, tenantVars);
   const model = heavy ? "claude-sonnet-4-5" : "claude-haiku-4-5-20251001";
   const maxTokens = heavy ? 1500 : 600;
 
