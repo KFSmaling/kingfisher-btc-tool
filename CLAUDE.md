@@ -465,6 +465,28 @@ Werk deze regel bij na elke compliance-verbetering.
 - Statusvelden met `CheckCircle2` (groen vinkje) of grijs bolletje
 - Data komt uit DB, geladen in `useCanvasState.js`
 
+### 5.1 Werkbladen — geïmplementeerd
+
+Werkbladen worden geactiveerd via `WERKBLAD_REGISTRY` in
+`src/features/canvas/components/DeepDiveOverlay.jsx`. Eén regel toevoegen
+voor een nieuw werkblad; geen `App.js`-wijziging nodig. Contract:
+`{ canvasId, onClose, onManualSaved? }`. `key={canvasId}` zit op de
+feature-root in DeepDiveOverlay (CLAUDE.md §4.1).
+
+| Block-id | Folder | Status | Notities |
+|---|---|---|---|
+| `strategy`   | `src/features/strategie/` | ✅ live | StrategieWerkblad + StrategyOnePager (anker voor rapport-laag-styling) |
+| `principles` | `src/features/richtlijnen/` | ✅ live | RichtlijnenWerkblad |
+| `customers`  | `src/features/klanten/` | ✅ MVP live (stap 11.D, 2026-05-07) | KlantenWerkblad fase-1 inventarisatie + rapport-laag Type A; 7 `cd_*`-tabellen + RLS; 3 archetypes (klantsegment/propositie/kanaal); fase 2-4 + klantreis-archetype + sub-items + AI-affordances buiten scope |
+| `processes` / `people` / `technology` / `portfolio` | — | placeholder | DeepDiveOverlay valt terug op `GenericPlaceholder`-component |
+
+**Klanten-werkblad-architectuur (stap 11.D MVP):**
+- Datamodel: 7 `cd_*`-tabellen (RFC-001 §2) + 1 audit-tabel; alle RLS-enabled met canvas-eigenaar + tenant-isolatie-pattern (anker `canvases`-policy)
+- API: `api/klanten/dimensions.js` + `api/klanten/items.js` via Path-2 `userScopedClient` uit `_template.js`; gedeelde archetype-schema-validatie in `_archetypes.js`
+- Frontend: `KlantenWerkblad` (root) → `WerkruimteView` (fase-tabs + dimensie-grid) → `DimensieKolom` (items-lijst per dim) → `ItemModal` (archetype-velden form). Plus `RapportView` (A4-landscape, leest dezelfde data via `useCanvasDimensions`-hook met race-guards)
+- Test-data: Aegis-fictie-canvas in KF-tenant (UUID `aaaaaaaa-eeee-eeee-eeee-aaaaaaaaaaaa`) + leeg test-canvas (UUID `bbbb...`)
+- RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7)
+
 ---
 
 ## 6. MIGRATIES — Veiligheidsregels
@@ -542,3 +564,9 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
   `api/improve.js` werkt wél met tokens), i18n-mismatch op werkbladen 
   (`appLabel` is monolinguaal-by-design — F-18, P11), en TLB-branding-
   finetune (P12). Zie `TECH_DEBT.md`.
+- Klanten & Dienstverlening werkblad MVP (stap 11.D) — ✅ live per 2026-05-07
+  (master `43ac1bb`). Sectie 5.1 + 7 `cd_*`-tabellen + 9 RLS-tests groen.
+  Vervolg-sprints (vooruitkijk, niet acuut): fase 2 pijnpunten + fase 3
+  analyse + AI-magic-staff-uitbreiding voor `cd_pattern_suggestions` + fase 4
+  verbeterrichtingen + Roadmap-handover + Klantreis-archetype + sub-items-UI
+  + Type B visueel rapport + P13 rapport-architectuur als platform-laag.

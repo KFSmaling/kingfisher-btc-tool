@@ -2,7 +2,7 @@
 
 > Levend document. Update de status zodra iets gefixt is.  
 > Gekoppeld aan `CLAUDE.md` sectie 4.6 en 10.  
-> Laatste update: 2026-05-05
+> Laatste update: 2026-05-07
 
 ---
 
@@ -263,6 +263,29 @@ SVG-render faalt op donkere achtergrond.
 
 **Effort:** ~1 uur na ontvangst brandbook.
 
+---
+
+## P3 — Klanten-werkblad RapportView canvas-naam fallback
+
+`src/features/klanten/RapportView.jsx` toont default "Canvas" in PageHeader
+omdat MVP geen aparte canvas-meta-fetch doet voor de `canvasName`-prop.
+Zelfde fallback-gedrag als StrategyOnePager bij ontbrekende canvas-context.
+
+**Fix:** twee paden:
+1. **canvas-context-prop uit DeepDiveOverlay**: DeepDiveOverlay kent het
+   actieve canvas al (via `canvasId`); voeg `canvasName`-prop toe aan
+   werkblad-contract en geef door aan KlantenWerkblad → RapportView.
+2. **Aparte canvas-meta-fetch in `useCanvasDimensions`**: hook fetcht
+   ook `canvases.name` voor de gegeven canvas. Trager (extra query) maar
+   zelfvoorzienend.
+
+**Urgentie:** low. Cosmetisch; rapport rendert correct, alleen header-titel
+toont generieke "Canvas" i.p.v. specifieke naam ("Aegis Verzekering — ...").
+
+**Bron:** B6 in stap-11D-result `2026-05-07-1132`.
+
+**Effort:** 15 min (pad 1, voorkeurspad).
+
 ## Done log
 
 - 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
@@ -281,6 +304,7 @@ SVG-render faalt op donkere achtergrond.
 - 2026-04-26 — P1 4.3 — `useCanvasState.handleSelectCanvas` race-guard via `latestSelectRef`. Sluit hele P1-categorie. CLAUDE.md §4.6 4.3 → ✅. Commit: `446bb8b`
 - 2026-04-26 — P4 Label-discipline tooling — ESLint `react/jsx-no-literals` op warn-level in `package.json` met allow-list. 220 legacy-violations gedetecteerd → sweep-item is nu uitvoerbaar. Commit: `245b562`
 - 2026-05-05 — Stap 7 Tenant-content-laag (ADR-002 niveau 1). 19 commits + 11 migraties + 21 files (+659/-46). Template-engine `api/_template.js`; `tenants.tenant_content jsonb` per-tenant tokens; `app_config(tenant_id, key)` met UNIQUE NULLS NOT DISTINCT; 2 RPC-functies voor DISTINCT ON / NULLS LAST tenant-lookup; alle 5 endpoints geïntegreerd; 22 prompts BTC/KF/Novius-vrij; KF-tenant 1-op-1 ge-templated zonder regressie; TLB enterprise-tenant + cross-tenant RLS-isolatie bewezen. Master-merge `92ccb24`, production-deploy `dpl_98g5xKetKXMp3hPJ5oZRVPfB6NFe`.
+- 2026-05-07 — Stap 11.D — MVP Klanten & Dienstverlening werkblad. 7 commits + 3 migraties + 17 files (+2455/-1). Datamodel uit RFC-001 §2-§3 (7 `cd_*`-tabellen + audit-tabel + 5 trigger-functies); 9 RLS-tests groen (RFC-001 §7); 3 archetypes functioneel (klantsegment/propositie/kanaal) via `api/klanten/{dimensions,items}.js` + 8 frontend-files in `src/features/klanten/`; A4-rapport met StrategyOnePager-ankers; Aegis-fictie test-canvas in KF-tenant. Master-merge `43ac1bb`, production-deploy `dpl_6o2R2UHoUDkAq4WvUUPWQvQDr2Cb`.
 
 ---
 
