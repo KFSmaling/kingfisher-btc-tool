@@ -59,8 +59,8 @@ export default function ItemModal({ item, dimension, onClose, onSave }) {
           <div>
             <h3 className="text-base font-bold text-[var(--color-primary)]">
               {isEdit
-                ? appLabel("label.klanten.modal.item.titel.edit", "Item bewerken")
-                : appLabel("label.klanten.modal.item.titel.add", "Nieuw item")}
+                ? appLabel("klanten.modal.item.titel.edit", "Item bewerken")
+                : appLabel("klanten.modal.item.titel.add", "Nieuw item")}
             </h3>
             <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-widest">
               {dimension?.name} · archetype: {dimension?.archetype}
@@ -129,14 +129,14 @@ export default function ItemModal({ item, dimension, onClose, onSave }) {
             disabled={saving}
             className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-50"
           >
-            {appLabel("label.klanten.knop.item.annuleren", "Annuleren")}
+            {appLabel("klanten.knop.item.annuleren", "Annuleren")}
           </button>
           <button
             type="button" onClick={handleSubmit}
             disabled={saving}
             className="px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50"
           >
-            {saving ? "Opslaan…" : appLabel("label.klanten.knop.item.opslaan", "Opslaan")}
+            {saving ? "Opslaan…" : appLabel("klanten.knop.item.opslaan", "Opslaan")}
           </button>
         </div>
       </div>

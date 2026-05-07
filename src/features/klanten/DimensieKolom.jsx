@@ -61,16 +61,16 @@ export default function DimensieKolom({ dimension, items, onItemClick, onAddItem
           className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-primary)] hover:text-[var(--color-accent)] uppercase tracking-widest"
         >
           <Plus size={12} />
-          {appLabel("label.klanten.knop.item.toevoegen", "+ item")}
+          {appLabel("klanten.knop.item.toevoegen", "+ item")}
         </button>
         <button
           type="button"
           disabled
-          title={appLabel("label.klanten.ai.disabled.tooltip", "AI komt in fase 3")}
+          title={appLabel("klanten.ai.disabled.tooltip", "AI komt in fase 3")}
           className="flex items-center gap-1 text-[10px] text-slate-400 cursor-not-allowed opacity-60"
         >
           <Sparkles size={10} />
-          {appLabel("label.klanten.ai.cluster", "Cluster-analyse")}
+          {appLabel("klanten.ai.cluster", "Cluster-analyse")}
         </button>
       </div>
     </div>

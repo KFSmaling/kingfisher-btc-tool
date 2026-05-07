@@ -35,7 +35,7 @@ export default function WerkruimteView({ dimensions, items, onItemClick, onAddIt
           <div className="flex items-center gap-1">
             {FASE_TABS.map(tab => {
               const isActive = activeFase === tab.num;
-              const tooltip = tab.enabled ? null : appLabel("label.klanten.fase.disabled.tooltip", "komt in latere sprint");
+              const tooltip = tab.enabled ? null : appLabel("klanten.fase.disabled.tooltip", "komt in latere sprint");
               return (
                 <button
                   key={tab.num}
@@ -58,7 +58,7 @@ export default function WerkruimteView({ dimensions, items, onItemClick, onAddIt
             })}
           </div>
           <span className="text-[10px] text-slate-400 italic uppercase tracking-widest">
-            {appLabel("label.klanten.helper.fase.geen_volgorde", "geen verplichte volgorde")}
+            {appLabel("klanten.helper.fase.geen_volgorde", "geen verplichte volgorde")}
           </span>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function WerkruimteView({ dimensions, items, onItemClick, onAddIt
           <div className="text-center py-12">
             <p className="text-sm text-slate-500 italic">Nog geen dimensies in dit canvas.</p>
             <p className="text-[11px] text-slate-400 mt-2">
-              {appLabel("label.klanten.helper.iteratief", "werk in uitvoering — geen 'klaar' status")}
+              {appLabel("klanten.helper.iteratief", "werk in uitvoering — geen 'klaar' status")}
             </p>
           </div>
         ) : (

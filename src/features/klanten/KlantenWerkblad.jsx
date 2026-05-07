@@ -69,7 +69,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
         <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)]">
           <button onClick={onClose} className="text-white/60 hover:text-white"><X size={18} /></button>
-          <h2 className="text-lg font-bold text-white">{appLabel("label.klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
+          <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 border-[var(--color-accent)] border-t-transparent animate-spin" />
@@ -83,7 +83,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
         <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)]">
           <button onClick={onClose} className="text-white/60 hover:text-white"><X size={18} /></button>
-          <h2 className="text-lg font-bold text-white">{appLabel("label.klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
+          <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center text-center px-6">
           <div className="max-w-md">
@@ -103,7 +103,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
       {/* Header */}
       <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)] flex-shrink-0">
         <button onClick={onClose} className="text-white/60 hover:text-white transition-colors"><X size={18} /></button>
-        <h2 className="text-lg font-bold text-white">{appLabel("label.klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
+        <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
 
         {/* Werkruimte/Rapport-toggle */}
         <div className="ml-6 flex items-center gap-1 bg-white/10 rounded-md p-0.5">
@@ -113,7 +113,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
               view === "werkruimte" ? "bg-white text-[var(--color-primary)]" : "text-white/70 hover:text-white"
             }`}
           >
-            <Layout size={12} /> {appLabel("label.klanten.section.werkruimte", "Werkruimte")}
+            <Layout size={12} /> {appLabel("klanten.section.werkruimte", "Werkruimte")}
           </button>
           <button
             onClick={() => setView("rapport")}
@@ -121,7 +121,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
               view === "rapport" ? "bg-white text-[var(--color-primary)]" : "text-white/70 hover:text-white"
             }`}
           >
-            <FileText size={12} /> {appLabel("label.klanten.section.rapport", "Rapport")}
+            <FileText size={12} /> {appLabel("klanten.section.rapport", "Rapport")}
           </button>
         </div>
       </div>

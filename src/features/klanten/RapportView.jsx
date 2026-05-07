@@ -104,7 +104,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
         <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-white/60 hover:text-white"><X size={18} /></button>
           <h2 className="text-sm font-bold uppercase tracking-widest">
-            {appLabel("label.klanten.rapport.titel", "Klanten & Dienstverlening — overzicht")}
+            {appLabel("klanten.rapport.titel", "Klanten & Dienstverlening — overzicht")}
           </h2>
         </div>
         <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
           <button
             onClick={() => analysis && setIncludeInPrint(v => !v)}
             disabled={!analysis}
-            title={!analysis ? appLabel("label.klanten.ai.disabled.tooltip", "AI komt in fase 3") : (includeInPrint ? "Klik om AI-advies uit print te verwijderen" : "Klik om AI-advies toe te voegen aan print")}
+            title={!analysis ? appLabel("klanten.ai.disabled.tooltip", "AI komt in fase 3") : (includeInPrint ? "Klik om AI-advies uit print te verwijderen" : "Klik om AI-advies toe te voegen aan print")}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors
               ${!analysis
                 ? "opacity-30 cursor-not-allowed text-white/40 border-white/20"
@@ -127,7 +127,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
           >
-            <Printer size={13} /> {appLabel("label.klanten.rapport.knop.print", "PDF / Printen")}
+            <Printer size={13} /> {appLabel("klanten.rapport.knop.print", "PDF / Printen")}
           </button>
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
         >
           <PageHeader
             canvasName={canvasName}
-            subtitle={appLabel("label.klanten.werkblad.titel", "Klanten & Dienstverlening")}
+            subtitle={appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}
             brandName={brandName}
             appLabel={appLabel}
           />
@@ -149,7 +149,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
           <div style={{ flex: 1, padding: "14px 20px", color: "#1e293b", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
             {/* Samenvatting */}
             <section style={{ marginBottom: "16px" }}>
-              <div style={sectionLabelStyle}>{appLabel("label.klanten.rapport.section.samenvatting", "Samenvatting")}</div>
+              <div style={sectionLabelStyle}>{appLabel("klanten.rapport.section.samenvatting", "Samenvatting")}</div>
               <p style={{ fontSize: "10px", color: "#475569", lineHeight: 1.55 }}>
                 {dimensions.length} dimensie{dimensions.length === 1 ? "" : "s"}, {items.length} item{items.length === 1 ? "" : "s"} vastgelegd.
                 Werkblad in inventarisatie-fase. Pijnpunten / analyse / verbeterrichtingen volgen in latere sprints.
@@ -158,7 +158,7 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
 
             {/* Huidige situatie — alle dimensies + items */}
             <section style={{ marginBottom: "16px" }}>
-              <div style={sectionLabelStyle}>{appLabel("label.klanten.rapport.section.huidig", "Huidige situatie")}</div>
+              <div style={sectionLabelStyle}>{appLabel("klanten.rapport.section.huidig", "Huidige situatie")}</div>
               {dimensions.length === 0 && (
                 <p style={{ fontSize: "9px", color: "#94a3b8", fontStyle: "italic" }}>Nog geen dimensies in dit canvas.</p>
               )}
@@ -169,13 +169,13 @@ export default function RapportView({ canvasName, dimensions, items, onClose }) 
 
             {/* Patronen — placeholder */}
             <section style={{ marginBottom: "16px" }}>
-              <div style={sectionLabelStyle}>{appLabel("label.klanten.rapport.section.patronen", "Patronen")}</div>
+              <div style={sectionLabelStyle}>{appLabel("klanten.rapport.section.patronen", "Patronen")}</div>
               <p style={{ fontSize: "9px", color: "#94a3b8", fontStyle: "italic" }}>komt in fase 3 (Analyse)</p>
             </section>
 
             {/* Verbeterrichtingen — placeholder */}
             <section>
-              <div style={sectionLabelStyle}>{appLabel("label.klanten.rapport.section.richtingen", "Verbeterrichtingen")}</div>
+              <div style={sectionLabelStyle}>{appLabel("klanten.rapport.section.richtingen", "Verbeterrichtingen")}</div>
               <p style={{ fontSize: "9px", color: "#94a3b8", fontStyle: "italic" }}>komt in fase 4 (Verbeterrichtingen)</p>
             </section>
           </div>
