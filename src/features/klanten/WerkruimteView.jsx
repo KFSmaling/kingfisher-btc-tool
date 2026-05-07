@@ -11,6 +11,7 @@
  */
 
 import React, { useState } from "react";
+import { Plus } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import DimensieKolom from "./DimensieKolom";
 
@@ -21,7 +22,7 @@ const FASE_TABS = [
   { num: 4, key: "label.klanten.fase.4.titel", fallback: "Verbeterrichtingen", enabled: false },
 ];
 
-export default function WerkruimteView({ dimensions, items, onItemClick, onAddItem }) {
+export default function WerkruimteView({ dimensions, items, onItemClick, onAddItem, onAddDimensie }) {
   const { label: appLabel } = useAppConfig();
   const [activeFase, setActiveFase] = useState(1);
 
@@ -67,23 +68,45 @@ export default function WerkruimteView({ dimensions, items, onItemClick, onAddIt
       <div className="flex-1 overflow-auto p-8">
         {dimensions.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-sm text-slate-500 italic">Nog geen dimensies in dit canvas.</p>
-            <p className="text-[11px] text-slate-400 mt-2">
+            <p className="text-sm text-slate-500 italic mb-1">Nog geen dimensies in dit canvas.</p>
+            <p className="text-[11px] text-slate-400 mb-6">
               {appLabel("klanten.helper.iteratief", "werk in uitvoering — geen 'klaar' status")}
             </p>
+            <button
+              type="button"
+              onClick={onAddDimensie}
+              data-testid="dimensie-cta-eerste"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[11px] font-bold uppercase tracking-widest rounded-md transition-colors"
+            >
+              <Plus size={14} />
+              {appLabel("klanten.knop.dimensie.toevoegen.eerste", "+ Eerste dimensie aanmaken")}
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {dimensions.map(dim => (
-              <DimensieKolom
-                key={dim.id}
-                dimension={dim}
-                items={itemsByDim(dim.id)}
-                onItemClick={onItemClick}
-                onAddItem={() => onAddItem(dim)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex justify-end mb-3">
+              <button
+                type="button"
+                onClick={onAddDimensie}
+                data-testid="dimensie-cta-extra"
+                className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-slate-600 hover:text-[var(--color-primary)] border border-slate-300 hover:border-slate-500 px-3 py-1.5 rounded-sm transition-colors"
+              >
+                <Plus size={12} />
+                {appLabel("klanten.knop.dimensie.toevoegen", "+ dimensie")}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {dimensions.map(dim => (
+                <DimensieKolom
+                  key={dim.id}
+                  dimension={dim}
+                  items={itemsByDim(dim.id)}
+                  onItemClick={onItemClick}
+                  onAddItem={() => onAddItem(dim)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

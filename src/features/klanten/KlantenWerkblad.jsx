@@ -23,6 +23,7 @@ import * as klantenService from "./services/klanten.service";
 import WerkruimteView from "./WerkruimteView";
 import RapportView from "./RapportView";
 import ItemModal from "./ItemModal";
+import DimensieCreateModal from "./DimensieCreateModal";
 
 export default function KlantenWerkblad({ canvasId, onClose }) {
   const { label: appLabel } = useAppConfig();
@@ -30,6 +31,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
 
   const [view, setView] = useState("werkruimte"); // "werkruimte" | "rapport"
   const [modalCtx, setModalCtx] = useState(null); // { dimension, item } of null
+  const [dimModalOpen, setDimModalOpen] = useState(false);
 
   function openCreateItem(dimension) {
     setModalCtx({ dimension, item: null });
@@ -40,6 +42,27 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
   }
   function closeModal() {
     setModalCtx(null);
+  }
+  function openCreateDimensie() {
+    setDimModalOpen(true);
+  }
+  function closeDimModal() {
+    setDimModalOpen(false);
+  }
+
+  // Save-handler doorgegeven aan DimensieCreateModal — { error } contract.
+  async function handleSaveDimensie({ archetype, name, description }) {
+    const result = await klantenService.createDimension({
+      canvasId,
+      archetype,
+      name,
+      description,
+      isOrdered: archetype === "klantreis",
+      sortOrder: dimensions ? dimensions.length * 10 : 0,
+    });
+    if (result.error) return { error: result.error };
+    reload();
+    return { error: null };
   }
 
   // Save-handler doorgegeven aan ItemModal — { error } contract.
@@ -133,6 +156,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
           items={items}
           onItemClick={openEditItem}
           onAddItem={openCreateItem}
+          onAddDimensie={openCreateDimensie}
         />
       ) : (
         <RapportView
@@ -150,6 +174,14 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
           dimension={modalCtx.dimension}
           onClose={closeModal}
           onSave={handleSaveItem}
+        />
+      )}
+
+      {/* Dimensie-create-modal (stap 11.E correctie) */}
+      {dimModalOpen && (
+        <DimensieCreateModal
+          onClose={closeDimModal}
+          onSave={handleSaveDimensie}
         />
       )}
     </div>
