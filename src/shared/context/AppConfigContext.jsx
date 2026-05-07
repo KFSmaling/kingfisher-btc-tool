@@ -130,6 +130,17 @@ const LABEL_FALLBACKS = {
   "klanten.ai.disabled.tooltip":      "AI komt in fase 3",
   "klanten.helper.iteratief":         "werk in uitvoering — geen 'klaar' status",
   "klanten.helper.fase.geen_volgorde":"geen verplichte volgorde",
+  // Stap 11.E correctie — DimensieCreateModal + lege-state CTA
+  "klanten.knop.dimensie.toevoegen.eerste":         "+ Eerste dimensie aanmaken",
+  "klanten.dimensie.create.titel":                  "Nieuwe dimensie",
+  "klanten.dimensie.create.archetype.label":        "Archetype",
+  "klanten.dimensie.create.archetype.placeholder":  "Kies een archetype…",
+  "klanten.dimensie.create.naam.label":             "Naam",
+  "klanten.dimensie.create.naam.placeholder":       "bijv. Klantsegmenten of Doelgroepen",
+  "klanten.dimensie.create.omschrijving.label":     "Omschrijving (optioneel)",
+  "klanten.dimensie.create.omschrijving.placeholder":"korte tenant-beschrijving van deze dimensie",
+  "klanten.dimensie.create.error.naam_leeg":        "Naam is verplicht",
+  "klanten.archetype.disabled.tooltip":             "komt in latere sprint",
 };
 
 const AppConfigContext = createContext(null);
