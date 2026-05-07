@@ -82,7 +82,12 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "parent_id zit in ander canvas" });
       }
       parentRow = parent;
-      // refine-deeper: action moet matchen met parent.pattern_type
+      // Refine-deeper: kind erft type van parent. Cluster-parent met paradox-prompt-
+      // call zou onbruikbare output geven; AI heeft de parent-context nodig om
+      // zinvol "dieper te graven". Uitzondering: parent.pattern_type='eigen' (consultant-
+      // eigen patroon zonder AI-prompt) — daar mag elke action-keuze, want de AI-call
+      // is een nieuwe analyse onafhankelijk van consultant-eigen-tekst. Validatie
+      // bevestigd door reviewer 2026-05-07T21:00 (akkoord op open punt 4).
       if (parent.pattern_type !== action && parent.pattern_type !== "eigen") {
         return res.status(400).json({
           error: `action=${action} klopt niet bij parent.pattern_type=${parent.pattern_type}`,
