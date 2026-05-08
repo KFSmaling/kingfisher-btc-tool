@@ -29,6 +29,7 @@ export default function AiIconButton({
   tooltip,
   label,
   className = "",
+  ...rest         // forward bv. data-testid, aria-* — geen breaking change
 }) {
   const isBlocked = loading || disabled;
 
@@ -46,6 +47,7 @@ export default function AiIconButton({
       disabled={isBlocked}
       title={tooltip}
       className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-all ${stateCls} ${className}`}
+      {...rest}
     >
       <AiIcon
         variant={variant}

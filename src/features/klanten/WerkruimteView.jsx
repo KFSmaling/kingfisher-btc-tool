@@ -15,11 +15,13 @@ import { Plus } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import DimensieKolom from "./DimensieKolom";
 import PijnpuntenView from "./PijnpuntenView";
+import AnalyseView from "./AnalyseView";
 
+// Stap 11.G: fase 3 enabled. Fase 4 blijft disabled tot 11.H.
 const FASE_TABS = [
   { num: 1, key: "label.klanten.fase.1.titel", fallback: "Inventarisatie", enabled: true  },
   { num: 2, key: "label.klanten.fase.2.titel", fallback: "Pijnpunten",     enabled: true  },
-  { num: 3, key: "label.klanten.fase.3.titel", fallback: "Analyse",        enabled: false },
+  { num: 3, key: "label.klanten.fase.3.titel", fallback: "Analyse",        enabled: true  },
   { num: 4, key: "label.klanten.fase.4.titel", fallback: "Verbeterrichtingen", enabled: false },
 ];
 
@@ -78,7 +80,17 @@ export default function WerkruimteView({
       </div>
 
       {/* Fase-content */}
-      {activeFase === 2 ? (
+      {activeFase === 3 ? (
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <AnalyseView
+            canvasId={canvasId}
+            dimensions={dimensions}
+            items={items}
+            painPoints={painPoints || []}
+            couplings={couplings || []}
+          />
+        </div>
+      ) : activeFase === 2 ? (
         <div className="flex-1 overflow-hidden flex flex-col">
           <PijnpuntenView
             dimensions={dimensions}
