@@ -19,7 +19,9 @@ const { userScopedClient } = require("../_template");
 
 const MAX_LIMIT = 200;
 
-module.exports = async function handler(req, res) {
+// Geconsolideerd in pattern_suggestions.js via Vercel rewrite (?_subpath=events)
+// — zie comment in _pattern_generate.js. Frontend-URL onveranderd.
+async function handleEvents(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
@@ -55,4 +57,6 @@ module.exports = async function handler(req, res) {
     console.error("[api/klanten/pattern_suggestion_events] onverwachte fout:", err);
     return res.status(500).json({ error: err.message || "interne fout" });
   }
-};
+}
+
+module.exports = { handleEvents };

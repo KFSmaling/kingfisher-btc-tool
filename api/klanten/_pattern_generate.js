@@ -39,7 +39,11 @@ const PROMPT_VERSION = "11G-v1"; // bumpen bij grote prompt-wijzigingen
 const MAX_SUGGESTIONS_PER_CALL = 5;
 const CONTEXT_TOKEN_WARN_THRESHOLD = 8000; // ruwe char-count, geen echte tokens
 
-module.exports = async function handler(req, res) {
+// Geconsolideerd in pattern_suggestions.js via Vercel rewrite (?_subpath=generate)
+// om binnen Hobby 12-functions-limit te blijven. Frontend-URLs onveranderd
+// (Vercel rewrite zorgt dat /api/klanten/pattern_suggestions_generate naar
+// dezelfde lambda gaat). Deze module wordt geïmporteerd door pattern_suggestions.js.
+async function handleGenerate(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
@@ -268,7 +272,9 @@ module.exports = async function handler(req, res) {
     console.error("[api/klanten/pattern_suggestions_generate] onverwachte fout:", err);
     return res.status(500).json({ error: err.message || "interne fout" });
   }
-};
+}
+
+module.exports = { handleGenerate };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -17,10 +17,16 @@
 
 const { requireAuth } = require("../_auth");
 const { userScopedClient } = require("../_template");
+const { handleCouplings } = require("./_pain_couplings");
 
 const TEXT_MAX = 5000; // ruim genoeg voor markdown-pijnpunt-tekst
 
 module.exports = async function handler(req, res) {
+  // Subpath-dispatch — /api/klanten/pain_point_couplings wordt via Vercel
+  // rewrite (?_subpath=couplings) naar deze file gerouteerd om binnen Hobby
+  // 12-functions-limit te blijven (zie vercel.json).
+  if (req.query?._subpath === "couplings") return handleCouplings(req, res);
+
   const user = await requireAuth(req, res);
   if (!user) return;
 

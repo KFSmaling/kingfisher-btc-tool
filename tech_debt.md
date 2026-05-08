@@ -2,7 +2,7 @@
 
 > Levend document. Update de status zodra iets gefixt is.  
 > Gekoppeld aan `CLAUDE.md` sectie 4.6 en 10.  
-> Laatste update: 2026-05-07
+> Laatste update: 2026-05-08
 
 ---
 
@@ -265,6 +265,51 @@ SVG-render faalt op donkere achtergrond.
 
 ---
 
+## P3 — Klanten fase-3 AI: twee-traps-summarisation voor grote canvas
+
+`api/klanten/pattern_suggestions_generate.js` heeft een `CONTEXT_TOKEN_WARN_THRESHOLD = 8000` (ruwe char-count) maar bij overschrijding nu alleen een server-side log-warning + één-traps-fallback. Bij grote consultancy-canvases (veel dimensies × items × pijnpunten met couplings) kan de context-payload ruim boven die drempel uitkomen, met:
+
+- Risico op afgekapte AI-output (Anthropic max-tokens-limiet) of slechtere kwaliteit
+- Geen graceful degradation: ofwel dezelfde call met te veel context, ofwel error
+
+**Fix-pad:** twee-traps-pattern — eerste call vraagt AI om de input samen te vatten naar 1-2 zinnen per dimensie, tweede call gebruikt die summarisation als context. Zelfde 4 prompts blijven, alleen de input-blob wijzigt.
+
+**Bron:** instructie-handoff `2026-05-08-1400-...` sectie 55 + comment in `pattern_suggestions_generate.js` regel 11-13.
+
+**Urgentie:** medium. Geen blocker voor MVP-canvas-grootte; relevant zodra eerste klant met >50 items+pijnpunten op fase 3 zit.
+
+**Effort:** 1-2 dagen (nieuwe summarisation-prompt + code-pad + RTL-test).
+
+---
+
+## P3 — Klanten fase-3 AI: parse-fout-pad bij malformed AI-output
+
+`pattern_suggestions_generate.js` parseert AI-output als pure JSON-array; bij parse-error wordt nu alleen server-side gelogd en client krijgt 500 + retry-knop. Géén audit-trail-rij voor de mislukte poging in `cd_pattern_suggestion_events` met de raw output, dus we kunnen achteraf niet reconstrueren wat de AI precies retourneerde toen het misging.
+
+**Fix-pad:** insert event in `cd_pattern_suggestion_events` met `event_type='ai_generated'` + `metadata.parse_error=true` + raw output, zonder bijbehorende suggestion-rij (suggestion_id NULL of synthetic). Tabel bestaat al, alleen catch-pad uitbreiden.
+
+**Bron:** comment in `pattern_suggestions_generate.js` regel 24-27 ("TODO post-MVP — voor nu: log raw output server-side, retourneer error naar client").
+
+**Urgentie:** low. Hangt samen met debug-discipline; bij eerste echte parse-fout in productie wordt dit acuut.
+
+**Effort:** 30 min (audit-event-INSERT-pad in catch).
+
+---
+
+## P3 — Klanten fase-3 AI: PROMPT_VERSION als string-literal
+
+`PROMPT_VERSION = "11G-v1"` staat als const in `api/klanten/pattern_suggestions_generate.js` regel 41. Bij prompt-wijziging via Admin-UI (alle 4 prompts zijn `tenant_overridable=true`) wordt deze string niet automatisch bijgewerkt — alleen bij code-deploy. Gevolg: events-metadata kan misleidend zijn (`prompt_version=11G-v1` terwijl de DB-prompt al via Admin-edit gewijzigd is).
+
+**Fix-pad:** verplaats `prompt_version` als veld in de prompt-app_config-rij (nieuwe kolom of JSON-suffix in description), lees per call uit DB-rij i.p.v. const. Of: incrementeer client-side op basis van `app_config.updated_at` van de prompt-rij.
+
+**Bron:** instructie-handoff `2026-05-08-1400-...` sectie 55 + comment in code regel 41 ("bumpen bij grote prompt-wijzigingen").
+
+**Urgentie:** low. Geen functionele impact; alleen audit-trail-precisie.
+
+**Effort:** 1 uur (kolom-toevoeging of description-parsing-pattern).
+
+---
+
 ## P3 — Klanten-werkblad RapportView canvas-naam fallback
 
 `src/features/klanten/RapportView.jsx` toont default "Canvas" in PageHeader
@@ -305,6 +350,7 @@ toont generieke "Canvas" i.p.v. specifieke naam ("Aegis Verzekering — ...").
 - 2026-04-26 — P4 Label-discipline tooling — ESLint `react/jsx-no-literals` op warn-level in `package.json` met allow-list. 220 legacy-violations gedetecteerd → sweep-item is nu uitvoerbaar. Commit: `245b562`
 - 2026-05-05 — Stap 7 Tenant-content-laag (ADR-002 niveau 1). 19 commits + 11 migraties + 21 files (+659/-46). Template-engine `api/_template.js`; `tenants.tenant_content jsonb` per-tenant tokens; `app_config(tenant_id, key)` met UNIQUE NULLS NOT DISTINCT; 2 RPC-functies voor DISTINCT ON / NULLS LAST tenant-lookup; alle 5 endpoints geïntegreerd; 22 prompts BTC/KF/Novius-vrij; KF-tenant 1-op-1 ge-templated zonder regressie; TLB enterprise-tenant + cross-tenant RLS-isolatie bewezen. Master-merge `92ccb24`, production-deploy `dpl_98g5xKetKXMp3hPJ5oZRVPfB6NFe`.
 - 2026-05-07 — Stap 11.D — MVP Klanten & Dienstverlening werkblad. 7 commits + 3 migraties + 17 files (+2455/-1). Datamodel uit RFC-001 §2-§3 (7 `cd_*`-tabellen + audit-tabel + 5 trigger-functies); 9 RLS-tests groen (RFC-001 §7); 3 archetypes functioneel (klantsegment/propositie/kanaal) via `api/klanten/{dimensions,items}.js` + 8 frontend-files in `src/features/klanten/`; A4-rapport met StrategyOnePager-ankers; Aegis-fictie test-canvas in KF-tenant. Master-merge `43ac1bb`, production-deploy `dpl_6o2R2UHoUDkAq4WvUUPWQvQDr2Cb`.
+- 2026-05-08 — Stap 11.G — Fase 3 Analyse + AI (Klanten-werkblad). 4 commits + 3 migraties + ~25 files. 4 AI-affordances (cluster/paradox/positionering/overstijgend) via `api/klanten/pattern_suggestions_generate.js` met Anthropic-call + pure JSON-array parser + append-only events; suggestion-tree (refine-edit / refine-deeper / + eigen patroon); fase-3-tab geactiveerd; RapportView AI-sectie 3-koloms grid max 6 cards (eerste 2 per type); 4 prompts `tenant_overridable=true`; 56 nieuwe label-keys → 129 totaal `label.klanten.*`; geen schema-wijziging (cd_pattern_suggestions + _events uit 11.D). RTL-tests 20/20 PASS over 3 suites (KlantenWerkblad/Pijnpunten/AnalyseView). Master-merge `30b16ae`, production-deploy `dpl_J7eHF3mYD1xj9GvpgQnjfJGDFtBw`. Drie nieuwe P3-items toegevoegd (twee-traps-summarisation, parse-fout-audit-pad, PROMPT_VERSION als string-literal).
 
 ---
 

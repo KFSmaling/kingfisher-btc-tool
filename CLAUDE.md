@@ -477,15 +477,18 @@ feature-root in DeepDiveOverlay (CLAUDE.md §4.1).
 |---|---|---|---|
 | `strategy`   | `src/features/strategie/` | ✅ live | StrategieWerkblad + StrategyOnePager (anker voor rapport-laag-styling) |
 | `principles` | `src/features/richtlijnen/` | ✅ live | RichtlijnenWerkblad |
-| `customers`  | `src/features/klanten/` | ✅ MVP live (stap 11.D, 2026-05-07) | KlantenWerkblad fase-1 inventarisatie + rapport-laag Type A; 7 `cd_*`-tabellen + RLS; 3 archetypes (klantsegment/propositie/kanaal); fase 2-4 + klantreis-archetype + sub-items + AI-affordances buiten scope |
+| `customers`  | `src/features/klanten/` | ✅ Fase 1+2+3 live (stap 11.D/E/F/G, 2026-05-08) | KlantenWerkblad fase 1 inventarisatie + fase 2 pijnpunten + fase 3 AI-analyse; 7 `cd_*`-tabellen + RLS; 3 archetypes (klantsegment/propositie/kanaal); 4 AI-affordances (cluster/paradox/positionering/overstijgend); rapport-laag Type A met geaccepteerde patronen; fase 4 verbeterrichtingen + klantreis-archetype + sub-items + Type B rapport buiten scope |
 | `processes` / `people` / `technology` / `portfolio` | — | placeholder | DeepDiveOverlay valt terug op `GenericPlaceholder`-component |
 
-**Klanten-werkblad-architectuur (stap 11.D MVP):**
+**Klanten-werkblad-architectuur (stap 11.D-G):**
 - Datamodel: 7 `cd_*`-tabellen (RFC-001 §2) + 1 audit-tabel; alle RLS-enabled met canvas-eigenaar + tenant-isolatie-pattern (anker `canvases`-policy)
-- API: `api/klanten/dimensions.js` + `api/klanten/items.js` via Path-2 `userScopedClient` uit `_template.js`; gedeelde archetype-schema-validatie in `_archetypes.js`
-- Frontend: `KlantenWerkblad` (root) → `WerkruimteView` (fase-tabs + dimensie-grid) → `DimensieKolom` (items-lijst per dim) → `ItemModal` (archetype-velden form). Plus `RapportView` (A4-landscape, leest dezelfde data via `useCanvasDimensions`-hook met race-guards)
-- Test-data: Aegis-fictie-canvas in KF-tenant (UUID `aaaaaaaa-eeee-eeee-eeee-aaaaaaaaaaaa`) + leeg test-canvas (UUID `bbbb...`)
-- RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7)
+- API fase 1+2: `api/klanten/dimensions.js` + `items.js` + `pain_points.js` + `pain_point_couplings.js` via Path-2 `userScopedClient` uit `_template.js`; gedeelde archetype-schema-validatie in `_archetypes.js`
+- API fase 3: `api/klanten/pattern_suggestions.js` + `pattern_suggestions_generate.js` (Anthropic-call met cluster/paradox/positionering/overstijgend prompts, pure JSON-array parser, append-only events) + `pattern_suggestion_events.js` (audit-trail)
+- Frontend fase 1+2: `KlantenWerkblad` (root) → `WerkruimteView` (fase-tabs) → `DimensieKolom` + `ItemModal` (fase 1) + `PijnpuntenView` + `PijnpuntCard` + `PijnpuntModal` (fase 2)
+- Frontend fase 3: `AnalyseView` (4 AI-knoppen + counter + suggestion-list) + `SuggestionCard` (TYPE_STYLES uit `patternTypeStyles.js` — letterlijk uit StrategyOnePager voor cluster/paradox/positionering per PLATFORM_REQUIREMENTS #8) + `SuggestionEditModal` + `RefineDeeperModal` + `EigenPatroonModal`
+- Frontend rapport-laag: `RapportView` (A4-landscape) leest dimensies/items/pijnpunten + geaccepteerde patronen via `useCanvasDimensions` + `usePainPoints` + `usePatternSuggestions`-hooks (race-guarded). AI-sectie: 3-koloms grid max 6 cards (eerste 2 per type), `includeInPrint`-toggle deblokkeerd bij ≥1 accepted
+- 4 prompts (`prompt.klanten.{cluster,paradox,positionering,overstijgend}`) zijn `tenant_overridable=true` per ADR-002 niveau 1+3 — branche/methode-positionering kan legitiem per consultancy-tenant verschillen
+- RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7); cd_pattern_suggestions cross-tenant geverifieerd in stap 11.G sprint-afsluit
 
 ---
 
@@ -564,9 +567,19 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
   `api/improve.js` werkt wél met tokens), i18n-mismatch op werkbladen 
   (`appLabel` is monolinguaal-by-design — F-18, P11), en TLB-branding-
   finetune (P12). Zie `TECH_DEBT.md`.
-- Klanten & Dienstverlening werkblad MVP (stap 11.D) — ✅ live per 2026-05-07
-  (master `43ac1bb`). Sectie 5.1 + 7 `cd_*`-tabellen + 9 RLS-tests groen.
-  Vervolg-sprints (vooruitkijk, niet acuut): fase 2 pijnpunten + fase 3
-  analyse + AI-magic-staff-uitbreiding voor `cd_pattern_suggestions` + fase 4
-  verbeterrichtingen + Roadmap-handover + Klantreis-archetype + sub-items-UI
-  + Type B visueel rapport + P13 rapport-architectuur als platform-laag.
+- Klanten & Dienstverlening werkblad — ✅ Fase 1+2+3 live per 2026-05-08
+  (master `30b16ae`). Sectie 5.1 + 7 `cd_*`-tabellen + 9 RLS-tests groen.
+  Stap 11.D MVP fase 1 inventarisatie (master `43ac1bb`); stap 11.E
+  correctie + dimensie-edit (`9dcfd22`); stap 11.F fase 2 pijnpunten met
+  multi-relationele koppelingen + boy-scout dimensie-edit (`a6f838e`);
+  stap 11.G fase 3 AI-analyse (`30b16ae`) — 4 AI-affordances cluster/
+  paradox/positionering/overstijgend, suggestion-tree met refine-edit/
+  refine-deeper/+ eigen-patroon, geaccepteerde patronen in rapport-laag.
+  Open subitems: twee-traps-summarisation voor grote canvas (>8K chars
+  context-payload — fallback nu één-traps-call), parse-fout-pad bij
+  malformed AI-output (logged server-side, geen audit-trail-suggestion
+  rij), `PROMPT_VERSION="11G-v1"` als string-literal i.p.v. DB-veld voor
+  versie-tracking. Zie `TECH_DEBT.md`.
+  Vervolg-sprints (vooruitkijk, niet acuut): fase 4 verbeterrichtingen +
+  Roadmap-handover + Klantreis-archetype + sub-items-UI + Type B visueel
+  rapport + P13 rapport-architectuur als platform-laag.

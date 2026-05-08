@@ -36,6 +36,8 @@
 
 const { requireAuth } = require("../_auth");
 const { userScopedClient } = require("../_template");
+const { handleGenerate } = require("./_pattern_generate");
+const { handleEvents }   = require("./_pattern_events");
 
 const TEXT_MAX = 8000;
 const ALLOWED_PATTERN_TYPES = ["cluster", "paradox", "positionering", "overstijgend", "eigen"];
@@ -43,6 +45,14 @@ const ALLOWED_SCOPES = ["canvas", "dimension", "item"];
 const OPEN_STATUSES = ["open", "edited", "refined"];
 
 module.exports = async function handler(req, res) {
+  // Subpath-dispatch (Vercel rewrites consolideren _generate + _events naar deze
+  // file om binnen Hobby 12-functions-limit te blijven, zie vercel.json):
+  //   - /api/klanten/pattern_suggestions_generate → ?_subpath=generate
+  //   - /api/klanten/pattern_suggestion_events    → ?_subpath=events
+  const subpath = req.query?._subpath;
+  if (subpath === "generate") return handleGenerate(req, res);
+  if (subpath === "events")   return handleEvents(req, res);
+
   const user = await requireAuth(req, res);
   if (!user) return;
 

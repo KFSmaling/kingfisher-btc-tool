@@ -21,7 +21,10 @@ const { userScopedClient } = require("../_template");
 
 const ALLOWED_TARGET_TABLES = ["cd_dimensions", "cd_items"];
 
-module.exports = async function handler(req, res) {
+// Geconsolideerd in pain_points.js via Vercel rewrite (?_subpath=couplings)
+// om binnen Vercel Hobby 12-functions-limit te blijven. Frontend-URL
+// onveranderd (rewrite van /api/klanten/pain_point_couplings → pain_points).
+async function handleCouplings(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
@@ -104,4 +107,6 @@ module.exports = async function handler(req, res) {
     console.error("[api/klanten/pain_point_couplings] onverwachte fout:", err);
     return res.status(500).json({ error: err.message || "interne fout" });
   }
-};
+}
+
+module.exports = { handleCouplings };
