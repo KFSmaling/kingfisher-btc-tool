@@ -31,6 +31,12 @@ export default function WerkruimteView({
   items,
   painPoints,
   couplings,
+  // Stap 11.G.4 F11-fix: suggestions/loading/error/reload-pass-through
+  // van KlantenWerkblad naar AnalyseView (single source of truth).
+  suggestions,
+  suggestionsLoading,
+  suggestionsError,
+  reloadSuggestions,
   onItemClick,
   onAddItem,
   onAddDimensie,
@@ -88,6 +94,10 @@ export default function WerkruimteView({
             items={items}
             painPoints={painPoints || []}
             couplings={couplings || []}
+            suggestions={suggestions}
+            loading={suggestionsLoading}
+            error={suggestionsError}
+            reload={reloadSuggestions}
           />
         </div>
       ) : activeFase === 2 ? (
