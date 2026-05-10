@@ -14,7 +14,8 @@
  *   - EigenPatroonModal voor consultant-eigen patroon
  *
  * State-discipline (CLAUDE.md §4):
- *   - usePatternSuggestions levert race-guarded load (4.3+4.4 compliant)
+ *   - suggestions/reload als props (Stap 11.G.4 F11-fix: single source of
+ *     truth in KlantenWerkblad — AnalyseView heeft geen eigen hook-instance)
  *   - Acties checken `error` expliciet (4.2)
  *   - Geen optimistic update — wacht op service-bevestiging dan reload()
  *   - canvasIdRef voor async callbacks
@@ -28,7 +29,6 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import AiIconButton from "../../shared/components/AiIconButton";
-import { usePatternSuggestions } from "./hooks/usePatternSuggestions";
 import * as klantenService from "./services/klanten.service";
 import SuggestionCard from "./SuggestionCard";
 import SuggestionEditModal from "./SuggestionEditModal";
@@ -48,9 +48,21 @@ const AI_BUTTONS = [
   { action: "overstijgend",  labelKey: "klanten.analyse.knop.overstijgend",  labelFallback: "Overstijgend zoeken",  helperKey: "klanten.analyse.knop.overstijgend.helper",  helperFallback: "Capabilities die het hele werkblad raken" },
 ];
 
-export default function AnalyseView({ canvasId, dimensions = [], items = [], painPoints = [], couplings = [] }) {
+export default function AnalyseView({
+  canvasId,
+  dimensions = [],
+  items = [],
+  painPoints = [],
+  couplings = [],
+  // Stap 11.G.4 F11-fix: suggestions/loading/error/reload komen nu als props
+  // van KlantenWerkblad (single source of truth). AnalyseView heeft GEEN eigen
+  // hook-instance meer — voorkomt stale data in RapportView na edit-acties.
+  suggestions,
+  loading,
+  error,
+  reload,
+}) {
   const { label: appLabel } = useAppConfig();
-  const { loading, error, suggestions, reload } = usePatternSuggestions(canvasId);
 
   // canvasIdRef voor async callbacks (CLAUDE.md §4.4)
   const canvasIdRef = useRef(canvasId);

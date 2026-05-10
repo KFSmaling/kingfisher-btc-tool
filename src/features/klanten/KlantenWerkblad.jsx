@@ -32,9 +32,15 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
   const { label: appLabel } = useAppConfig();
   const { loading, error, dimensions, items, reload } = useCanvasDimensions(canvasId);
   const { painPoints, couplings, reload: reloadPains } = usePainPoints(canvasId);
-  // Stap 11.G Vervolg-sessie B: KlantenWerkblad-niveau suggestions-load voor
-  // RapportView. AnalyseView houdt eigen hook-instance (live reload na actions).
-  const { suggestions } = usePatternSuggestions(canvasId);
+  // Stap 11.G.4 F11-fix: single source of truth voor suggestions. AnalyseView
+  // krijgt suggestions/loading/error/reload als props (geen eigen hook-instance
+  // meer) zodat edit-acties in fase 3 onmiddellijk doorslaan naar RapportView.
+  const {
+    suggestions,
+    loading: suggestionsLoading,
+    error:   suggestionsError,
+    reload:  reloadSuggestions,
+  } = usePatternSuggestions(canvasId);
 
   const [view, setView] = useState("werkruimte"); // "werkruimte" | "rapport"
   const [modalCtx, setModalCtx] = useState(null); // { dimension, item } of null
@@ -235,6 +241,10 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
           items={items}
           painPoints={painPoints || []}
           couplings={couplings || []}
+          suggestions={suggestions}
+          suggestionsLoading={suggestionsLoading}
+          suggestionsError={suggestionsError}
+          reloadSuggestions={reloadSuggestions}
           onItemClick={openEditItem}
           onAddItem={openCreateItem}
           onAddDimensie={openCreateDimensie}
