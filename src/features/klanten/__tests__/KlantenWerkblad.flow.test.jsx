@@ -197,7 +197,7 @@ describe("KlantenWerkblad — lege-canvas flow (stap 11.E correctie)", () => {
     });
   });
 
-  test("disabled archetypes (regio/behoefte/merk/gedrag/klantreis/anders) zijn zichtbaar in dropdown", async () => {
+  test("alle 9 archetypes zichtbaar én selecteerbaar in dropdown (post-11.I.2)", async () => {
     render(<KlantenWerkblad canvasId={TEST_CANVAS_ID} onClose={() => {}} />);
     fireEvent.click(await screen.findByTestId("dimensie-cta-eerste"));
 
@@ -207,14 +207,11 @@ describe("KlantenWerkblad — lege-canvas flow (stap 11.E correctie)", () => {
     // 1 placeholder + 9 archetypes = 10 options
     expect(options).toHaveLength(10);
 
-    // Drie enabled (klantsegment, propositie, kanaal)
+    // Alle 9 enabled (na 11.I.1 lichte archetypes + 11.I.2 klantreis Scope A)
     const enabledValues = options.filter(o => !o.disabled && o.value !== "").map(o => o.value);
-    expect(enabledValues.sort()).toEqual(["kanaal", "klantsegment", "propositie"]);
-
-    // Zes disabled
-    const disabledValues = options.filter(o => o.disabled && o.value !== "").map(o => o.value);
-    expect(disabledValues.sort()).toEqual(
-      ["anders", "behoefte", "gedragspatroon", "klantreis", "merk", "regio"]
+    expect(enabledValues.sort()).toEqual(
+      ["anders", "behoefte", "gedragspatroon", "kanaal", "klantreis",
+       "klantsegment", "merk", "propositie", "regio"]
     );
   });
 

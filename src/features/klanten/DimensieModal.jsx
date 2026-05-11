@@ -23,20 +23,28 @@ import React, { useState, useMemo } from "react";
 import { X } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 
-// Archetype-opties: enabled (MVP) + disabled (later)
+// Archetype-opties: alle 9 enabled per stap 11.I.2.
+// (Tot 11.I.1: klantsegment/propositie/kanaal enabled, rest minimal-stub disabled.
+//  Stap 11.I.1: 5 lichte archetypes uitgewerkt. Stap 11.I.2: klantreis Scope A.)
 const ARCHETYPE_OPTIONS = [
-  { value: "klantsegment", label: "Klantsegment", enabled: true,
+  { value: "klantsegment",   label: "Klantsegment",      enabled: true,
     placeholder: "bijv. Klantsegmenten of Doelgroepen of Markten" },
-  { value: "propositie",   label: "Propositie",   enabled: true,
+  { value: "propositie",     label: "Propositie",        enabled: true,
     placeholder: "bijv. Proposities of Diensten of Productlijnen" },
-  { value: "kanaal",       label: "Kanaal",       enabled: true,
+  { value: "kanaal",         label: "Kanaal",            enabled: true,
     placeholder: "bijv. Kanalen of Distributie of Touchpoints" },
-  { value: "regio",          label: "Regio",          enabled: false },
-  { value: "behoefte",       label: "Behoefte (JTBD)", enabled: false },
-  { value: "merk",           label: "Merk",           enabled: false },
-  { value: "gedragspatroon", label: "Gedragspatroon", enabled: false },
-  { value: "klantreis",      label: "Klantreis",      enabled: false },
-  { value: "anders",         label: "Anders, namelijk…", enabled: false },
+  { value: "regio",          label: "Regio",             enabled: true,
+    placeholder: "bijv. Regio's of Geografische markten" },
+  { value: "behoefte",       label: "Behoefte (JTBD)",   enabled: true,
+    placeholder: "bijv. Klantbehoeften of Jobs-to-be-done" },
+  { value: "merk",           label: "Merk",              enabled: true,
+    placeholder: "bijv. Merken of Sub-merken" },
+  { value: "gedragspatroon", label: "Gedragspatroon",    enabled: true,
+    placeholder: "bijv. Gedragspatronen of Klantgedrag-types" },
+  { value: "klantreis",      label: "Klantreis",         enabled: true,
+    placeholder: "bijv. Klantreis-stages of Customer journey" },
+  { value: "anders",         label: "Anders, namelijk…", enabled: true,
+    placeholder: "bijv. Eigen dimensie-categorie" },
 ];
 
 const NAME_MAX = 100;
