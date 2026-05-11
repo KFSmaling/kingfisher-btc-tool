@@ -1,11 +1,12 @@
 name: Supabase Migrations
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'supabase/migrations/**'
+  workflow_dispatch:
+    # Manual trigger only — migraties worden via Supabase-MCP applied tijdens
+    # bouwer-sprints. Workflow blijft beschikbaar als fall-back voor toekomst.
+    # Auto-trigger uitgeschakeld om GitHub-fail-mails te vermijden bij
+    # migraties die al via Supabase-MCP applied zijn (schema_migrations zegt
+    # "already applied" → supabase db push faalt).
 
 jobs:
   migrate:

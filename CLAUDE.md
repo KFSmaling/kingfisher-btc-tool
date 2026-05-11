@@ -477,21 +477,24 @@ feature-root in DeepDiveOverlay (CLAUDE.md §4.1).
 |---|---|---|---|
 | `strategy`   | `src/features/strategie/` | ✅ live | StrategieWerkblad + StrategyOnePager (anker voor rapport-laag-styling) |
 | `principles` | `src/features/richtlijnen/` | ✅ live | RichtlijnenWerkblad |
-| `customers`  | `src/features/klanten/` | ✅ Fase 1+2+3 + UX-cyclus afgerond (stap 11.D/E/F/G/G.1-G.4, 2026-05-08 t/m 2026-05-10) | Zie blok onder de tabel voor volledige UX-cyclus-stand; buiten scope (volgende subs): fase 4 verbeterrichtingen + Roadmap-handover (11.H), klantreis-archetype (11.I), Type B visueel rapport (11.J post-MVP), dossier-driven AI-input (11.K na RFC-002), platform-pattern voor cross-werkblad-AI (F10) |
+| `customers`  | `src/features/klanten/` | ✅ Fase 1+2+3+4 + UX-cyclus live (stap 11.D-H, 2026-05-08 t/m 2026-05-11) | Zie blok onder de tabel voor volledige stand; buiten scope (volgende subs): klantreis-archetype (11.I), Type B visueel rapport (11.J post-MVP), dossier-driven AI-input (11.K na RFC-002), J2+J3+J5 Playwright (11.G.5), platform-pattern voor cross-werkblad-AI (F10) |
 | `processes` / `people` / `technology` / `portfolio` | — | placeholder | DeepDiveOverlay valt terug op `GenericPlaceholder`-component |
 
-**Klanten-werkblad-architectuur (stap 11.D-G + G.1-G.4):**
-- Datamodel: 7 `cd_*`-tabellen (RFC-001 §2) + 1 audit-tabel; alle RLS-enabled met canvas-eigenaar + tenant-isolatie-pattern (anker `canvases`-policy); event-CHECK uitgebreid met `unrejected` (stap 11.G.3)
+**Klanten-werkblad-architectuur (stap 11.D-H):**
+- Datamodel: 7 `cd_*`-tabellen (RFC-001 §2) + 1 audit-tabel; alle RLS-enabled met canvas-eigenaar + tenant-isolatie-pattern (anker `canvases`-policy); event-CHECK uitgebreid met `unrejected` (stap 11.G.3); `cd_improvement_intents` actief in productie sinds 11.H met cross-tenant RLS-test PASS
 - API fase 1+2: `api/klanten/dimensions.js` + `items.js` + `pain_points.js` + `pain_point_couplings.js` via Path-2 `userScopedClient` uit `_template.js`; gedeelde archetype-schema-validatie in `_archetypes.js`
 - API fase 3: `api/klanten/pattern_suggestions.js` (+ `unmark` / `restore`-actions stap 11.G.3) + `pattern_suggestions_generate.js` (Anthropic-call met cluster/paradox/positionering/overstijgend prompts, pure JSON-array parser, append-only events) + `pattern_suggestion_events.js` (audit-trail). 3 endpoints via Vercel rewrites geconsolideerd (Hobby 12-limiet)
-- Frontend fase 1+2: `KlantenWerkblad` (root, hosting van `usePatternSuggestions` single source of truth) → `WerkruimteView` (fase-tabs, pass-through van suggestions-props) → `DimensieKolom` + `ItemModal` (fase 1) + `PijnpuntenView` + `PijnpuntCard` + `PijnpuntModal` (fase 2)
-- Frontend fase 3: `AnalyseView` (4 AI-knoppen + counter + suggestion-list, `isInitialLoad`/`isReloading` distinctie + inline-spinner — stap 11.G.2) + `SuggestionCard` (TYPE_STYLES uit `patternTypeStyles.js`; Bewerk/Verwijder/Markeer als richting-rebrand — stap 11.G.3) + `SuggestionEditModal` + `RefineDeeperModal` + `EigenPatroonModal` + `CollapseSection` voor Gemarkeerd/Verwijderd-secties met restore-acties (stap 11.G.3)
-- Frontend rapport-laag: `RapportView` (A4-landscape) krijgt suggestions via props van KlantenWerkblad (stap 11.G.4 — geen eigen hook-instance meer). AI-sectie: 3-koloms grid van **alle** accepted patterns (geen 6-limiet meer per stap 11.G.3), `includeInPrint`-toggle deblokkeerd + one-shot auto-enabled bij ≥1 accepted via `hasAutoEnabledRef`
-- E2E-infra: Playwright + `playwright.config.js` + `global-setup.js` storageState + `helpers/test-canvas.js` Path-2-creds; test-account `keessmaling+test@gmail.com` (KF tenant_admin); `.env.test` gitignored; J1-blueprint PASS 13-step in 5.4s tegen productie (stap 11.G.1)
-- 4 prompts (`prompt.klanten.{cluster,paradox,positionering,overstijgend}`) zijn `tenant_overridable=true` per ADR-002 niveau 1+3 — branche/methode-positionering kan legitiem per consultancy-tenant verschillen
-- RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7); cd_pattern_suggestions cross-tenant geverifieerd in stap 11.G sprint-afsluit
-- RTL: 24/24 PASS over KlantenWerkblad.flow + PijnpuntenView.flow + AnalyseView.flow (mocks op service-laag, refactor-veilig)
-- Label-corpus: 140 totaal `label.klanten.*`-keys (incl. 6 nieuwe `klanten.analyse.helper.*` stap 11.G.2 + 6 nieuwe collapse-keys stap 11.G.3)
+- API fase 4: `api/klanten/_improvement_intents.js`-helper via `pattern_suggestions.js?_subpath=intents` (Pad B uit 11.H — endpoint-budget=12 behouden). CRUD + `handover_to_roadmap` / `unsend`-actions met state-machine 409-validatie. `promote_to_intent`-action uitgebreid met body `{ title, intent_md }` zodat dezelfde call de `cd_improvement_intents`-rij creëert + audit-event `metadata.intent_id` zet (1:1-relatie via `source_suggestion_id` partial-unique)
+- Frontend fase 1+2: `KlantenWerkblad` (root, hosting van `usePatternSuggestions` + `useIntents` single source of truth) → `WerkruimteView` (fase-tabs, pass-through van suggestions+intents-props) → `DimensieKolom` + `ItemModal` (fase 1) + `PijnpuntenView` + `PijnpuntCard` + `PijnpuntModal` (fase 2)
+- Frontend fase 3: `AnalyseView` (4 AI-knoppen + counter + suggestion-list, `isInitialLoad`/`isReloading` distinctie + inline-spinner — stap 11.G.2) + `SuggestionCard` (TYPE_STYLES uit `patternTypeStyles.js`; Bewerk/Verwijder/Markeer als richting-rebrand — stap 11.G.3) + `SuggestionEditModal` + `RefineDeeperModal` + `EigenPatroonModal` + `CollapseSection` voor Gemarkeerd/Verwijderd-secties met restore-acties (stap 11.G.3). Stap 11.H: `secondaryActionLabel`-prop op CollapseSection rendert "Promote naar verbeterrichting"-knop voor gemarkeerde patterns die nog geen intent hebben (filter via `promotedSuggestionIds`-derivation)
+- Frontend fase 4 (stap 11.H): `VerbeterrichtingenView` (root: counter `X concept · Y verstuurd`, concept-lijst, Verstuurd-collapse, CTA) + `IntentCard` (concept/verstuurd status-badge + Bewerk/Verwijder/Markeer-Terugtrekken — F9-consistent) + `IntentModal` (create + edit; titel 1-100, intent_md 50-2000) + `PromoteToIntentModal` (pre-vulling via `deriveTitle` 60 chars + volledige suggestion-tekst). Handover blijft stub: zet `status='verstuurd'` + `handover_to_roadmap_at=now()` + `window.confirm`-dialoog ("Roadmap-werkblad is nog niet beschikbaar — actie wordt vastgelegd"). Roadmap-werkblad bestaat nog niet.
+- `useIntents`-hook met race-guards + cancelled-flag + canvasIdRef (CLAUDE.md §4.3+4.4); zelfde anker als `usePatternSuggestions`. Single source of truth in KlantenWerkblad — VerbeterrichtingenView en RapportView krijgen beide dezelfde data via props (anker 11.G.4 F11-fix)
+- Frontend rapport-laag: `RapportView` (A4-landscape) krijgt suggestions + intents via props van KlantenWerkblad (single source of truth, stap 11.G.4 + 11.H). AI-sectie: 3-koloms grid van **alle** accepted patterns; `includeInPrint`-toggle deblokkeerd + one-shot auto-enabled bij ≥1 accepted. Verbeterrichtingen-sectie tussen patronen en footer met responsive 1/2/3-koloms grid en concept/verstuurd-status-badges
+- E2E-infra: Playwright + `playwright.config.js` + `global-setup.js` storageState + `helpers/test-canvas.js` Path-2-creds; test-account `keessmaling+test@gmail.com` (KF tenant_admin); `.env.test` gitignored; J1-blueprint PASS 13-step in 5.4s tegen productie (stap 11.G.1). J2+J3+J5 niet uitgevoerd — eigen mini-sprint 11.G.5
+- 4 prompts (`prompt.klanten.{cluster,paradox,positionering,overstijgend}`) zijn `tenant_overridable=true` per ADR-002 niveau 1+3 — branche/methode-positionering kan legitiem per consultancy-tenant verschillen. Geen AI-prompts voor fase 4 (intent-content is volledig consultant-eigen)
+- RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7); `cd_pattern_suggestions` + `cd_improvement_intents` cross-tenant geverifieerd via Supabase-MCP in stap 11.G + 11.H sprint-afsluit
+- RTL: 34/34 PASS over 4 suites — KlantenWerkblad.flow + PijnpuntenView.flow + AnalyseView.flow + VerbeterrichtingenView.flow (mocks op service-laag, refactor-veilig)
+- Label-corpus: 174 totaal `label.klanten.*`-keys (140 vóór 11.H + 34 nieuw: 5 algemene `klanten.actie.*` set, 27 `klanten.verbeterrichting.*`, 2 `klanten.rapport.verbeterrichtingen.*`). Algemene `klanten.actie.*`-set is Optie 2 uit RFC-002 RP1 open vraag #11 — herbruikbaar over werkbladen heen. Aandachtspunt **F13**: `klanten.actie.markeer`-fallback is `"Markeer als verstuurd"` (intent-context), maar de key wordt ook gebruikt op SuggestionCard waar context anders is — rename of duplicatie volgt in 11.K cleanup-pas
 
 ---
 
@@ -570,29 +573,36 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
   `api/improve.js` werkt wél met tokens), i18n-mismatch op werkbladen 
   (`appLabel` is monolinguaal-by-design — F-18, P11), en TLB-branding-
   finetune (P12). Zie `TECH_DEBT.md`.
-- Klanten & Dienstverlening werkblad — ✅ Fase 1+2+3 + UX-cyclus afgerond
-  per 2026-05-10. Master-merge-keten: `30b16ae` (11.G fase 3 AI-analyse) +
+- Klanten & Dienstverlening werkblad — ✅ Fase 1+2+3+4 live per 2026-05-11.
+  Master-merge-keten: `30b16ae` (11.G fase 3 AI-analyse) +
   `a89be72` (Vercel Hobby 12-limit deploy-blocker fix via 3 rewrites) +
   `ea94327` (11.G.1 E2E-Playwright-infra) + `777b9e8` (11.G.2 F4 reload-
   flicker + F5 helper-tekst + B3 ItemModal a11y) + `8567545` (11.G.3 F7
   rapport-volledigheid + F8 collapse marked/deleted + F9 rebrand
   Bewerk/Verwijder/Markeer als richting) + `ded1959` (11.G.4 F11 RapportView-
-  sync via single source of truth). Laatste deploy: `dpl_DCu3c9H7shR5ZHe4FxKe1ND9jBRR`
-  op `kingfisher-btcprod.vercel.app`. Sectie 5.1 + 7 `cd_*`-tabellen + 9
-  RLS-tests + cross-tenant cd_pattern_suggestions groen + RTL 24/24 PASS.
-  Open subitems (3 P3 uit 11.G, blijven open): twee-traps-summarisation
-  voor grote canvas (>8K chars context-payload — fallback nu één-traps-
-  call), parse-fout-pad bij malformed AI-output (logged server-side, geen
-  audit-trail-suggestion rij), `PROMPT_VERSION="11G-v1"` als string-
-  literal i.p.v. DB-veld voor versie-tracking. 2 P3 uit 11.G.1:
-  wachtwoord-rotatie + test-tenant-isolatie zodra eerste echte klant
-  onboardt. Zie `tech_debt.md`.
-- Klanten-werkblad **fase 4 (stap 11.H)** — instructie volgt zodra
-  reviewer 'm schrijft. Scope: verbeterrichtingen + Roadmap-handover stub.
-  `cd_improvement_intents`-tabel staat klaar uit RFC-001.
-- **Stap 11.G.5 J2+J3 Playwright-specs** — dedicated mini-sprint. Drie
-  keer boy-scout overgeslagen (G.1, G.2, G.3) — patroon is duidelijk,
+  sync via single source of truth) + `48ed620` (11.H Fase 4 Verbeter-
+  richtingen + Roadmap-handover-stub). Laatste deploy:
+  `dpl_8znp8xLEtNTiBDJG5imioaFowXN8` op `kingfisher-btcprod.vercel.app`.
+  Sectie 5.1 + 7 `cd_*`-tabellen (incl. `cd_improvement_intents` actief) +
+  9 RLS-tests + cross-tenant `cd_pattern_suggestions` + `cd_improvement_intents`
+  groen + RTL 34/34 PASS over 4 suites. Open subitems (3 P3 uit 11.G, blijven
+  open): twee-traps-summarisation voor grote canvas (>8K chars context-payload),
+  parse-fout-pad bij malformed AI-output, `PROMPT_VERSION` als string-literal.
+  2 P3 uit 11.G.1: wachtwoord-rotatie + test-tenant-isolatie zodra eerste
+  echte klant onboardt. Zie `tech_debt.md`.
+- **Stap 11.G.5 J2+J3+J5 Playwright-specs** — dedicated mini-sprint. Vier
+  keer boy-scout overgeslagen (G.1, G.2, G.3, H) — patroon is duidelijk,
   eigen sessie nodig. Niet acuut.
+- **Stap 11.I klantreis-archetype** — vijfde dimensie-archetype (geordend).
+  Niet acuut; volgt na 11.K.
+- **Stap 11.J Type B visueel rapport** — post-MVP. Vier-kwadranten +
+  veranderacties-pinnetjes. Gamma/PPTX/PDF-route nog te kiezen.
+- **F12 canvas-tegel-feedback** — TECH_DEBT P3-kandidaat: canvas-overzicht-
+  tegel toont fase-status (fase 1/2/3/4 counts) zodat consultants in één
+  oogopslag zien waar elk canvas in z'n levenscyclus zit.
+- **F13 `klanten.actie.markeer`-key-rename in 11.K** — algemene key wordt
+  ook gebruikt op SuggestionCard waar fallback "Markeer als verstuurd" niet
+  past. In 11.K cleanup-pas splitsen of contextuele override toevoegen.
 - **RFC-002 dossier-driven AI-input** — architect-opdracht ligt in
   `platform/handoff/to-architect/`. Niet bouwer-werk tot RFC akkoord-
   bevonden + 11.K-instructie geschreven.
@@ -617,21 +627,23 @@ Bij een verse Claude Code-sessie (nieuwe instance, geen context):
 5. Bij twijfel over scope: question-file naar reviewer in
    `handoff/to-reviewer/` (niet meteen code schrijven)
 
-### Huidige hoofd-state (per einde 2026-05-10)
+### Huidige hoofd-state (per einde 2026-05-11)
 
 | Aspect | Waarde |
 |---|---|
-| Laatste deploy | `dpl_DCu3c9H7shR5ZHe4FxKe1ND9jBRR` (10 mei) op `kingfisher-btcprod.vercel.app` |
-| Master HEAD | `ded1959` — Stap 11.G.4 F11 RapportView-sync |
+| Laatste deploy | `dpl_8znp8xLEtNTiBDJG5imioaFowXN8` (11 mei) op `kingfisher-btcprod.vercel.app` |
+| Master HEAD | `48ed620` — Stap 11.H Fase 4 Verbeterrichtingen + Roadmap-handover-stub |
 | Test-credentials | `keessmaling+test@gmail.com` / staat in `.env.test` (gitignored) — KF tenant_admin |
-| E2E-suite | `npm run test:e2e` — J1-blueprint live, J2/J3 nog niet (mini-sprint 11.G.5) |
-| RTL | 24/24 PASS over 3 klanten-suites |
-| Endpoint-budget Vercel | 12/12 (Hobby), 3 endpoints geconsolideerd via rewrites |
+| E2E-suite | `npm run test:e2e` — J1-blueprint live, J2/J3/J5 nog niet (mini-sprint 11.G.5) |
+| RTL | 34/34 PASS over 4 klanten-suites (incl. VerbeterrichtingenView.flow) |
+| Endpoint-budget Vercel | 12/12 (Hobby), 4 endpoints geconsolideerd via rewrites (incl. `improvement_intents`) |
+| Klanten-labels | 174 totaal `label.klanten.*` |
+| Supabase-migrations CI | `workflow_dispatch`-only sinds 2026-05-11 (auto-trigger uitgeschakeld; migraties via Supabase-MCP applied tijdens sprints) |
 
 ### Verwachte volgende stappen
 
-- **Stap 11.H** — Klanten-fase 4 verbeterrichtingen + Roadmap-handover
-  (instructie volgt van reviewer)
-- **Stap 11.G.5** — J2+J3 Playwright-specs als mini-sprint (niet acuut)
 - **Stap 11.K** — Dossier-driven AI-input, wacht op RFC-002 akkoord
-  (architect-werk parallel)
+  (architect-werk parallel). Bevat ook F13 `klanten.actie.markeer`-key-cleanup.
+- **Stap 11.G.5** — J2+J3+J5 Playwright-specs als mini-sprint (niet acuut)
+- **Stap 11.I** — Klantreis-archetype (geordend dimensie-type)
+- **Stap 11.J** — Type B visueel rapport (post-MVP)
