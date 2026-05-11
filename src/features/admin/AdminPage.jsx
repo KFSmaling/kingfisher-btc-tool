@@ -50,6 +50,22 @@ const PROMPT_GROUPS = [
     headerCls: "bg-purple-50 border-purple-200 text-purple-800",
     match: k => k.startsWith("prompt.guideline."),
   },
+  {
+    id: "klanten",
+    label: "Klanten & Dienstverlening",
+    icon: Layers,
+    desc: "AI-prompts voor analyse (cluster/paradox/positionering/overstijgend) + (post-11.K) dossier-extractie",
+    headerCls: "bg-amber-50 border-amber-200 text-amber-800",
+    match: k => k.startsWith("prompt.klanten."),
+  },
+  {
+    id: "prompts-other",
+    label: "Overig",
+    icon: Wand2,
+    desc: "Overige prompts (fallback)",
+    headerCls: "bg-slate-50 border-slate-200 text-slate-600",
+    match: () => true,
+  },
 ];
 
 const LABEL_GROUPS = [
@@ -81,6 +97,14 @@ const LABEL_GROUPS = [
     match: k =>
       k === "label.werkblad.richtlijnen" ||
       k.startsWith("label.richtl."),
+  },
+  {
+    id: "werkblad-klanten",
+    label: "Werkblad Klanten",
+    icon: Layers,
+    desc: "Sectiekoppen, veldnamen, dimensies, pijnpunten, analyse, verbeterrichtingen, rapport",
+    headerCls: "bg-amber-50 border-amber-200 text-amber-800",
+    match: k => k === "label.werkblad.klanten" || k.startsWith("label.klanten."),
   },
   {
     id: "other",
