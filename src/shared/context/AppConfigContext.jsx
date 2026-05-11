@@ -117,6 +117,13 @@ const LABEL_FALLBACKS = {
   "klanten.knop.item.toevoegen":      "+ item",
   "klanten.knop.item.opslaan":        "Opslaan",
   "klanten.knop.item.annuleren":      "Annuleren",
+  // Stap 11.K.2 F16 — canonical-delete-knoppen + inline-bevestigingsdialog
+  "klanten.knop.item.verwijderen":         "Verwijderen",
+  "klanten.knop.pijnpunt.verwijderen":     "Verwijderen",
+  "klanten.modal.delete.confirm.titel":    "Permanent verwijderen?",
+  "klanten.modal.delete.confirm.tekst":    "Dit kan niet ongedaan gemaakt worden.",
+  "klanten.modal.delete.confirm.ja":       "Verwijder definitief",
+  "klanten.modal.delete.confirm.nee":      "Annuleer",
   "klanten.rapport.titel":            "Klanten & Dienstverlening — overzicht",
   "klanten.rapport.section.samenvatting": "Samenvatting",
   "klanten.rapport.section.huidig":   "Huidige situatie",
