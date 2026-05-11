@@ -477,10 +477,10 @@ feature-root in DeepDiveOverlay (CLAUDE.md §4.1).
 |---|---|---|---|
 | `strategy`   | `src/features/strategie/` | ✅ live | StrategieWerkblad + StrategyOnePager (anker voor rapport-laag-styling) |
 | `principles` | `src/features/richtlijnen/` | ✅ live | RichtlijnenWerkblad |
-| `customers`  | `src/features/klanten/` | ✅ Fase 1+2+3+4 + dossier-driven AI + canonical-delete + UX-banner + in-roadmap-rebrand live (stap 11.D-K.2, 2026-05-08 t/m 2026-05-11; Kees-handmatige-test van AI-flow pending) | Zie blok onder de tabel voor volledige stand; buiten scope (volgende subs): klantreis-archetype (11.I), Type B visueel rapport (11.J post-MVP), J2+J3+J5+J6 Playwright (11.G.5), F12 canvas-tegel-feedback (na 11.K-test), F15 prompt-naming-cleanup post-MVP, status-enum DB-rename via ADR-004/RFC-003, platform-pattern voor cross-werkblad-AI (F10) |
+| `customers`  | `src/features/klanten/` | ✅ Fase 1+2+3+4 + dossier-driven AI + 5 lichte archetypes (regio/behoefte/merk/gedragspatroon/anders) live (stap 11.D-I.1, 2026-05-08 t/m 2026-05-12; Kees-handmatige-test van AI-flow pending) | Zie blok onder de tabel voor volledige stand; buiten scope (volgende subs): klantreis-archetype (11.I.2 met is_ordered + DMU + insurance-overlay), Type B visueel rapport (11.J post-MVP), J2+J3+J5+J6 Playwright (11.G.5), F12 canvas-tegel-feedback (na 11.K-test), F15 prompt-naming-cleanup post-MVP, status-enum DB-rename via ADR-004/RFC-003, platform-pattern voor cross-werkblad-AI (F10) |
 | `processes` / `people` / `technology` / `portfolio` | — | placeholder | DeepDiveOverlay valt terug op `GenericPlaceholder`-component |
 
-**Klanten-werkblad-architectuur (stap 11.D-K.2):**
+**Klanten-werkblad-architectuur (stap 11.D-I.1):**
 - Datamodel: 7 `cd_*`-tabellen (RFC-001 §2) + 1 audit-tabel; alle RLS-enabled met canvas-eigenaar + tenant-isolatie-pattern (anker `canvases`-policy); event-CHECK uitgebreid met `unrejected` (stap 11.G.3); `cd_improvement_intents` actief in productie sinds 11.H met cross-tenant RLS-test PASS
 - API fase 1+2: `api/klanten/dimensions.js` + `items.js` + `pain_points.js` + `pain_point_couplings.js` via Path-2 `userScopedClient` uit `_template.js`; gedeelde archetype-schema-validatie in `_archetypes.js`
 - API fase 3: `api/klanten/pattern_suggestions.js` (+ `unmark` / `restore`-actions stap 11.G.3) + `pattern_suggestions_generate.js` (Anthropic-call met cluster/paradox/positionering/overstijgend prompts, pure JSON-array parser, append-only events) + `pattern_suggestion_events.js` (audit-trail). 3 endpoints via Vercel rewrites geconsolideerd (Hobby 12-limiet)
@@ -497,10 +497,11 @@ feature-root in DeepDiveOverlay (CLAUDE.md §4.1).
 - E2E-infra: Playwright + `playwright.config.js` + `global-setup.js` storageState + `helpers/test-canvas.js` Path-2-creds; test-account `keessmaling+test@gmail.com` (KF tenant_admin); `.env.test` gitignored; J1-blueprint PASS 13-step in 5.4s tegen productie (stap 11.G.1). J2+J3+J5 niet uitgevoerd — eigen mini-sprint 11.G.5
 - 7 prompts totaal `tenant_overridable=true` per ADR-002 niveau 1+3: 4 fase-3-analyse (`prompt.klanten.{cluster,paradox,positionering,overstijgend}`) + 3 dossier-driven (`prompt.klanten.dossier.{items_extract,fields_fill,pain_points_extract}` — stap 11.K). Branche/methode-positionering per consultancy-tenant kan legitiem verschillen. Geen AI-prompts voor fase 4 (intent-content is volledig consultant-eigen)
 - RLS-tests: `tests/rls/cd_klanten_werkblad.sql` (9 tests, RFC-001 §7); `cd_pattern_suggestions` + `cd_improvement_intents` cross-tenant geverifieerd via Supabase-MCP in stap 11.G + 11.H sprint-afsluit; `cd_input_suggestion_events` 5 RLS-tests pass via MCP DO-blokken in stap 11.K (structuur + cross-canvas-blokkade + cross-tenant-blokkade + append-only-bewijs + rejected-uitzondering voor verwijderde target)
-- RTL: 50/50 PASS over 6 suites — KlantenWerkblad.flow + PijnpuntenView.flow + AnalyseView.flow + VerbeterrichtingenView.flow + DossierAffordances.flow + ItemModal.flow (mocks op service-laag, refactor-veilig). 11.K.2-uitbreiding: 3 F16-cases in KlantenWerkblad.flow + 3 F17-cases in nieuwe ItemModal.flow + 2 F18-cases in VerbeterrichtingenView.flow
-- Label-corpus: **190 totaal** `label.klanten.*`-keys (184 vóór 11.K.2 + 6 nieuw F16). 11.K nieuwe keys: 3 affordance-knoppen + 4 draft-state-UX + 3 dossier-context-actie-keys. 11.K.2 F16: 6 nieuwe keys voor canonical-delete (2 verwijder-knop + 4 inline-confirm). **F13 ✅ afgerond in 11.K**: werkblad-onderdeel-prefix toegepast — `klanten.actie.markeer`/`.terugtrekken` (intent-context) gerenamed naar `klanten.verbeterrichting.actie.markeer`/`.terugtrekken`; nieuwe `klanten.dossier.actie.markeer="Markeer als richting"` voor draft-acceptance. **F18 ✅ afgerond in 11.K.2**: UI-rebrand 'verstuurd' → 'in roadmap' (Optie A — DB-enum `cd_improvement_intents.status='verstuurd'` blijft tot RFC-003/11.L Roadmap-werkblad). Algemene `klanten.actie.bewerk`/`.verwijder`/`.promote` blijven context-onafhankelijk
+- RTL: 57/57 PASS over 7 suites — KlantenWerkblad.flow + PijnpuntenView.flow + AnalyseView.flow + VerbeterrichtingenView.flow + DossierAffordances.flow + ItemModal.flow + ItemModal.archetypes (mocks op service-laag, refactor-veilig). 11.K.2-uitbreiding: 3 F16-cases in KlantenWerkblad.flow + 3 F17-cases in nieuwe ItemModal.flow + 2 F18-cases in VerbeterrichtingenView.flow. 11.I.1-uitbreiding: 7 cases in nieuwe ItemModal.archetypes (5 archetype-renderings + 2 anders-save/edit-paden)
+- Label-corpus: **207 totaal** `label.klanten.*`-keys (190 vóór 11.I.1 + 17 nieuw). 11.K nieuwe keys: 3 affordance-knoppen + 4 draft-state-UX + 3 dossier-context-actie-keys. 11.K.2 F16: 6 nieuwe keys voor canonical-delete (2 verwijder-knop + 4 inline-confirm). 11.I.1: 17 nieuwe veld-labels (3 regio + 4 behoefte + 4 merk + 4 gedragspatroon + 2 anders incl. helper). **F13 ✅ afgerond in 11.K**: werkblad-onderdeel-prefix toegepast — `klanten.actie.markeer`/`.terugtrekken` (intent-context) gerenamed naar `klanten.verbeterrichting.actie.markeer`/`.terugtrekken`; nieuwe `klanten.dossier.actie.markeer="Markeer als richting"` voor draft-acceptance. **F18 ✅ afgerond in 11.K.2**: UI-rebrand 'verstuurd' → 'in roadmap' (Optie A — DB-enum `cd_improvement_intents.status='verstuurd'` blijft tot RFC-003/11.L Roadmap-werkblad). Algemene `klanten.actie.bewerk`/`.verwijder`/`.promote` blijven context-onafhankelijk
 - Frontend canonical-delete (stap 11.K.2 F16): ItemModal + PijnpuntModal hebben in edit-mode een Verwijder-knop links in footer (`mr-auto`) met inline-bevestigingsdialog (rode strook met titel/tekst + Annuleer/Verwijder definitief). Hard-delete via bestaande `deleteItem`/`deletePainPoint`-services — items/pijnpunten zijn consultant-eigendom (geen AI-output), dus geen audit-event. KlantenWerkblad handelt `handleDeleteItem`/`handleDeletePijnpunt` af + reload na succes.
 - A2-feedback-banner (stap 11.K.2 F17): ItemModal toont na A2-call een banner-stijl feedback i.p.v. subtiele klein-tekst. `fillNote`-state shape `{ type: "success" | "empty", text }` — groene banner met CheckCircle2 bij gevulde proposed_fields, amber banner met AlertCircle bij lege server-note. Sluitbaar via X-icon.
+- Archetype-schemas (stap 11.I.1): 5 lichte archetypes volledig uitgewerkt — `regio` (3 velden: geografie/marktgrootte/lokale_kenmerken), `behoefte` (4: job_to_be_done/context/bestaande_oplossingen/frustraties — JTBD-frame ADR-003 §C), `merk` (4: positionering/belofte/doelgroep/relatie_tot_andere_merken), `gedragspatroon` (4: intensiteit/loyaliteit/koopgedrag/digitale_volwassenheid), `anders` (1 jsonb-veld `vrije_velden` met max 4 keys via `custom_pairs`-type). Server-side ARCHETYPE_FIELDS in `_archetypes.js` was al compleet — alleen frontend-schema + labels werden in 11.I.1 uitgewerkt. Klantreis blijft minimal-stub tot 11.I.2 (is_ordered + DMU + insurance-overlay). Nieuwe `CustomPairsField`-component met interne array-state (voorkomt pair-positie-shuffling tijdens typen) — herbruikbaar voor toekomstige archetypes.
 
 ---
 
@@ -593,7 +594,8 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
   groepering klanten-labels + klanten-prompts + prompts-Overig-fallback) +
   `8ccaa5c` (11.K Dossier-driven AI-input + F13 key-rename) +
   `f6cc467` (11.K.2 cleanup F16 canonical-delete + F17 A2-banner + F18
-  in-roadmap-rebrand). Laatste deploy: `dpl_42GdeFacaDw9eZr7oPg5SAAAU9eL`
+  in-roadmap-rebrand) + `1255aa2` (11.I.1 5 lichte archetypes + custom_pairs
+  UX). Laatste deploy: `dpl_Gkj9NGELJmg5tQkzwHEw89ydSfvA`
   op `kingfisher-btcprod.vercel.app`. Sectie 5.1 + 7 `cd_*`-tabellen
   (incl. `cd_improvement_intents` + `cd_input_suggestion_events` actief)
   + 14 RLS-tests groen (9 RFC-001 §7 + 5 RFC-002 §8.1 via MCP) + cross-
@@ -607,7 +609,12 @@ Gedetailleerde lijst staat in `TECH_DEBT.md`. Korte versie:
 - **Stap 11.G.5 J2+J3+J5+J6 Playwright-specs** — dedicated mini-sprint.
   Vijf keer boy-scout overgeslagen (G.1, G.2, G.3, H, K) — patroon is
   duidelijk, eigen sessie nodig. Niet acuut.
-- **Stap 11.I klantreis-archetype** — vijfde dimensie-archetype (geordend).
+- **Stap 11.I.1 ✅ afgerond per 2026-05-12** — 5 lichte archetypes
+  (regio + behoefte + merk + gedragspatroon + anders) volledig uitgewerkt
+  met betekenisvolle veld-volgorde + CustomPairsField voor anders.
+- **Stap 11.I.2 klantreis-archetype** — is_ordered-UI + DMU + insurance-
+  overlay-seed. Strategie-adviseur-input ligt in `platform/architecture/
+  decisions/inputs/2026-05-11-klantreis-archetype-input-strategie-adviseur.md`.
   Niet acuut.
 - **Stap 11.J Type B visueel rapport** — post-MVP. Vier-kwadranten +
   veranderacties-pinnetjes. Gamma/PPTX/PDF-route nog te kiezen.
@@ -653,13 +660,13 @@ Bij een verse Claude Code-sessie (nieuwe instance, geen context):
 
 | Aspect | Waarde |
 |---|---|
-| Laatste deploy | `dpl_42GdeFacaDw9eZr7oPg5SAAAU9eL` (11 mei) op `kingfisher-btcprod.vercel.app` |
-| Master HEAD | `f6cc467` — Stap 11.K.2 cleanup F16 + F17 + F18 (Kees-handmatige-test 11.K AI-flow nog steeds pending) |
+| Laatste deploy | `dpl_Gkj9NGELJmg5tQkzwHEw89ydSfvA` (12 mei) op `kingfisher-btcprod.vercel.app` |
+| Master HEAD | `1255aa2` — Stap 11.I.1 5 lichte archetypes (Kees-handmatige-test 11.K AI-flow nog steeds pending) |
 | Test-credentials | `keessmaling+test@gmail.com` / staat in `.env.test` (gitignored) — KF tenant_admin |
 | E2E-suite | `npm run test:e2e` — J1-blueprint live, J2/J3/J5/J6 nog niet (mini-sprint 11.G.5) |
-| RTL | 50/50 PASS over 6 klanten-suites (incl. ItemModal.flow voor F17) |
+| RTL | 57/57 PASS over 7 klanten-suites (incl. ItemModal.archetypes voor 11.I.1) |
 | Endpoint-budget Vercel | 12/12 (Hobby), 4 rewrites + sub-route-dispatchers (incl. dossier_extract op items.js + pain_points.js) |
-| Klanten-labels | 190 totaal `label.klanten.*` (incl. 10 dossier + 6 F16-delete + F18-rebrand netto 0) |
+| Klanten-labels | 207 totaal `label.klanten.*` (190 + 17 lichte archetypes 11.I.1) |
 | Klanten-prompts | 7 totaal `prompt.klanten.*` (4 analyse + 3 dossier, allen `tenant_overridable=true`) |
 | Audit-tabellen | `cd_pattern_suggestion_events` + `cd_input_suggestion_events` (beide append-only via RLS-policies SELECT+INSERT) |
 | Supabase-migrations CI | `workflow_dispatch`-only sinds 2026-05-11 (auto-trigger uitgeschakeld; migraties via Supabase-MCP applied tijdens sprints) |
@@ -675,6 +682,7 @@ Bij een verse Claude Code-sessie (nieuwe instance, geen context):
 - **Stap 11.G.5** — J2+J3+J5+J6 Playwright-specs als mini-sprint (niet
   acuut)
 - **F12 canvas-tegel-feedback** — wacht op succesvolle Kees-test van 11.K
-- **Stap 11.I** — Klantreis-archetype (geordend dimensie-type)
+- **Stap 11.I.2** — Klantreis-archetype (geordend dimensie-type) met
+  is_ordered-UI + DMU + insurance-overlay-seed
 - **Stap 11.J** — Type B visueel rapport (post-MVP)
 - **F15 prompt-naming-cleanup** — post-MVP cleanup-sprint
