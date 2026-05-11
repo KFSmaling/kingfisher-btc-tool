@@ -12,7 +12,7 @@
  */
 
 import React, { useState } from "react";
-import { X, Sparkles, Loader2 } from "lucide-react";
+import { X, Sparkles, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import { getSchemaFor } from "./archetypeSchemas";
 
@@ -41,6 +41,8 @@ export default function ItemModal({
   const [saving, setSaving]   = useState(false);
   const [errMsg, setErrMsg]   = useState(null);
   const [filling, setFilling] = useState(false);
+  // F17: fillNote-shape is { type: "success" | "empty", text: string } i.p.v. plain string,
+  // zodat we visueel onderscheid kunnen maken (groene vs. amber banner met passend icoon).
   const [fillNote, setFillNote] = useState(null);
   // F16: inline-bevestiging-state. Toont confirm-strook in footer i.p.v. browser-confirm.
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -70,9 +72,15 @@ export default function ItemModal({
     const proposed = meta?.proposed_fields || {};
     const count = Object.keys(proposed).length;
     if (count === 0) {
-      setFillNote(meta?.note || "Geen onderbouwing gevonden voor lege velden");
+      setFillNote({
+        type: "empty",
+        text: meta?.note || "AI vond geen onderbouwing voor lege velden",
+      });
     } else {
-      setFillNote(`${count} veld${count === 1 ? "" : "en"} ingevuld vanuit dossier`);
+      setFillNote({
+        type: "success",
+        text: `${count} veld${count === 1 ? "" : "en"} ingevuld vanuit dossier`,
+      });
     }
   }
 
@@ -178,8 +186,32 @@ export default function ItemModal({
                 </button>
               )}
             </div>
+            {/* F17: banner-stijl feedback ipv klein-tekst — onderscheid succes/empty
+                via groene/amber kleuren + passend icoon. Sluitbaar via X-icon. */}
             {fillNote && (
-              <p className="text-[10px] text-blue-700 italic" data-testid="dossier-fields-fill-note">{fillNote}</p>
+              <div
+                data-testid="dossier-fields-fill-note"
+                data-fill-type={fillNote.type}
+                className={`flex items-start gap-2 px-3 py-2 text-xs rounded border ${
+                  fillNote.type === "success"
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                {fillNote.type === "success"
+                  ? <CheckCircle2 size={14} className="mt-0.5 shrink-0" />
+                  : <AlertCircle  size={14} className="mt-0.5 shrink-0" />}
+                <p className="flex-1">{fillNote.text}</p>
+                <button
+                  type="button"
+                  onClick={() => setFillNote(null)}
+                  aria-label="Sluit"
+                  data-testid="dossier-fields-fill-note-sluit"
+                  className="shrink-0 text-current opacity-60 hover:opacity-100"
+                >
+                  <X size={12} />
+                </button>
+              </div>
             )}
             {schema.length === 0 && (
               <p className="text-xs text-slate-500 italic">Geen velden gedefinieerd voor archetype "{dimension?.archetype}"</p>
