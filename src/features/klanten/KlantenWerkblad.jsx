@@ -16,7 +16,7 @@
  */
 
 import React, { useState } from "react";
-import { X, Layout, FileText } from "lucide-react";
+import { ArrowLeft, Layout, FileText } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import { useCanvasDimensions } from "./hooks/useCanvasDimensions";
 import { usePainPoints } from "./hooks/usePainPoints";
@@ -300,6 +300,16 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
     return { error: null };
   }
 
+  // Stap Bundle 3 F21 — dimensie-delete met cascade (cd_items + cd_pain_point_couplings
+  // via DB-FK ON DELETE CASCADE). Geen audit-event (consultant-eigendom).
+  async function handleDeleteDimensie(dimensionId) {
+    const { error } = await klantenService.deleteDimension(dimensionId);
+    if (error) return { error };
+    reload();
+    reloadPains();
+    return { error: null };
+  }
+
   // Canvas-naam afleiden uit eerste item/dimensie of fallback.
   // (MVP: geen aparte canvas-meta-fetch; voor rapport-header laat ik
   // canvasName leeg zodat default "Canvas" zichtbaar is.)
@@ -309,7 +319,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
     return (
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
         <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)]">
-          <button onClick={onClose} className="text-white/60 hover:text-white"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Terug naar canvas" className="text-white/60 hover:text-white"><ArrowLeft size={18} /></button>
           <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -323,7 +333,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
     return (
       <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
         <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)]">
-          <button onClick={onClose} className="text-white/60 hover:text-white"><X size={18} /></button>
+          <button onClick={onClose} aria-label="Terug naar canvas" className="text-white/60 hover:text-white"><ArrowLeft size={18} /></button>
           <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center text-center px-6">
@@ -343,7 +353,7 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
     <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
       {/* Header */}
       <div className="flex items-center gap-3 px-8 py-4 bg-[var(--color-primary)] flex-shrink-0">
-        <button onClick={onClose} className="text-white/60 hover:text-white transition-colors"><X size={18} /></button>
+        <button onClick={onClose} aria-label="Terug naar canvas" className="text-white/60 hover:text-white transition-colors"><ArrowLeft size={18} /></button>
         <h2 className="text-lg font-bold text-white">{appLabel("klanten.werkblad.titel", "Klanten & Dienstverlening")}</h2>
 
         {/* Werkruimte/Rapport-toggle */}
@@ -443,15 +453,28 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
         />
       )}
 
-      {/* Dimensie-modal (create + edit, stap 11.E + 11.F boy-scout) */}
-      {dimModalState && (
-        <DimensieModal
-          mode={dimModalState.mode}
-          dimension={dimModalState.dimension}
-          onClose={closeDimModal}
-          onSave={handleSaveDimensie}
-        />
-      )}
+      {/* Dimensie-modal (create + edit, stap 11.E + 11.F boy-scout; F21 delete-cascade) */}
+      {dimModalState && (() => {
+        const dim = dimModalState.dimension;
+        const dimItemIds = (items || [])
+          .filter(it => it.dimension_id === dim?.id)
+          .map(it => it.id);
+        const dimItemCount = dimItemIds.length;
+        const dimCouplingCount = (couplings || []).filter(
+          c => c.target_table === "cd_items" && dimItemIds.includes(c.target_id)
+        ).length;
+        return (
+          <DimensieModal
+            mode={dimModalState.mode}
+            dimension={dim}
+            onClose={closeDimModal}
+            onSave={handleSaveDimensie}
+            onDelete={handleDeleteDimensie}
+            itemCount={dimItemCount}
+            couplingCount={dimCouplingCount}
+          />
+        );
+      })()}
 
       {/* Pijnpunt-modal (create + edit, stap 11.F fase 2; canonical-delete stap 11.K.2 F16) */}
       {pijnModalState && (

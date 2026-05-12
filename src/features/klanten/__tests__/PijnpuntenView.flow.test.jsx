@@ -262,4 +262,34 @@ describe("KlantenWerkblad — fase-2 Pijnpunten flow (stap 11.F)", () => {
     });
     expect(klantenService.createDimension).not.toHaveBeenCalled();
   });
+
+  // ── Bundle 3 F27 — genummerde pijnpunt-bolletjes cross-referentie ────────
+  test("F27: drie pijnpunten gesorteerd → cards genummerd 1/2/3 + ItemCard rode-bolletjes tonen nummers", async () => {
+    const pains = [
+      { id: "pp-1", canvas_id: TEST_CANVAS_ID, text_md: "Eerste pain", is_floating: false, sort_order: 10, is_draft: false },
+      { id: "pp-2", canvas_id: TEST_CANVAS_ID, text_md: "Tweede pain", is_floating: false, sort_order: 20, is_draft: false },
+      { id: "pp-3", canvas_id: TEST_CANVAS_ID, text_md: "Derde pain",  is_floating: true,  sort_order: 30, is_draft: false },
+    ];
+    const couplings = [
+      { id: "c-1", pain_point_id: "pp-1", target_table: "cd_items", target_id: "item-1" },
+      { id: "c-2", pain_point_id: "pp-2", target_table: "cd_items", target_id: "item-1" },
+    ];
+    klantenService.listPainPoints.mockResolvedValue({ data: pains, error: null });
+    klantenService.listCouplingsForCanvas.mockResolvedValue({ data: couplings, error: null });
+
+    render(<KlantenWerkblad canvasId={TEST_CANVAS_ID} onClose={() => {}} />);
+    await openFase2();
+
+    // PijnpuntCards tonen nummer-badges 1/2/3 in sort_order-volgorde
+    expect(await screen.findByTestId("pijnpunt-nummer-pp-1")).toHaveTextContent("1");
+    expect(screen.getByTestId("pijnpunt-nummer-pp-2")).toHaveTextContent("2");
+    expect(screen.getByTestId("pijnpunt-nummer-pp-3")).toHaveTextContent("3");
+
+    // CompactDimensieKolom indicator op item-1 toont nummers 1 + 2 (twee couplings)
+    const indicators = screen.getByTestId("item-pijn-indicators-item-1");
+    expect(indicators).toHaveTextContent("1");
+    expect(indicators).toHaveTextContent("2");
+    // Niet 3 — pp-3 koppelt nergens (overstijgend)
+    expect(indicators).not.toHaveTextContent("3");
+  });
 });

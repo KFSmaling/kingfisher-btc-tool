@@ -170,6 +170,12 @@ const LABEL_FALLBACKS = {
   "klanten.dimensie.edit.titel":                    "Dimensie bewerken",
   "klanten.dimensie.edit.tooltip":                  "Klik om te bewerken",
   "klanten.dimensie.edit.archetype.locked":         "(niet wijzigbaar — datamodel-impact)",
+  // Bundle 3 F21 — cascade-delete labels
+  "klanten.dimensie.actie.verwijderen":             "Verwijderen",
+  "klanten.dimensie.delete.bevestig.titel":         "Dimensie verwijderen?",
+  "klanten.dimensie.delete.bevestig.tekst":         "Deze dimensie bevat {N} items en {M} pijnpunt-koppelingen. Bij verwijderen worden items en koppelingen ook weggehaald. Doorgaan?",
+  "klanten.dimensie.delete.bevestig.actie":         "Ja, verwijder",
+  "klanten.dimensie.delete.bevestig.annuleren":     "Annuleren",
   "klanten.pijnpunt.intro":                         "verzamel waarnemingen en koppel aan items. multi-relationeel — een pijnpunt mag aan meerdere dimensies hangen, of nergens (overstijgend).",
   "klanten.pijnpunt.lijst.titel":                   "Pijnpunten",
   "klanten.pijnpunt.lijst.helper":                  "card laat koppelingen zien als chips",
