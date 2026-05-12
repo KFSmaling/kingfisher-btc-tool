@@ -18,13 +18,17 @@
  *   - busyAction: { action, id? } of null
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Sparkles, Plus, Pencil, Loader2 } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
+import KlantreisChevronOverview from "./KlantreisChevronOverview";
 
 export default function DimensieKolom({
   dimension,
   items,
+  // Bundle 4 F26 — klantreis chevron-overview voor geordende archetypes
+  couplings = [],
+  currentPhase = 1,
   onItemClick,
   onAddItem,
   onEditDimensie,
@@ -37,6 +41,30 @@ export default function DimensieKolom({
   busyAction = null,
 }) {
   const { label: appLabel } = useAppConfig();
+
+  // Bundle 4 F26 — bereken pijnpunt-count per item voor chevron-overlay (fase 2+).
+  // Only voor klantreis-archetype gebruikt; map blijft leeg voor andere
+  // archetypes om unnecessary work te vermijden.
+  const isKlantreis = dimension.archetype === "klantreis";
+  const painPointCounts = useMemo(() => {
+    if (!isKlantreis) return new Map();
+    const map = new Map();
+    for (const c of couplings) {
+      if (c.target_table !== "cd_items") continue;
+      map.set(c.target_id, (map.get(c.target_id) || 0) + 1);
+    }
+    return map;
+  }, [isKlantreis, couplings]);
+
+  // Klantreis-items voor chevron-overview: alleen canonical, sorted op
+  // sort_order (zelfde bron als detail-cards).
+  const canonicalKlantreisItems = useMemo(() => {
+    if (!isKlantreis) return [];
+    return items
+      .filter(it => !it.is_draft)
+      .slice()
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  }, [isKlantreis, items]);
 
   const headerClickable = typeof onEditDimensie === "function";
   const hasExtractCallback = typeof onExtractFromDossier === "function";
@@ -77,6 +105,14 @@ export default function DimensieKolom({
 
       {/* Items */}
       <div className="flex-1 px-4 py-3 space-y-2 overflow-auto">
+        {/* Bundle 4 F26 — chevron-overview boven detail-cards voor klantreis */}
+        {isKlantreis && canonicalKlantreisItems.length > 0 && (
+          <KlantreisChevronOverview
+            items={canonicalKlantreisItems}
+            painPointCounts={painPointCounts}
+            currentPhase={currentPhase}
+          />
+        )}
         {items.length === 0 && (
           <p className="text-xs text-slate-400 italic">Nog geen items — voeg er één toe.</p>
         )}
