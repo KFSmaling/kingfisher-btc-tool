@@ -162,6 +162,10 @@ export default function ItemModal({
             <input
               id="item-naam"
               type="text" value={name} onChange={e => setName(e.target.value)}
+              name="item-naam"
+              autoComplete="off"
+              data-1p-ignore=""
+              data-form-type="other"
               className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-accent)]"
               autoFocus required
             />

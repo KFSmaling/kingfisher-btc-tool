@@ -141,6 +141,10 @@ export default function PijnpuntModal({
               value={textMd}
               onChange={e => setTextMd(e.target.value.slice(0, TEXT_MAX))}
               placeholder={appLabel("klanten.pijnpunt.create.tekst.placeholder", "Beschrijf de waarneming of het pijnpunt — bron mag in de tekst (markdown)")}
+              name="pijnpunt-tekst"
+              autoComplete="off"
+              data-1p-ignore=""
+              data-form-type="other"
               className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-accent)]"
               maxLength={TEXT_MAX}
               autoFocus

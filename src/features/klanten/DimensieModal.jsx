@@ -184,6 +184,10 @@ export default function DimensieModal({
               value={name}
               onChange={e => setName(e.target.value.slice(0, NAME_MAX))}
               placeholder={selectedOption?.placeholder || appLabel("klanten.dimensie.create.naam.placeholder", "bijv. Klantsegmenten of Doelgroepen")}
+              name="dimensie-naam"
+              autoComplete="off"
+              data-1p-ignore=""
+              data-form-type="other"
               className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[var(--color-accent)]"
               maxLength={NAME_MAX}
               autoFocus={isEdit}
