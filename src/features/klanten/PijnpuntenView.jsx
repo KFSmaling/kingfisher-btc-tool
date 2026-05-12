@@ -20,17 +20,21 @@ import { Plus, Sparkles, Loader2 } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import PijnpuntCard from "./PijnpuntCard";
 
-// Aantal couplings per item-id — voor red-dot-marker in inventaris-grid
-function couplingCountByItem(couplings) {
-  const counts = new Map();
+// Stap Bundle 3 F27 — gekoppelde pain_point_ids per item-id.
+// Vervangt de oude `couplingCountByItem`-counts door arrays zodat ItemCard-
+// indicator-bolletjes het volgnummer kan tonen (cross-referentie met
+// PijnpuntCard-badge).
+function painIdsByItem(couplings) {
+  const map = new Map();
   for (const c of couplings) {
     if (c.target_table !== "cd_items") continue;
-    counts.set(c.target_id, (counts.get(c.target_id) || 0) + 1);
+    if (!map.has(c.target_id)) map.set(c.target_id, []);
+    map.get(c.target_id).push(c.pain_point_id);
   }
-  return counts;
+  return map;
 }
 
-function CompactDimensieKolom({ dimension, items, couplingCounts }) {
+function CompactDimensieKolom({ dimension, items, painsByItem, painNumberById }) {
   const dimItems = items.filter(it => it.dimension_id === dimension.id);
   return (
     <div className="border border-slate-200 rounded-lg p-3 bg-white">
@@ -40,16 +44,28 @@ function CompactDimensieKolom({ dimension, items, couplingCounts }) {
       ) : (
         <div className="space-y-1.5">
           {dimItems.map(it => {
-            const count = couplingCounts.get(it.id) || 0;
+            const painIds = painsByItem.get(it.id) || [];
+            const visibleNums = painIds
+              .map(pid => painNumberById.get(pid))
+              .filter(Boolean)
+              .sort((a, b) => a - b);
+            const shown = visibleNums.slice(0, 5);
+            const overflow = visibleNums.length - shown.length;
             return (
               <div key={it.id} className="bg-slate-50 px-3 py-1.5 rounded flex justify-between items-center">
                 <div className="text-[12px]">{it.name}</div>
-                {count > 0 && (
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(count, 5) }).map((_, idx) => (
-                      <span key={idx} className="inline-block w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                {visibleNums.length > 0 && (
+                  <div className="flex gap-1 items-center" data-testid={`item-pijn-indicators-${it.id}`}>
+                    {shown.map(n => (
+                      <span
+                        key={n}
+                        data-testid={`item-pijn-num-${it.id}-${n}`}
+                        className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none"
+                      >
+                        {n}
+                      </span>
                     ))}
-                    {count > 5 && <span className="text-[9px] text-red-600 ml-1">+{count - 5}</span>}
+                    {overflow > 0 && <span className="text-[9px] text-red-600 ml-1">+{overflow}</span>}
                   </div>
                 )}
               </div>
@@ -78,12 +94,19 @@ export default function PijnpuntenView({
   busyAction = null,
 }) {
   const { label: appLabel } = useAppConfig();
-  const couplingCounts = couplingCountByItem(couplings);
+  const painsByItem = painIdsByItem(couplings);
   const couplingsByPain = new Map();
   for (const c of couplings) {
     if (!couplingsByPain.has(c.pain_point_id)) couplingsByPain.set(c.pain_point_id, []);
     couplingsByPain.get(c.pain_point_id).push(c);
   }
+
+  // Stap Bundle 3 F27 — stabiele nummering per canonical-pijnpunt
+  // (gesorteerd via service-laag op sort_order ASC). Index `i+1` voor 1-based
+  // weergave. Drafts krijgen geen nummer — pas na accept-draft (canonical)
+  // verschijnt het pijnpunt in de genummerde lijst.
+  const canonicalSorted = painPoints.filter(pp => !pp.is_draft);
+  const painNumberById = new Map(canonicalSorted.map((pp, i) => [pp.id, i + 1]));
 
   const canonicalItemCount = items.filter(it => !it.is_draft).length;
   const a3HasCallback = typeof onExtractFromDossier === "function";
@@ -115,7 +138,8 @@ export default function PijnpuntenView({
               key={dim.id}
               dimension={dim}
               items={items}
-              couplingCounts={couplingCounts}
+              painsByItem={painsByItem}
+              painNumberById={painNumberById}
             />
           ))}
         </div>
@@ -189,6 +213,7 @@ export default function PijnpuntenView({
               <PijnpuntCard
                 key={pp.id}
                 painPoint={pp}
+                nummer={painNumberById.get(pp.id)}
                 couplings={couplingsByPain.get(pp.id) || []}
                 dimensions={dimensions}
                 items={items}

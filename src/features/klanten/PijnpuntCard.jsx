@@ -35,7 +35,7 @@ function couplingLabel(coupling, dimensions, items) {
   return null;
 }
 
-export default function PijnpuntCard({ painPoint, couplings, dimensions, items, onClick }) {
+export default function PijnpuntCard({ painPoint, nummer = null, couplings, dimensions, items, onClick }) {
   const { label: appLabel } = useAppConfig();
   const isFloating = couplings.length === 0;
 
@@ -44,11 +44,21 @@ export default function PijnpuntCard({ painPoint, couplings, dimensions, items, 
       type="button"
       onClick={() => onClick(painPoint)}
       data-testid={`pijnpunt-card-${painPoint.id}`}
-      className={`text-left border rounded-md p-3 bg-white hover:border-[var(--color-accent)] hover:shadow-sm transition-all ${
+      className={`relative text-left border rounded-md p-3 bg-white hover:border-[var(--color-accent)] hover:shadow-sm transition-all ${
         isFloating ? "col-span-2 border-dashed border-slate-400" : "border-slate-200"
       }`}
     >
-      <div className="text-[12px] mb-2 leading-relaxed text-slate-800 whitespace-pre-wrap">
+      {/* Stap Bundle 3 F27 — nummer-badge linksboven voor cross-referentie
+          met item-card-indicator-bolletjes in inventaris-grid */}
+      {nummer != null && (
+        <span
+          data-testid={`pijnpunt-nummer-${painPoint.id}`}
+          className="absolute -top-2 -left-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500 text-white text-[11px] font-bold leading-none shadow-sm"
+        >
+          {nummer}
+        </span>
+      )}
+      <div className="text-[12px] mb-2 leading-relaxed text-slate-800 whitespace-pre-wrap pl-4">
         {painPoint.text_md}
       </div>
       <div className="flex gap-1 flex-wrap items-center">
