@@ -34,11 +34,16 @@ const COLOR_ASYMMETRIE = "#3C3489";
 
 // Clip-path voor chevron pijl-naar-rechts: 12px-notch links + 12px-punt rechts.
 // Eerste chevron krijgt geen notch links (vlak); laatste geen punt rechts (vlak).
-const CHEVRON_CLIP_MID   = "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)";
-const CHEVRON_CLIP_FIRST = "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)";
-const CHEVRON_CLIP_LAST  = "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)";
+// Exported voor hergebruik door F26-iteratie PijnpuntChevronCard (zelfde
+// shape-geometrie, andere kleur-config).
+export const CHEVRON_CLIP_MID   = "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)";
+export const CHEVRON_CLIP_FIRST = "polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)";
+export const CHEVRON_CLIP_LAST  = "polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%)";
 
-function clipFor(idx, total) {
+// `clipFor` retourneert clip-path-string voor chevron op positie idx van total.
+// Voor pijnpunt-chevron-cards in F26-iteratie altijd MID gebruiken (zelfde
+// vorm in continue flow — geen "eerste" of "laatste" semantiek).
+export function clipFor(idx, total) {
   if (total <= 1) return CHEVRON_CLIP_MID;
   if (idx === 0) return CHEVRON_CLIP_FIRST;
   if (idx === total - 1) return CHEVRON_CLIP_LAST;
