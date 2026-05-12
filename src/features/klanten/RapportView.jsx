@@ -161,9 +161,6 @@ export default function RapportView({
   // proces-info wenst. Smart-disable wanneer geen proces-info beschikbaar.
   const procesInfoAvailable = acceptedCount > 0 || conceptIntents.length > 0;
   const [includeInPrint, setIncludeInPrint] = useState(false);
-  // Backwards-compat alias — bestaande JSX refereert nog `analysisAvailable`
-  // (vervangen in commit 3 toggle-UI-update).
-  const analysisAvailable = procesInfoAvailable;
 
   const handlePrint = () => window.print();
   const itemsByDim = (dimId) => items.filter(i => i.dimension_id === dimId);
@@ -206,31 +203,29 @@ export default function RapportView({
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          {/* AI-print-toggle (button-met-state, anker StrategyOnePager 540-553) */}
-          <button
-            type="button"
-            onClick={() => analysisAvailable && setIncludeInPrint(v => !v)}
-            disabled={!analysisAvailable}
-            data-testid="rapport-toggle-advies"
-            title={
-              !analysisAvailable
-                ? appLabel("klanten.rapport.toggle.disabled", "Geen geaccepteerde patronen — accepteer er minstens één")
-                : (includeInPrint
-                    ? appLabel("klanten.rapport.toggle.uit", "Klik om AI-advies uit print te verwijderen")
-                    : appLabel("klanten.rapport.toggle.aan", "Klik om AI-advies toe te voegen aan print"))
-            }
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors
-              ${!analysisAvailable
-                ? "opacity-30 cursor-not-allowed text-white/40 border-white/20"
-                : includeInPrint
+          {/* F32 Bundle 5 — "Toon proces-info"-toggle. Smart-disable: render
+              null wanneer geen AI-patronen én geen concept-intents bestaan
+              (= geen proces-info om te tonen). */}
+          {procesInfoAvailable && (
+            <button
+              type="button"
+              onClick={() => setIncludeInPrint(v => !v)}
+              data-testid="rapport-toggle-proces-info"
+              title={includeInPrint
+                ? appLabel("klanten.rapport.toggle.uit", "Klik om proces-info te verbergen — toon alleen eindresultaat")
+                : appLabel("klanten.rapport.toggle.aan", "Klik om AI-patronen + concept-verbeteracties zichtbaar te maken")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md border transition-colors ${
+                includeInPrint
                   ? "bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[var(--color-accent)]/50 hover:bg-[var(--color-accent)]/30"
-                  : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"}`}
-          >
-            <AiIcon variant="generate" size={10} />
-            {includeInPrint
-              ? appLabel("klanten.rapport.toggle.label.aan", "Advies in print ✓")
-              : appLabel("klanten.rapport.toggle.label.uit", "Advies in print")}
-          </button>
+                  : "text-white/40 border-white/20 hover:text-white/70 hover:border-white/40"
+              }`}
+            >
+              <AiIcon variant="generate" size={10} />
+              {includeInPrint
+                ? appLabel("klanten.rapport.toggle.label.aan", "Proces-info zichtbaar ✓")
+                : appLabel("klanten.rapport.toggle.label.uit", "Toon proces-info")}
+            </button>
+          )}
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-[10px] font-black uppercase tracking-widest rounded-md transition-colors"
@@ -255,19 +250,25 @@ export default function RapportView({
           />
 
           <div style={{ flex: 1, padding: "14px 20px", color: "#1e293b", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
-            {/* Samenvatting */}
+            {/* F32 Bundle 5 — Samenvatting eindresultaat-focus. Fase-keten-
+                tekst verwijderd (toegevoegde waarde laag — kan in audit-
+                trail-rapport opnieuw verschijnen). Toggle-aanvulling met
+                proces-info-counts tussen haakjes wanneer toggle aan. */}
             <section style={{ marginBottom: "16px" }}>
               <div style={sectionLabelStyle}>{appLabel("klanten.rapport.section.samenvatting", "Samenvatting")}</div>
               <p style={{ fontSize: "10px", color: "#475569", lineHeight: 1.55 }}>
-                {dimensions.length} dimensie{dimensions.length === 1 ? "" : "s"}, {items.length} item{items.length === 1 ? "" : "s"},{" "}
+                {dimensions.length} dimensie{dimensions.length === 1 ? "" : "s"} met {items.length} item{items.length === 1 ? "" : "s"},{" "}
                 {painPoints.length} pijnpunt{painPoints.length === 1 ? "" : "en"} ({overstijgendPains.length} overstijgend),{" "}
-                {acceptedCount} geaccepteerde patron{acceptedCount === 1 ? "" : "en"},{" "}
-                {intents.length} {appLabel("klanten.rapport.counter.verbeteracties", intents.length === 1 ? "verbeteractie" : "verbeteracties")} vastgelegd.
-                {intents.length === 0 && acceptedCount === 0
-                  ? " Werkblad in inventarisatie + pijnpunten-fase."
-                  : intents.length === 0
-                    ? " Werkblad in inventarisatie + pijnpunten + analyse-fase."
-                    : ` ${appLabel("klanten.rapport.samenvatting.volledig", "Werkblad in volledige fase-keten — verbeteracties vastgelegd.")}`}
+                {verstuurdIntents.length}{" "}
+                {appLabel(
+                  "klanten.rapport.counter.naar_roadmap",
+                  verstuurdIntents.length === 1 ? "verbeteractie naar Roadmap" : "verbeteracties naar Roadmap"
+                )}.
+                {includeInPrint && acceptedCount + conceptIntents.length > 0 && (
+                  <span style={{ color: "#94a3b8" }}>
+                    {" "}({acceptedCount} patron{acceptedCount === 1 ? "" : "en"} + {conceptIntents.length} concept-verbeteractie{conceptIntents.length === 1 ? "" : "s"} in proces-info)
+                  </span>
+                )}
               </p>
             </section>
 
