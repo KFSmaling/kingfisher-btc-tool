@@ -300,6 +300,16 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
     return { error: null };
   }
 
+  // Stap Bundle 3 F21 — dimensie-delete met cascade (cd_items + cd_pain_point_couplings
+  // via DB-FK ON DELETE CASCADE). Geen audit-event (consultant-eigendom).
+  async function handleDeleteDimensie(dimensionId) {
+    const { error } = await klantenService.deleteDimension(dimensionId);
+    if (error) return { error };
+    reload();
+    reloadPains();
+    return { error: null };
+  }
+
   // Canvas-naam afleiden uit eerste item/dimensie of fallback.
   // (MVP: geen aparte canvas-meta-fetch; voor rapport-header laat ik
   // canvasName leeg zodat default "Canvas" zichtbaar is.)
@@ -443,15 +453,28 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
         />
       )}
 
-      {/* Dimensie-modal (create + edit, stap 11.E + 11.F boy-scout) */}
-      {dimModalState && (
-        <DimensieModal
-          mode={dimModalState.mode}
-          dimension={dimModalState.dimension}
-          onClose={closeDimModal}
-          onSave={handleSaveDimensie}
-        />
-      )}
+      {/* Dimensie-modal (create + edit, stap 11.E + 11.F boy-scout; F21 delete-cascade) */}
+      {dimModalState && (() => {
+        const dim = dimModalState.dimension;
+        const dimItemIds = (items || [])
+          .filter(it => it.dimension_id === dim?.id)
+          .map(it => it.id);
+        const dimItemCount = dimItemIds.length;
+        const dimCouplingCount = (couplings || []).filter(
+          c => c.target_table === "cd_items" && dimItemIds.includes(c.target_id)
+        ).length;
+        return (
+          <DimensieModal
+            mode={dimModalState.mode}
+            dimension={dim}
+            onClose={closeDimModal}
+            onSave={handleSaveDimensie}
+            onDelete={handleDeleteDimensie}
+            itemCount={dimItemCount}
+            couplingCount={dimCouplingCount}
+          />
+        );
+      })()}
 
       {/* Pijnpunt-modal (create + edit, stap 11.F fase 2; canonical-delete stap 11.K.2 F16) */}
       {pijnModalState && (

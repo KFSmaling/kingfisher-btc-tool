@@ -50,7 +50,17 @@ const ARCHETYPE_OPTIONS = [
 const NAME_MAX = 100;
 const DESC_MAX = 500;
 
-export default function DimensieModal({ mode = "create", dimension = null, onClose, onSave }) {
+export default function DimensieModal({
+  mode = "create",
+  dimension = null,
+  onClose,
+  onSave,
+  // Stap 11.K.2 F21 — cascade-delete (alleen actief in edit-mode).
+  // Caller (KlantenWerkblad) berekent counts uit items+couplings-arrays.
+  onDelete = null,
+  itemCount = 0,
+  couplingCount = 0,
+}) {
   const { label: appLabel } = useAppConfig();
   const isEdit = mode === "edit";
 
@@ -59,6 +69,28 @@ export default function DimensieModal({ mode = "create", dimension = null, onClo
   const [description, setDescription] = useState(dimension?.description ?? "");
   const [saving, setSaving]           = useState(false);
   const [errMsg, setErrMsg]           = useState(null);
+  // F21 — confirm-state-machine (anker F16 PijnpuntModal/ItemModal).
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    if (!isEdit || !onDelete || !dimension?.id || deleting) return;
+    setDeleting(true);
+    setErrMsg(null);
+    const { error } = await onDelete(dimension.id);
+    setDeleting(false);
+    if (error) {
+      setErrMsg(error.message || "Verwijderen mislukt");
+      setConfirmingDelete(false);
+      return;
+    }
+    onClose();
+  }
+
+  const cascadeTekst = appLabel(
+    "klanten.dimensie.delete.bevestig.tekst",
+    "Deze dimensie bevat {N} items en {M} pijnpunt-koppelingen. Bij verwijderen worden items en koppelingen ook weggehaald. Doorgaan?"
+  ).replace("{N}", String(itemCount)).replace("{M}", String(couplingCount));
 
   const selectedOption = useMemo(
     () => ARCHETYPE_OPTIONS.find(o => o.value === archetype),
@@ -186,25 +218,68 @@ export default function DimensieModal({ mode = "create", dimension = null, onClo
           )}
         </form>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-slate-200">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-50"
+        {/* Footer — F21 cascade-confirm vervangt knoppen-rij wanneer confirmingDelete=true */}
+        {confirmingDelete ? (
+          <div
+            data-testid="dimensie-modal-delete-confirm"
+            className="flex items-start gap-3 px-6 py-3 border-t border-red-200 bg-red-50"
           >
-            {appLabel("klanten.knop.item.annuleren", "Annuleren")}
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Opslaan…" : appLabel("klanten.knop.item.opslaan", "Opslaan")}
-          </button>
-        </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-red-800">
+                {appLabel("klanten.dimensie.delete.bevestig.titel", "Dimensie verwijderen?")}
+              </p>
+              <p className="text-[11px] text-red-700">{cascadeTekst}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              disabled={deleting}
+              data-testid="dimensie-modal-delete-confirm-nee"
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-50"
+            >
+              {appLabel("klanten.dimensie.delete.bevestig.annuleren", "Annuleren")}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+              data-testid="dimensie-modal-delete-confirm-ja"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50"
+            >
+              {deleting ? "Bezig…" : appLabel("klanten.dimensie.delete.bevestig.actie", "Ja, verwijder")}
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-2 px-6 py-3 border-t border-slate-200">
+            {isEdit && onDelete && (
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                disabled={saving}
+                data-testid="dimensie-modal-delete"
+                className="mr-auto px-4 py-2 text-xs font-bold uppercase tracking-widest text-red-600 hover:text-red-700 disabled:opacity-50"
+              >
+                {appLabel("klanten.dimensie.actie.verwijderen", "Verwijderen")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-50"
+            >
+              {appLabel("klanten.knop.item.annuleren", "Annuleren")}
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] text-xs font-bold uppercase tracking-widest rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Opslaan…" : appLabel("klanten.knop.item.opslaan", "Opslaan")}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
