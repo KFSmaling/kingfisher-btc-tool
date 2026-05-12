@@ -57,6 +57,8 @@ export default function CustomPairsField({
   appLabel,
   max = MAX_PAIRS_DEFAULT,
   fieldKey,
+  keyPlaceholder,
+  valuePlaceholder,
 }) {
   // Init alleen bij mount — daarna is `pairs` de bron van waarheid.
   // Voorkomt dat lege-key-paren "verdwijnen" uit de UI tijdens typen.
@@ -88,7 +90,7 @@ export default function CustomPairsField({
               type="text"
               value={p.key}
               onChange={e => update(i, { key: e.target.value })}
-              placeholder="sleutel"
+              placeholder={keyPlaceholder || "sleutel"}
               data-testid={`custom-pairs-key-${i}`}
               className="w-2/5 border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[var(--color-accent)]"
             />
@@ -96,7 +98,7 @@ export default function CustomPairsField({
               type="text"
               value={p.value}
               onChange={e => update(i, { value: e.target.value })}
-              placeholder="waarde"
+              placeholder={valuePlaceholder || "waarde"}
               data-testid={`custom-pairs-value-${i}`}
               className="flex-1 border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[var(--color-accent)]"
             />

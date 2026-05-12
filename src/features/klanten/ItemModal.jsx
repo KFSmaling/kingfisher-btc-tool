@@ -366,6 +366,8 @@ function FieldRenderer({ field, archetypeData, setField, appLabel, appEnum }) {
         helperKey={field.helperKey || "klanten.veld.anders.helper"}
         helperFallback="Definieer maximaal 4 eigen sleutels en waarden voor deze dimensie."
         appLabel={appLabel}
+        keyPlaceholder={field.placeholder?.key}
+        valuePlaceholder={field.placeholder?.value}
       />
     );
   }
@@ -391,7 +393,7 @@ function FieldRenderer({ field, archetypeData, setField, appLabel, appEnum }) {
           onChange={e => setField(field.key, e.target.value)}
           className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--color-accent)] bg-white"
         >
-          <option value="">— kies —</option>
+          <option value="">{field.placeholder || "— kies —"}</option>
           {opts.map(opt => (
             <option key={opt} value={opt}>
               {appLabel(`${field.enumLabelPrefix || ""}${opt}`, opt)}
@@ -411,7 +413,7 @@ function FieldRenderer({ field, archetypeData, setField, appLabel, appEnum }) {
           type="text"
           value={tagsToText(archetypeData[field.key])}
           onChange={e => setField(field.key, textToTags(e.target.value))}
-          placeholder="comma-separated"
+          placeholder={field.placeholder || "comma-separated"}
           className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--color-accent)]"
         />
       </div>
@@ -427,6 +429,7 @@ function FieldRenderer({ field, archetypeData, setField, appLabel, appEnum }) {
           rows={2}
           value={archetypeData[field.key] ?? ""}
           onChange={e => setField(field.key, e.target.value)}
+          placeholder={field.placeholder || ""}
           className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--color-accent)]"
         />
       </div>
@@ -442,6 +445,7 @@ function FieldRenderer({ field, archetypeData, setField, appLabel, appEnum }) {
         type="text"
         value={archetypeData[field.key] ?? ""}
         onChange={e => setField(field.key, e.target.value)}
+        placeholder={field.placeholder || ""}
         className="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-[var(--color-accent)]"
       />
     </div>
