@@ -19,7 +19,7 @@
  * 540-553), enabled wanneer ≥1 accepted pattern.
  */
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { Printer, X } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
 import { useTheme } from "../../shared/hooks/useTheme";
@@ -142,23 +142,28 @@ export default function RapportView({
     return flat;
   }, [acceptedByType]);
 
-  // AI-print-toggle button-met-state pattern (StrategyOnePager regel 540-553).
-  // Enabled wanneer ≥1 accepted pattern. Stap 11.G.3 F7-fix: default `true`
-  // zodra `analysisAvailable=true` zodat consultant niet hoeft te klikken
-  // voor een compleet rapport. Consultant kan toggle handmatig uit zetten;
-  // useState-init evalueert eenmalig dus state-behoud per sessie werkt.
-  const analysisAvailable = acceptedCount > 0;
+  // F32 Bundle 5 — split intents in verstuurd (= naar Roadmap) vs concept.
+  // Default-rapport toont alleen verstuurd; concept zit achter "Toon proces-
+  // info"-toggle samen met AI-patronen.
+  const verstuurdIntents = useMemo(
+    () => intents.filter(it => it.status === "verstuurd"),
+    [intents]
+  );
+  const conceptIntents = useMemo(
+    () => intents.filter(it => it.status !== "verstuurd"),
+    [intents]
+  );
+
+  // F32 — "Toon proces-info"-toggle (was "Advies in print" tot Bundle 5).
+  // Semantiek-uitbreiding: dekt nu AI-patronen + concept-intents samen.
+  // Default UIT (omdraait F7 auto-aan-pattern uit 11.G.3): eindresultaat-
+  // principe — consultant ziet eerst schone onepager, klikt toggle wanneer
+  // proces-info wenst. Smart-disable wanneer geen proces-info beschikbaar.
+  const procesInfoAvailable = acceptedCount > 0 || conceptIntents.length > 0;
   const [includeInPrint, setIncludeInPrint] = useState(false);
-  // One-shot auto-enable: bij eerste detectie van accepted patterns wordt
-  // toggle automatisch aangezet. Daarna mag consultant 'm vrij toggle —
-  // de ref voorkomt dat useEffect bij elke re-render terug-aanzet.
-  const hasAutoEnabledRef = useRef(false);
-  React.useEffect(() => {
-    if (analysisAvailable && !hasAutoEnabledRef.current) {
-      setIncludeInPrint(true);
-      hasAutoEnabledRef.current = true;
-    }
-  }, [analysisAvailable]);
+  // Backwards-compat alias — bestaande JSX refereert nog `analysisAvailable`
+  // (vervangen in commit 3 toggle-UI-update).
+  const analysisAvailable = procesInfoAvailable;
 
   const handlePrint = () => window.print();
   const itemsByDim = (dimId) => items.filter(i => i.dimension_id === dimId);
@@ -390,77 +395,71 @@ export default function RapportView({
                   — alle accepted patterns worden nu getoond in het grid. */}
             </section>
 
-            {/* Verbeterrichtingen — stap 11.H. Toont alle intents (concept +
-                verstuurd) met status-badge. 3-koloms grid bij ≥3, 2-koloms
-                bij 2, 1-koloms bij 1. Single source of truth via KlantenWerkblad-
-                hook zodat fase-4-edits onmiddellijk doorslaan naar rapport. */}
-            <section data-testid="rapport-section-verbeterrichtingen">
+            {/* F32 Bundle 5 — "Verbeteracties → Roadmap": alleen `status=verstuurd`
+                (= naar Roadmap doorgezet). Concept-intents zitten achter
+                "Toon proces-info"-toggle in aparte sectie verderop. */}
+            <section data-testid="rapport-section-naar-roadmap">
               <div style={sectionLabelStyle}>
-                {appLabel("klanten.rapport.section.verbeterrichtingen", "Verbeteracties")}
+                {appLabel("klanten.rapport.section.naar_roadmap", "Verbeteracties → Roadmap")}
               </div>
-              {intents.length === 0 ? (
+              {verstuurdIntents.length === 0 ? (
                 <p style={{ fontSize: "9px", color: "#94a3b8", fontStyle: "italic" }}>
                   {appLabel(
-                    "klanten.rapport.verbeterrichtingen.leeg",
-                    "Nog geen verbeteracties vastgelegd — werkblad zit nog in inventarisatie/analyse-fase."
+                    "klanten.rapport.naar_roadmap.leeg",
+                    "Nog geen verbeteracties naar Roadmap doorgezet."
                   )}
                 </p>
               ) : (
                 <div
-                  data-testid="rapport-verbeterrichtingen-grid"
+                  data-testid="rapport-naar-roadmap-grid"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: intents.length === 1
+                    gridTemplateColumns: verstuurdIntents.length === 1
                       ? "1fr"
-                      : intents.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
+                      : verstuurdIntents.length === 2 ? "repeat(2, 1fr)" : "repeat(3, 1fr)",
                     gap: "6px",
                   }}
                 >
-                  {intents.map(it => {
-                    const isVerstuurd = it.status === "verstuurd";
-                    return (
-                      <div
-                        key={it.id}
-                        data-testid={`rapport-intent-card-${it.id}`}
-                        style={{
-                          background: isVerstuurd ? "rgba(15,23,42,0.04)" : "#f8fafc",
-                          borderLeft: `3px solid ${isVerstuurd ? C.navy : "#94a3b8"}`,
-                          borderRadius: "3px",
-                          padding: "6px 8px",
-                        }}
-                      >
-                        <div style={{
-                          fontSize: "7px",
-                          fontWeight: 800,
-                          letterSpacing: "0.18em",
-                          textTransform: "uppercase",
-                          color: isVerstuurd ? C.navy : "#64748b",
-                          marginBottom: "3px",
-                        }}>
-                          {isVerstuurd
-                            ? appLabel("klanten.verbeterrichting.status.verstuurd", "verstuurd")
-                            : appLabel("klanten.verbeterrichting.status.concept", "concept")}
-                        </div>
-                        <div style={{
-                          fontSize: "9.5px",
-                          fontWeight: 700,
-                          color: "#1e293b",
-                          marginBottom: "2px",
-                        }}>
-                          {it.title}
-                        </div>
-                        <p style={{
-                          margin: 0,
-                          fontSize: "9px",
-                          color: "#475569",
-                          lineHeight: 1.45,
-                          whiteSpace: "pre-wrap",
-                        }}>
-                          {it.intent_md}
-                        </p>
+                  {verstuurdIntents.map(it => (
+                    <div
+                      key={it.id}
+                      data-testid={`rapport-intent-card-${it.id}`}
+                      style={{
+                        background: "rgba(15,23,42,0.04)",
+                        borderLeft: `3px solid ${C.navy}`,
+                        borderRadius: "3px",
+                        padding: "6px 8px",
+                      }}
+                    >
+                      <div style={{
+                        fontSize: "7px",
+                        fontWeight: 800,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: C.navy,
+                        marginBottom: "3px",
+                      }}>
+                        {appLabel("klanten.verbeterrichting.status.verstuurd", "in roadmap")}
                       </div>
-                    );
-                  })}
+                      <div style={{
+                        fontSize: "9.5px",
+                        fontWeight: 700,
+                        color: "#1e293b",
+                        marginBottom: "2px",
+                      }}>
+                        {it.title}
+                      </div>
+                      <p style={{
+                        margin: 0,
+                        fontSize: "9px",
+                        color: "#475569",
+                        lineHeight: 1.45,
+                        whiteSpace: "pre-wrap",
+                      }}>
+                        {it.intent_md}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
             </section>
