@@ -1,13 +1,16 @@
 /**
  * Stap 11.I.2 — RTL voor klantreis-archetype Scope A.
  *
- * Geïsoleerde tests: ItemModal direct gerenderd met mock-props + mock voor
- * useAppConfig (inclusief enumValue-resolver). Anker-pattern:
- * ItemModal.archetypes.test.jsx (11.I.1) + ItemModal.flow.test.jsx (11.K.2 F17).
+ * Optie-A-upgrade (post-stap_type-dropdown-bug 12 mei): vervangt directe
+ * `useAppConfig`-mock door echte `<AppConfigProvider>` + mock-`supabase.rpc`
+ * dat de config-rijen levert. Reden: directe `enum`-mock short-circuit de
+ * `enumValue`-resolver — dubbele "enum."-prefix-bug in `archetypeSchemas.js:91`
+ * werd zo verborgen (zie diagnose-result 2026-05-12-1329). Optie A dekt het
+ * volledige code-pad incl. `config["enum." + key]`-lookup.
  *
  * Test-cases (8):
  *  1. klantreis-archetype rendert alle 12 velden in betekenisvolle volgorde
- *  2. stap_type-dropdown toont 9 opties uit mocked enum.klanten.klantreis.stap_type
+ *  2. stap_type-dropdown toont 9 opties uit DB-rij via echte enumValue-resolver
  *  3. Strategische-weging-blok zichtbaar met data-denkdwang="asymmetrie"
  *  4. MoT-toggle togglet `is_moment_of_truth` true/false
  *  5. weight_multiplier numeric-input met sensible default 1.0
@@ -19,40 +22,66 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
+// ── Supabase-client mock (anker: AppConfigContext.flow.test.jsx F30) ───────
+jest.mock("../../../shared/services/supabase.client", () => ({
+  supabase: {
+    rpc: jest.fn(),
+    auth: {
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
+    },
+  },
+}));
+
+import { supabase } from "../../../shared/services/supabase.client";
+import { AppConfigProvider } from "../../../shared/context/AppConfigContext";
 import ItemModal from "../ItemModal";
 
-const MOCK_STAP_TYPES = [
+const rpcMock = supabase.rpc;
+
+const STAP_TYPES = [
   "trigger_life_event", "orientatie", "quote_aanvraag",
   "underwriting", "closing_polis", "onboarding",
   "servicing_in_life", "claim_schade", "renewal_churn_advocacy",
 ];
 
 const STAP_TYPE_LABELS = {
-  "klanten.klantreis.stap_type.trigger_life_event":     "1. Life Event Trigger",
-  "klanten.klantreis.stap_type.orientatie":             "2. Awareness & Oriëntatie",
-  "klanten.klantreis.stap_type.quote_aanvraag":         "3. Quote & Aanvraag",
-  "klanten.klantreis.stap_type.underwriting":           "4. Underwriting & Acceptatie",
-  "klanten.klantreis.stap_type.closing_polis":          "5. Closing & Polis",
-  "klanten.klantreis.stap_type.onboarding":             "6. Onboarding",
-  "klanten.klantreis.stap_type.servicing_in_life":      "7. Servicing & In-life",
-  "klanten.klantreis.stap_type.claim_schade":           "8. Claim / Schade",
-  "klanten.klantreis.stap_type.renewal_churn_advocacy": "9. Renewal / Churn / Advocacy",
+  trigger_life_event:     "1. Life Event Trigger",
+  orientatie:             "2. Awareness & Oriëntatie",
+  quote_aanvraag:         "3. Quote & Aanvraag",
+  underwriting:           "4. Underwriting & Acceptatie",
+  closing_polis:          "5. Closing & Polis",
+  onboarding:             "6. Onboarding",
+  servicing_in_life:      "7. Servicing & In-life",
+  claim_schade:           "8. Claim / Schade",
+  renewal_churn_advocacy: "9. Renewal / Churn / Advocacy",
 };
 
-jest.mock("../../../shared/context/AppConfigContext", () => ({
-  useAppConfig: () => ({
-    label: (key, fallback) => STAP_TYPE_LABELS[key] ?? fallback ?? key,
-    prompt: () => null,
-    setting: (k, d) => d,
-    enum: (key, defaultVal = []) => {
-      if (key === "enum.klanten.klantreis.stap_type") return MOCK_STAP_TYPES;
-      return defaultVal;
-    },
-  }),
-}));
+// Mimics shape die `get_app_config_for_tenant` RPC retourneert.
+// `value` voor jsonb-rij wordt door Supabase als JS-array gedeserialiseerd —
+// `enumValue` accepteert beide (string of array, zie AppConfigContext.jsx:412).
+const CONFIG_ROWS = [
+  { key: "enum.klanten.klantreis.stap_type", value: STAP_TYPES, category: "enum",  tenant_id: null },
+  ...STAP_TYPES.map(s => ({
+    key: `label.klanten.klantreis.stap_type.${s}`,
+    value: STAP_TYPE_LABELS[s],
+    category: "label",
+    tenant_id: null,
+  })),
+];
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  // Re-set implementation na clearAllMocks (clear nukt ook factory-impl)
+  supabase.auth.onAuthStateChange.mockImplementation(() => ({
+    data: { subscription: { unsubscribe: jest.fn() } },
+  }));
+  rpcMock.mockResolvedValue({ data: CONFIG_ROWS, error: null });
+});
 
 const klantreisDim = { id: "dim-kr", archetype: "klantreis", name: "Verzekerings-klantreis" };
 
@@ -65,9 +94,23 @@ function makeProps({ item = null, onSave = jest.fn(async () => ({ error: null })
   };
 }
 
-describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
-  test("1. klantreis rendert alle 12 velden in betekenisvolle volgorde", () => {
-    render(<ItemModal {...makeProps()} />);
+async function renderModal(props) {
+  let result;
+  await act(async () => {
+    result = render(
+      <AppConfigProvider>
+        <ItemModal {...props} />
+      </AppConfigProvider>
+    );
+  });
+  // Wacht tot config-fetch klaar is — voorkomt race tussen rpc-resolve en assertions
+  await waitFor(() => expect(rpcMock).toHaveBeenCalled());
+  return result;
+}
+
+describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2 + Optie A)", () => {
+  test("1. klantreis rendert alle 12 velden in betekenisvolle volgorde", async () => {
+    await renderModal(makeProps());
     // Wat — kern
     expect(screen.getByTestId("field-stap_type")).toBeInTheDocument();
     expect(screen.getByTestId("field-customer_goal")).toBeInTheDocument();
@@ -87,27 +130,36 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
     expect(screen.getByTestId("field-insight")).toBeInTheDocument();
   });
 
-  test("2. stap_type-dropdown toont 9 opties uit mocked enum", () => {
-    render(<ItemModal {...makeProps()} />);
+  test("2. stap_type-dropdown toont 9 opties via echte enumValue-resolver", async () => {
+    await renderModal(makeProps());
     const dropdown = screen.getByTestId("field-stap_type").querySelector("select");
     expect(dropdown).toBeInTheDocument();
-    // 9 opties + 1 placeholder "— kies —"
-    expect(dropdown.options).toHaveLength(10);
+
+    // Wacht tot config-load + re-render dropdown gevuld heeft. Bij de buggy
+    // pre-fix-state (dubbele "enum."-prefix in archetypeSchemas.js:91) blijft
+    // `dropdown.options.length === 1` (alleen placeholder) en faalt deze
+    // assertion → regressie-test voor mock-blind-spot uit oude versie van
+    // deze suite.
+    await waitFor(() => {
+      expect(dropdown.options).toHaveLength(10); // 1 placeholder + 9 stages
+    });
+
+    expect(dropdown.options[0].value).toBe(""); // placeholder
     expect(dropdown.options[1].value).toBe("trigger_life_event");
     expect(dropdown.options[1].textContent).toBe("1. Life Event Trigger");
     expect(dropdown.options[9].value).toBe("renewal_churn_advocacy");
     expect(dropdown.options[9].textContent).toBe("9. Renewal / Churn / Advocacy");
   });
 
-  test("3. Strategische-weging-blok heeft data-denkdwang='asymmetrie' (80/20-principe)", () => {
-    render(<ItemModal {...makeProps()} />);
+  test("3. Strategische-weging-blok heeft data-denkdwang='asymmetrie' (80/20-principe)", async () => {
+    await renderModal(makeProps());
     const blok = screen.getByTestId("strategische-weging-blok");
     expect(blok).toHaveAttribute("data-denkdwang", "asymmetrie");
   });
 
   test("4. MoT-toggle togglet is_moment_of_truth state via setField", async () => {
     const onSave = jest.fn(async () => ({ error: null }));
-    render(<ItemModal {...makeProps({ onSave })} />);
+    await renderModal(makeProps({ onSave }));
     fireEvent.change(screen.getByLabelText("Naam"), { target: { value: "Stage X" } });
 
     const motToggle = screen.getByTestId("toggle-is_moment_of_truth");
@@ -122,7 +174,7 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
 
   test("5. weight_multiplier numeric-input met default 1.0 + user kan tunen naar 3.0", async () => {
     const onSave = jest.fn(async () => ({ error: null }));
-    render(<ItemModal {...makeProps({ onSave })} />);
+    await renderModal(makeProps({ onSave }));
     fireEvent.change(screen.getByLabelText("Naam"), { target: { value: "Claim stage" } });
 
     const weightInput = screen.getByTestId("field-weight_multiplier").querySelector("input[type='number']");
@@ -137,7 +189,7 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
   });
 
   test("6. silent_period_risk conditional — toggle is_silent_period maakt veld zichtbaar", async () => {
-    render(<ItemModal {...makeProps()} />);
+    await renderModal(makeProps());
     fireEvent.change(screen.getByLabelText("Naam"), { target: { value: "Servicing stage" } });
 
     // Initial: verborgen
@@ -152,7 +204,7 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
 
   test("7. dmu tag_list save → archetype_data.dmu = array van rollen", async () => {
     const onSave = jest.fn(async () => ({ error: null }));
-    render(<ItemModal {...makeProps({ onSave })} />);
+    await renderModal(makeProps({ onSave }));
     fireEvent.change(screen.getByLabelText("Naam"), { target: { value: "Claim" } });
 
     const dmuInput = screen.getByTestId("field-dmu").querySelector("input[type='text']");
@@ -164,7 +216,7 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
     expect(onSave.mock.calls[0][0].archetype_data.dmu).toEqual(["klant", "adviseur", "verzekeraar"]);
   });
 
-  test("8. emotions tag_list edit-mode → bestaande array rendert als comma-joined text", () => {
+  test("8. emotions tag_list edit-mode → bestaande array rendert als comma-joined text", async () => {
     const item = {
       id: "kr-1",
       dimension_id: "dim-kr",
@@ -175,7 +227,7 @@ describe("ItemModal — klantreis-archetype Scope A (stap 11.I.2)", () => {
       is_draft: false,
       sort_order: 10,
     };
-    render(<ItemModal {...makeProps({ item })} />);
+    await renderModal(makeProps({ item }));
     const emotionsInput = screen.getByTestId("field-emotions").querySelector("input[type='text']");
     expect(emotionsInput).toHaveValue("onzeker, soms gestrest");
   });

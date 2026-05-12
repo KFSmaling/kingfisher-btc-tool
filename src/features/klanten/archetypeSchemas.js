@@ -88,7 +88,7 @@ export const ARCHETYPE_SCHEMAS = {
   //   - helperKey:      app_config-key met uitleg-tekst onder veld-label
   klantreis: [
     // ── Wat — kern-identiteit van de stage ──────────────────────────────────
-    { key: "stap_type",     labelKey: "klanten.veld.klantreis.stap_type",     fallback: "Stap-type",          type: "dropdown", enumKey: "enum.klanten.klantreis.stap_type", enumLabelPrefix: "klanten.klantreis.stap_type.", placeholder: "Selecteer een stage" },
+    { key: "stap_type",     labelKey: "klanten.veld.klantreis.stap_type",     fallback: "Stap-type",          type: "dropdown", enumKey: "klanten.klantreis.stap_type", enumLabelPrefix: "klanten.klantreis.stap_type.", placeholder: "Selecteer een stage" },
     { key: "customer_goal", labelKey: "klanten.veld.klantreis.customer_goal", fallback: "Doel van de klant", type: "textarea", placeholder: "Wat wil de klant in deze fase bereiken? (bv. \"inzicht in dekking\", \"snel polis afsluiten\")" },
     // ── Hoe — touchpoints, betrokkenen, signalen ────────────────────────────
     { key: "touchpoints", labelKey: "klanten.veld.klantreis.touchpoints", fallback: "Touchpoints",                 type: "tag_list", placeholder: "Voeg touchpoint toe (bv. \"app\", \"callcenter\", \"tussenpersoon\")" },
