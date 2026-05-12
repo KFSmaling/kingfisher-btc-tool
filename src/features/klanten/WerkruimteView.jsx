@@ -181,6 +181,11 @@ export default function WerkruimteView({
             hasIndexedChunks={hasIndexedChunks}
             uploadsProcessing={uploadsProcessing}
             busyAction={dossierBusy}
+            klantreisTopStripActive={showKlantreisTopStrip}
+            klantreisItemsSorted={klantreisItemsSorted}
+            klantreisPainCounts={klantreisPainCounts}
+            klantreisDim={klantreisDim}
+            onKlantreisChevronClick={handleTopStripChevronClick}
           />
         </div>
       ) : (
