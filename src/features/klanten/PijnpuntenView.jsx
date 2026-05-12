@@ -19,6 +19,8 @@ import React from "react";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import PijnpuntCard from "./PijnpuntCard";
+import KlantreisChevronOverview from "./KlantreisChevronOverview";
+import PijnpuntChevronCard from "./PijnpuntChevronCard";
 
 // Stap Bundle 3 F27 — gekoppelde pain_point_ids per item-id.
 // Vervangt de oude `couplingCountByItem`-counts door arrays zodat ItemCard-
@@ -92,6 +94,12 @@ export default function PijnpuntenView({
   hasUploads = false,
   uploadsProcessing = false,
   busyAction = null,
+  // F26-iteratie — klantreis volle-breedte-strip + pijnpunt-chevron-flow
+  klantreisTopStripActive = false,
+  klantreisItemsSorted = [],
+  klantreisPainCounts = new Map(),
+  klantreisDim = null,
+  onKlantreisChevronClick,
 }) {
   const { label: appLabel } = useAppConfig();
   const painsByItem = painIdsByItem(couplings);
@@ -124,16 +132,155 @@ export default function PijnpuntenView({
   const canonicalPains = painPoints.filter(pp => !pp.is_draft);
   const draftPains     = painPoints.filter(pp =>  pp.is_draft);
 
+  // F26-iteratie — split canonical-pijnpunten in op-klantreis vs andere-dims.
+  // Een pijnpunt is "op klantreis" als ≥1 coupling target is een klantreis-item.
+  // Sortering: gegroepeerd op stage-volgorde (zelfde sort_order als klantreis-
+  // items zelf — designer-spec Layout B doorlopend in leesrichting).
+  const klantreisItemIds = klantreisTopStripActive
+    ? new Set(klantreisItemsSorted.map(i => i.id))
+    : new Set();
+  const klantreisItemSortOrder = klantreisTopStripActive
+    ? new Map(klantreisItemsSorted.map((it, idx) => [it.id, idx]))
+    : new Map();
+  const klantreisItemShortName = (it) => {
+    const stapType = it?.archetype_data?.stap_type;
+    return stapType
+      ? appLabel(`klanten.klantreis.stap_type.${stapType}.short`, it.name)
+      : (it?.name || "");
+  };
+
+  const isPainOnKlantreis = (pp) => {
+    if (!klantreisTopStripActive) return false;
+    const ppCouplings = couplingsByPain.get(pp.id) || [];
+    return ppCouplings.some(c => c.target_table === "cd_items" && klantreisItemIds.has(c.target_id));
+  };
+
+  // Per pijnpunt: bepaal "primary stage" — eerste klantreis-item-koppeling
+  // (op stage-volgorde) voor pill-tekst + voor flow-sortering.
+  const primaryStageForPain = (pp) => {
+    const ppCouplings = couplingsByPain.get(pp.id) || [];
+    let best = null;
+    let bestOrder = Infinity;
+    for (const c of ppCouplings) {
+      if (c.target_table !== "cd_items" || !klantreisItemIds.has(c.target_id)) continue;
+      const ord = klantreisItemSortOrder.get(c.target_id);
+      if (ord != null && ord < bestOrder) {
+        bestOrder = ord;
+        best = c.target_id;
+      }
+    }
+    return best ? { itemId: best, order: bestOrder } : null;
+  };
+
+  // Per pijnpunt: count extra dimensies (= dimensies anders dan klantreis-dim
+  // waarvan ≥1 item gekoppeld is).
+  const extraDimensieCount = (pp) => {
+    const ppCouplings = couplingsByPain.get(pp.id) || [];
+    const dims = new Set();
+    for (const c of ppCouplings) {
+      if (c.target_table === "cd_dimensions" && c.target_id !== klantreisDim?.id) {
+        dims.add(c.target_id);
+      } else if (c.target_table === "cd_items") {
+        const it = items.find(i => i.id === c.target_id);
+        if (it && it.dimension_id !== klantreisDim?.id) dims.add(it.dimension_id);
+      }
+    }
+    return dims.size;
+  };
+
+  const klantreisPains = canonicalPains
+    .filter(isPainOnKlantreis)
+    .map(pp => ({ pp, stage: primaryStageForPain(pp) }))
+    .sort((a, b) => (a.stage?.order ?? 0) - (b.stage?.order ?? 0));
+  const andereDimsPains = klantreisTopStripActive
+    ? canonicalPains.filter(pp => !isPainOnKlantreis(pp))
+    : canonicalPains;
+
+  // Bij top-strip-active: andere-dims-grid filtert klantreis-dim weg
+  // (klantreis-content zit al in top-strip + flow).
+  const andereDimensies = klantreisTopStripActive
+    ? dimensions.filter(d => d.id !== klantreisDim?.id)
+    : dimensions;
+
   return (
     <div className="px-8 py-6 overflow-auto">
       <p className="text-[12px] text-slate-500 mb-4 leading-relaxed">
         {appLabel("klanten.pijnpunt.intro", "verzamel waarnemingen en koppel aan items. multi-relationeel — een pijnpunt mag aan meerdere dimensies hangen, of nergens (overstijgend).")}
       </p>
 
-      {/* Compacte inventaris-grid bovenaan */}
-      {dimensions.length > 0 && (
+      {/* F26-iteratie — klantreis volle-breedte-strip top (fase 2 met pijn-
+          overlay) + doorlopende horizontale flow met PijnpuntChevronCards
+          eronder. Bij <3 stages valt klantreis terug naar reguliere
+          inventaris-grid hieronder (geen top-strip). */}
+      {klantreisTopStripActive && (
+        <div
+          data-testid="klantreis-top-strip-container"
+          className="w-full mb-5 border border-slate-200 rounded-md bg-white p-4 shadow-sm"
+        >
+          <div className="flex items-baseline justify-between mb-3">
+            <h4 className="text-sm font-bold text-[var(--color-primary)]">{klantreisDim?.name}</h4>
+            <span className="text-[9px] text-slate-400 uppercase tracking-widest">
+              {klantreisDim?.archetype} · {klantreisItemsSorted.length} stages
+            </span>
+          </div>
+          <KlantreisChevronOverview
+            items={klantreisItemsSorted}
+            painPointCounts={klantreisPainCounts}
+            currentPhase={2}
+            onChevronClick={onKlantreisChevronClick}
+          />
+          {/* Doorlopende horizontale flow van pijnpunt-chevron-cards
+              (Layout B uit designer-result — gesorteerd op stage-volgorde,
+              horizontale scroll-strook bij overflow). */}
+          {klantreisPains.length > 0 && (
+            <div className="mt-4">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                {appLabel(
+                  "klanten.pijnpunten.klantreis.flow.titel",
+                  "Pijnpunten op klantreis · {N} stuks"
+                ).replace("{N}", String(klantreisPains.length))}
+              </div>
+              <div
+                data-testid="klantreis-pijnpunten-flow"
+                className="flex items-stretch gap-2 overflow-x-auto pb-2 pl-2"
+              >
+                {klantreisPains.map(({ pp, stage }, idx) => {
+                  const stageItem = stage ? klantreisItemsSorted.find(i => i.id === stage.itemId) : null;
+                  const stageNum  = stage ? stage.order + 1 : null;
+                  const stageShort = stageItem ? klantreisItemShortName(stageItem) : "";
+                  return (
+                    <PijnpuntChevronCard
+                      key={pp.id}
+                      pijnpunt={pp}
+                      nummer={painNumberById.get(pp.id)}
+                      stageNummer={stageNum}
+                      stageShortName={stageShort}
+                      extraDimensieCount={extraDimensieCount(pp)}
+                      clipIdx={idx}
+                      clipTotal={klantreisPains.length}
+                      onClick={onEditPijnpunt}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Compacte inventaris-grid bovenaan (alleen andere dimensies bij
+          top-strip-active — klantreis-content zit al boven) */}
+      {andereDimensies.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          {dimensions.map(dim => (
+          {klantreisTopStripActive && (
+            <div className="col-span-full text-[10px] font-bold uppercase tracking-widest text-slate-500 -mb-1">
+              {appLabel(
+                "klanten.pijnpunten.andere_dims.titel",
+                "Pijnpunten andere dimensies · {N} stuks"
+              ).replace("{N}", String(andereDimsPains.length))}
+            </div>
+          )}
+          {andereDimensies.map(dim => (
             <CompactDimensieKolom
               key={dim.id}
               dimension={dim}
@@ -209,7 +356,7 @@ export default function PijnpuntenView({
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            {canonicalPains.map(pp => (
+            {andereDimsPains.map(pp => (
               <PijnpuntCard
                 key={pp.id}
                 painPoint={pp}

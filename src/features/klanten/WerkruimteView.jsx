@@ -14,6 +14,7 @@ import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import DimensieKolom from "./DimensieKolom";
+import KlantreisChevronOverview from "./KlantreisChevronOverview";
 import PijnpuntenView from "./PijnpuntenView";
 import AnalyseView from "./AnalyseView";
 import VerbeterrichtingenView from "./VerbeterrichtingenView";
@@ -66,6 +67,40 @@ export default function WerkruimteView({
   const [activeFase, setActiveFase] = useState(1);
 
   const itemsByDim = (dimId) => items.filter(i => i.dimension_id === dimId);
+
+  // F26-iteratie — klantreis-top-strip-logica.
+  // Conditional: klantreis-dim aanwezig + ≥3 canonical items (designer-spec
+  // — chevron-flow niet zinvol bij <3 stages, val terug naar grid).
+  const klantreisDim = dimensions.find(d => d.archetype === "klantreis");
+  const klantreisItemsSorted = klantreisDim
+    ? items
+        .filter(i => i.dimension_id === klantreisDim.id && !i.is_draft)
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    : [];
+  const showKlantreisTopStrip = klantreisDim && klantreisItemsSorted.length >= 3;
+  const otherDimensions = showKlantreisTopStrip
+    ? dimensions.filter(d => d.id !== klantreisDim.id)
+    : dimensions;
+
+  // Pijn-counts voor top-strip (fase 2+).
+  const klantreisPainCounts = (() => {
+    if (!showKlantreisTopStrip) return new Map();
+    const klantreisItemIds = new Set(klantreisItemsSorted.map(i => i.id));
+    const map = new Map();
+    for (const c of (couplings || [])) {
+      if (c.target_table !== "cd_items" || !klantreisItemIds.has(c.target_id)) continue;
+      map.set(c.target_id, (map.get(c.target_id) || 0) + 1);
+    }
+    return map;
+  })();
+
+  // Klik op chevron in top-strip → open modal (geen scroll-to-card meer want
+  // klantreis-cards bestaan niet in grid bij showKlantreisTopStrip).
+  const handleTopStripChevronClick = (itemId) => {
+    const item = klantreisItemsSorted.find(i => i.id === itemId);
+    if (item) onItemClick(item);
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-slate-50">
@@ -146,6 +181,11 @@ export default function WerkruimteView({
             hasIndexedChunks={hasIndexedChunks}
             uploadsProcessing={uploadsProcessing}
             busyAction={dossierBusy}
+            klantreisTopStripActive={showKlantreisTopStrip}
+            klantreisItemsSorted={klantreisItemsSorted}
+            klantreisPainCounts={klantreisPainCounts}
+            klantreisDim={klantreisDim}
+            onKlantreisChevronClick={handleTopStripChevronClick}
           />
         </div>
       ) : (
@@ -180,8 +220,29 @@ export default function WerkruimteView({
                 {appLabel("klanten.knop.dimensie.toevoegen", "+ dimensie")}
               </button>
             </div>
+            {/* F26-iteratie — klantreis volle-breedte-strip top (alleen bij
+                ≥3 stages — anders val klantreis terug naar reguliere grid). */}
+            {showKlantreisTopStrip && (
+              <div
+                data-testid="klantreis-top-strip-container"
+                className="w-full mb-5 border border-slate-200 rounded-md bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-baseline justify-between mb-3">
+                  <h4 className="text-sm font-bold text-[var(--color-primary)]">{klantreisDim.name}</h4>
+                  <span className="text-[9px] text-slate-400 uppercase tracking-widest">
+                    {klantreisDim.archetype} · {klantreisItemsSorted.length} stages
+                  </span>
+                </div>
+                <KlantreisChevronOverview
+                  items={klantreisItemsSorted}
+                  painPointCounts={klantreisPainCounts}
+                  currentPhase={activeFase}
+                  onChevronClick={handleTopStripChevronClick}
+                />
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {dimensions.map(dim => (
+              {otherDimensions.map(dim => (
                 <DimensieKolom
                   key={dim.id}
                   dimension={dim}
