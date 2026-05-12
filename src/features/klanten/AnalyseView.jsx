@@ -282,7 +282,7 @@ export default function AnalyseView({
       {/* Intro + AI-knoppen */}
       <div className="mb-6">
         <p className="text-[11px] text-slate-500 italic mb-4 max-w-3xl">
-          {appLabel("klanten.analyse.helper.intro", "AI doet een eerste pas op je pijnpunten. Per suggestie kies je: accepteer, verfijn (eigen tekst), graaf dieper (AI verfijnt), of wuif weg.")}
+          {appLabel("klanten.analyse.intro", "Patronen herkennen in de pijnpunten — selecteer een analyse-type hieronder. AI doet de eerste pas; jij blijft eigenaar van het resultaat. Bewerk wat moet, verwijder wat niet klopt, markeer wat doorbouwt naar verbeteracties.")}
         </p>
 
         {!hasPainPoints && (
@@ -350,7 +350,7 @@ export default function AnalyseView({
         {appLabel("klanten.analyse.counter.geaccepteerd", "geaccepteerd")}
         {" "}<span className="text-slate-400">{appLabel("klanten.analyse.counter.separator", "·")}</span>{" "}
         <span data-testid="counter-weggewuifd">{rejectedCount}</span>{" "}
-        {appLabel("klanten.analyse.counter.weggewuifd", "weggewuifd")}
+        {appLabel("klanten.analyse.counter.weggewuifd", "verwijderd")}
       </div>
 
       {/* Global error */}
@@ -402,13 +402,13 @@ export default function AnalyseView({
         <div className="mb-6">
           {markedList.length > 0 && (
             <CollapseSection
-              title={`${appLabel("klanten.analyse.gemarkeerd.titel", "Gemarkeerd voor verbeterrichtingen")} (${markedList.length})`}
+              title={`${appLabel("klanten.analyse.gemarkeerd.titel", "Gemarkeerd voor verbeteracties")} (${markedList.length})`}
               items={markedList.filter(s => !promotedSuggestionIds.has(s.id))}
               emptyMessage={appLabel("klanten.analyse.gemarkeerd.leeg", "Nog niets gemarkeerd")}
               actionLabel={appLabel("klanten.analyse.gemarkeerd.terug", "Terug naar voorraad")}
               onAction={handleUnMark}
               secondaryActionLabel={onPromoteSuggestion
-                ? appLabel("klanten.actie.promote", "Promote naar verbeterrichting")
+                ? appLabel("klanten.actie.promote", "Promote naar verbeteractie")
                 : null}
               onSecondaryAction={onPromoteSuggestion || null}
               testIdPrefix="marked"

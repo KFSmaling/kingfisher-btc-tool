@@ -94,7 +94,7 @@ const LABEL_FALLBACKS = {
   "klanten.fase.1.titel":             "Inventarisatie",
   "klanten.fase.2.titel":             "Pijnpunten",
   "klanten.fase.3.titel":             "Analyse",
-  "klanten.fase.4.titel":             "Verbeterrichtingen",
+  "klanten.fase.4.titel":             "Verbeteracties",
   "klanten.fase.disabled.tooltip":    "komt in latere sprint",
   "klanten.dimensie.klantsegment":    "Klantsegmenten",
   "klanten.dimensie.propositie":      "Proposities",
@@ -189,7 +189,7 @@ const LABEL_FALLBACKS = {
   "klanten.rapport.pijnpunten.leeg":                "Nog geen pijnpunten vastgelegd.",
   "klanten.pijnpunt.overstijgend.section":          "Overstijgend (geen koppeling)",
   // Stap 11.G — Fase 3 Analyse + AI (canvas-niveau-affordances)
-  "klanten.analyse.intro":                          "AI doet een eerste pas met patroon-suggesties. Consultant blijft eigenaar — accept, verfijn, of wuif weg.",
+  "klanten.analyse.intro":                          "AI doet een eerste pas met patroon-suggesties. Consultant blijft eigenaar — markeer als richting, bewerk, of verwijder.",
   "klanten.analyse.knop.cluster":                   "Cluster zoeken",
   "klanten.analyse.knop.cluster.helper":            "Groepen pijnpunten met gemeenschappelijke oorzaak",
   "klanten.analyse.knop.paradox":                   "Paradox zoeken",
@@ -204,7 +204,7 @@ const LABEL_FALLBACKS = {
   "klanten.analyse.error.retry":                    "Opnieuw",
   "klanten.analyse.empty.geen_data":                "Voeg eerst pijnpunten toe in fase 2 voordat je analyse draait.",
   "klanten.analyse.counter.geaccepteerd":           "geaccepteerd",
-  "klanten.analyse.counter.weggewuifd":             "weggewuifd",
+  "klanten.analyse.counter.weggewuifd":             "verwijderd",
   "klanten.analyse.counter.separator":              "·",
   "klanten.analyse.lijst.titel":                    "Suggesties",
   "klanten.analyse.lijst.leeg":                     "Nog geen suggesties — klik een AI-knop hierboven of voeg een eigen patroon toe.",
@@ -226,9 +226,15 @@ const LABEL_FALLBACKS = {
   "klanten.analyse.actie.refine.edit":              "Bewerk",
   "klanten.analyse.actie.refine.deeper":            "Verfijn — graaf dieper",
   "klanten.analyse.actie.reject":                   "Verwijder",
-  "klanten.analyse.accept.tooltip.fase4":           "nog te promoten in fase 4 (verbeterrichtingen) — komt later",
+  "klanten.analyse.accept.tooltip.fase4":           "nog te promoten in fase 4 (verbeteracties) — komt later",
+  // Bundle 1+2 F28 — analyse-intro + 4 SuggestionCard actie-tooltips
+  "klanten.analyse.intro":                          "Patronen herkennen in de pijnpunten — selecteer een analyse-type hieronder. AI doet de eerste pas; jij blijft eigenaar van het resultaat. Bewerk wat moet, verwijder wat niet klopt, markeer wat doorbouwt naar verbeteracties.",
+  "klanten.analyse.actie.accept.tooltip":           "Dit patroon doorbouwen naar fase 4 als verbeteractie",
+  "klanten.analyse.actie.refine.edit.tooltip":      "Tekst aanpassen — audit-spoor onthoudt dat consultant gewijzigd heeft",
+  "klanten.analyse.actie.reject.tooltip":           "Wegnemen uit zicht. Zichtbaar in \"Verwijderd\"-collapse om terug te halen",
+  "klanten.analyse.actie.refine.deeper.tooltip":    "Nieuwe AI-variant op basis van dit patroon",
   // Stap 11.G.3 F8 — collapse-secties Gemarkeerd + Verwijderd
-  "klanten.analyse.gemarkeerd.titel":               "Gemarkeerd voor verbeterrichtingen",
+  "klanten.analyse.gemarkeerd.titel":               "Gemarkeerd voor verbeteracties",
   "klanten.analyse.gemarkeerd.leeg":                "Nog niets gemarkeerd",
   "klanten.analyse.gemarkeerd.terug":               "Terug naar voorraad",
   "klanten.analyse.verwijderd.titel":               "Verwijderd",
@@ -272,7 +278,11 @@ const LABEL_FALLBACKS = {
   // `klanten.actie.markeer/.terugtrekken` zijn 11 mei gerenamed naar
   // `verbeterrichting.actie.*` (intent-context). Nieuwe `dossier.actie.*` voor
   // draft-acceptance. Generieke bewerk/verwijder blijven context-onafhankelijk.
-  "klanten.verbeterrichting.actie.markeer":          "Markeer als in roadmap",
+  "klanten.verbeterrichting.actie.markeer":          "Naar roadmap",
+  // Bundle 1+2 F29 deel-2 — 3 status-tooltips IntentCard
+  "klanten.verbeterrichting.status.concept.tooltip":    "Concept — verbeteractie staat in fase 4 maar is nog niet in Roadmap-werkblad doorgezet",
+  "klanten.verbeterrichting.status.in_roadmap.tooltip": "Doorgezet naar Roadmap-werkblad",
+  "klanten.verbeterrichting.actie.markeer.tooltip":     "Zet deze verbeteractie in het Roadmap-werkblad voor concrete acties, eigenaars en planning",
   "klanten.verbeterrichting.actie.terugtrekken":     "Haal uit roadmap",
   "klanten.dossier.actie.markeer":                   "Markeer als richting",
   "klanten.dossier.actie.bewerk":                    "Bewerk",
@@ -284,35 +294,40 @@ const LABEL_FALLBACKS = {
   "klanten.dossier.disabled_no_uploads":             "Upload eerst documenten",
   "klanten.dossier.disabled_no_items":               "Voeg eerst items toe",
   "klanten.dossier.disabled_processing":             "Documenten worden nog verwerkt",
+  // Stap 11.I.2 + Bundle 1+2 — klantreis strategische-weging uitleg (F25)
+  "klanten.veld.klantreis.strategische_weging.uitleg": "Niet elke stap weegt even zwaar. Markeer Moments of Truth (kritische ervaringsmomenten waar de klant \"wakker wordt\") en Silent periods (stille fases waar de klant uit zicht is — risico op churn). Pas de weging aan om strategisch belang in de rapport- en analyse-laag zichtbaar te maken.",
   "klanten.verbeterrichting.titel":                  "Verbeterrichtingen",
   "klanten.verbeterrichting.intro":                  "Verscherp geaccepteerde patronen tot intent. Verstuur naar Roadmap voor concrete acties, eigenaars en planning.",
   "klanten.verbeterrichting.counter.concept":        "concept",
   "klanten.verbeterrichting.counter.verstuurd":      "in roadmap",
   "klanten.verbeterrichting.counter.separator":      "·",
-  "klanten.verbeterrichting.lijst.leeg":             "Nog geen verbeterrichtingen — promoot een gemarkeerd patroon vanuit fase 3 of voeg een eigen richting toe.",
-  "klanten.verbeterrichting.knop.toevoegen":         "+ verbeterrichting toevoegen",
+  "klanten.verbeterrichting.lijst.leeg":             "Nog geen verbeteracties — promoot een gemarkeerd patroon vanuit fase 3 of voeg een eigen verbeteractie toe.",
+  "klanten.verbeterrichting.knop.toevoegen":         "+ verbeteractie toevoegen",
   "klanten.verbeterrichting.knop.opslaan":           "Opslaan",
   "klanten.verbeterrichting.knop.annuleren":         "Annuleren",
   "klanten.verbeterrichting.status.concept":         "concept",
   "klanten.verbeterrichting.status.verstuurd":       "in roadmap",
-  "klanten.verbeterrichting.modal.create.titel":     "Nieuwe verbeterrichting",
-  "klanten.verbeterrichting.modal.edit.titel":       "Verbeterrichting bewerken",
+  "klanten.verbeterrichting.modal.create.titel":     "Nieuwe verbeteractie",
+  "klanten.verbeterrichting.modal.edit.titel":       "Verbeteractie bewerken",
   "klanten.verbeterrichting.veld.titel.label":       "Titel",
   "klanten.verbeterrichting.veld.titel.placeholder": "Korte titel (\"SME-bediening structureel versterken\")",
   "klanten.verbeterrichting.veld.intent.label":      "Beschrijving",
-  "klanten.verbeterrichting.veld.intent.placeholder":"Verscherp het patroon tot een concrete verbeterrichting. Wat moet er gebeuren en waarom?",
+  "klanten.verbeterrichting.veld.intent.placeholder":"Verscherp het patroon tot een concrete verbeteractie. Wat moet er gebeuren en waarom?",
   "klanten.verbeterrichting.veld.vanuit.label":      "Vanuit",
   "klanten.verbeterrichting.veld.vanuit.helper":     "Verwijst naar bron-patronen of context — automatisch gevuld bij promote.",
   "klanten.verbeterrichting.error.titel_leeg":       "Titel is verplicht (1-100 tekens)",
   "klanten.verbeterrichting.error.intent_leeg":      "Beschrijving is verplicht (minimaal 50 tekens)",
   "klanten.verbeterrichting.error.intent_te_lang":   "Beschrijving overschrijdt 2000 tekens",
-  "klanten.verbeterrichting.promote.titel":          "Promote naar verbeterrichting",
-  "klanten.verbeterrichting.promote.intro":          "Verscherp dit gemarkeerde patroon tot een concrete verbeterrichting. Title en beschrijving zijn vooringevuld — bewerk waar nodig.",
+  "klanten.verbeterrichting.promote.titel":          "Promote naar verbeteractie",
+  "klanten.verbeterrichting.promote.intro":          "Verscherp dit gemarkeerde patroon tot een concrete verbeteractie. Title en beschrijving zijn vooringevuld — bewerk waar nodig.",
   "klanten.verbeterrichting.handover.confirm":       "Roadmap-werkblad is nog niet beschikbaar — actie wordt vastgelegd zodat hij later kan worden opgepakt. Doorgaan?",
   "klanten.verbeterrichting.handover.datum":         "in roadmap sinds",
-  "klanten.verbeterrichting.handover.tooltip":       "Markeer deze richting als in roadmap (stub — Roadmap-werkblad volgt)",
-  "klanten.rapport.section.verbeterrichtingen":      "Verbeterrichtingen",
-  "klanten.rapport.verbeterrichtingen.leeg":         "Nog geen verbeterrichtingen vastgelegd — werkblad zit nog in inventarisatie/analyse-fase.",
+  "klanten.verbeterrichting.handover.tooltip":       "Markeer deze verbeteractie als in roadmap (stub — Roadmap-werkblad volgt)",
+  "klanten.rapport.section.verbeterrichtingen":      "Verbeteracties",
+  "klanten.rapport.verbeterrichtingen.leeg":         "Nog geen verbeteracties vastgelegd — werkblad zit nog in inventarisatie/analyse-fase.",
+  // F20 — nieuwe label-key voor RapportView counter (verbeteractie/verbeteracties)
+  "klanten.rapport.counter.verbeteracties":          "verbeteracties",
+  "klanten.rapport.samenvatting.volledig":           "Werkblad in volledige fase-keten — verbeteracties vastgelegd.",
 };
 
 const AppConfigContext = createContext(null);
@@ -338,7 +353,21 @@ export function AppConfigProvider({ children }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadConfig(); }, [loadConfig]);
+  // Stap F30 Fix-pad B (2026-05-12): mount-fetch + auth-state-change listener.
+  // Reden: bij eerste React-mount kan Supabase-auth-session nog niet hersteld
+  // zijn → RPC-call in anon-context → 0 rijen via RLS-block → `config` blijft
+  // leeg → LABEL_FALLBACKS-strings winnen over DB-waarden. Listener re-fetcht
+  // zodra SIGNED_IN of TOKEN_REFRESHED gefired wordt.
+  useEffect(() => {
+    loadConfig();
+    if (!supabase) return undefined;
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, _session) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        loadConfig();
+      }
+    });
+    return () => { authListener?.subscription?.unsubscribe(); };
+  }, [loadConfig]);
 
   /**
    * label("app.title") → waarde uit DB, anders hardcoded fallback
