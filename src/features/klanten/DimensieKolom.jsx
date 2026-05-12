@@ -162,27 +162,21 @@ export default function DimensieKolom({
               appLabel={appLabel}
             />
           ) : (
-            <button
+            <KlantreisOrPlainItemCard
               key={item.id}
-              ref={el => {
+              item={item}
+              isKlantreis={isKlantreis}
+              currentPhase={currentPhase}
+              isHighlighted={highlightedCardId === item.id}
+              cardRefSetter={el => {
                 if (isKlantreis) {
                   if (el) cardRefs.current.set(item.id, el);
                   else cardRefs.current.delete(item.id);
                 }
               }}
-              data-testid={`item-card-${item.id}`}
               onClick={() => isKlantreis ? handleKlantreisCardClick(item) : onItemClick(item)}
-              className={`w-full text-left border rounded px-3 py-2 hover:border-[var(--color-accent)] hover:bg-slate-50 transition-all ${
-                highlightedCardId === item.id
-                  ? "border-purple-400 ring-2 ring-purple-300 ring-offset-1"
-                  : "border-slate-200"
-              }`}
-            >
-              <div className="text-sm font-medium text-slate-800">{item.name}</div>
-              {item.description && (
-                <div className="text-[11px] text-slate-500 mt-0.5">{item.description}</div>
-              )}
-            </button>
+              appLabel={appLabel}
+            />
           )
         ))}
       </div>
@@ -225,6 +219,61 @@ export default function DimensieKolom({
         )}
       </div>
     </div>
+  );
+}
+
+// Bundle 4 F26 commit 4 — klantreis-card-render met asymmetrie-cues
+// (designer-note 6 mei). Voor niet-klantreis-archetypes valt 'm terug op
+// de huidige minimal-card-render (geen pill-badge, geen rode background).
+function KlantreisOrPlainItemCard({ item, isKlantreis, currentPhase, isHighlighted, cardRefSetter, onClick, appLabel }) {
+  const data = item.archetype_data || {};
+  const isMoT     = isKlantreis && data.is_moment_of_truth === true;
+  const isSilent  = isKlantreis && data.is_silent_period === true;
+  const weight    = typeof data.weight_multiplier === "number" ? data.weight_multiplier : 1;
+  const isWeighted = isKlantreis && weight > 1.0;
+  const showAsymmetriePill = isKlantreis && currentPhase >= 2 && (isMoT || isSilent || isWeighted);
+
+  // Pill-tekst: MoT (met weight) > Silent > "x× weight" als enige asymmetrie
+  let pillText = null;
+  if (isMoT) {
+    pillText = appLabel("klanten.klantreis.card.pill.mot", "bepalend moment")
+      + (weight > 1.0 ? ` · ${weight}×` : "");
+  } else if (isSilent) {
+    pillText = appLabel("klanten.klantreis.card.pill.silent", "silent period");
+  } else if (isWeighted) {
+    pillText = `${weight}×`;
+  }
+
+  // Lichte rode card-background bij asymmetrie + pijn (fase 2+)
+  const bgClass = showAsymmetriePill ? "bg-red-50/40" : "";
+
+  return (
+    <button
+      ref={cardRefSetter}
+      data-testid={`item-card-${item.id}`}
+      data-asymmetrie={showAsymmetriePill ? "true" : "false"}
+      onClick={onClick}
+      className={`w-full text-left border rounded px-3 py-2 hover:border-[var(--color-accent)] hover:bg-slate-50 transition-all ${bgClass} ${
+        isHighlighted
+          ? "border-purple-400 ring-2 ring-purple-300 ring-offset-1"
+          : "border-slate-200"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <div className="text-sm font-medium text-slate-800 flex-1">{item.name}</div>
+        {pillText && (
+          <span
+            data-testid={`item-card-pill-${item.id}`}
+            className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200"
+          >
+            {pillText}
+          </span>
+        )}
+      </div>
+      {item.description && (
+        <div className="text-[11px] text-slate-500 mt-0.5">{item.description}</div>
+      )}
+    </button>
   );
 }
 
