@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, Crosshair } from "lucide-react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, Crosshair, Info, Settings, LogOut } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
 import WerkbladActieknoppen from "../../shared/components/WerkbladActieknoppen";
 import WerkbladHeader from "../../shared/components/WerkbladHeader";
+import OverDialog from "../../shared/components/OverDialog";
 import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
+import { useAuth } from "../../shared/services/auth.service";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import WandButton from "../../shared/components/WandButton";
 import MagicResult from "../../shared/components/MagicResult";
@@ -490,7 +492,12 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
 }
 
 export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) {
-  const { t } = useLang();
+  const { t, lang, setLang } = useLang();
+  const { user, signOut } = useAuth();
+  const [showOverDialog, setShowOverDialog] = useState(false);
+  // S2 instructie C — content-filtering sectie-tabs.
+  // Eén actieve sectie tegelijk; default "identiteit" bij canvas-load.
+  const [activeSectie, setActiveSectie] = useState("identiteit");
   const { prompt: appPrompt, label: appLabel } = useAppConfig();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -1080,7 +1087,11 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     <div className={`flex flex-col flex-1 min-h-0 bg-slate-50 transition-all duration-300 ease-out
       ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
 
-      {/* Fase 2 design-systeem — drie-lagen-hybride WerkbladHeader */}
+      {/* S2 design-systeem — drie-lagen-WerkbladHeader vol-vullen (designer §3.7).
+          Laag 1 met LogoBrand + appTitle + versie-pill + lang-switch + overflow.
+          Laag 2 werkblad-bar met Crosshair-tile + Inzichten + Rapportage + Full Draft
+          (Analyse-knop verhuisd naar InzichtenOverlay per instructie B).
+          Laag 3 sectie-tabs met content-filtering (instructie C). */}
       <WerkbladHeader
         categorie="strategie"
         icon={Crosshair}
@@ -1088,36 +1099,54 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         titel="Strategie Werkblad"
         onClose={handleClose}
         saveStatus={saveLabel || null}
+        showLogo
+        appTitle={appLabel("app.title", "Strategy Platform")}
+        versie={process.env.REACT_APP_VERSION || "0.1.0"}
+        lang={lang}
+        onLangSwitch={() => setLang(lang === "nl" ? "en" : "nl")}
+        overflowItems={[
+          {
+            id: "admin",
+            label: "App config",
+            icon: Settings,
+            onClick: () => { window.location.href = "/admin"; },
+            hidden: user?.email !== process.env.REACT_APP_ADMIN_EMAIL,
+          },
+          {
+            id: "over",
+            label: "Over Platform Workbench",
+            icon: Info,
+            onClick: () => setShowOverDialog(true),
+            divider: true,
+          },
+          {
+            id: "uitloggen",
+            label: "Uitloggen",
+            icon: LogOut,
+            onClick: signOut,
+            divider: true,
+            danger: true,
+          },
+        ]}
         tabs={[
           { id: "identiteit", label: "Identiteit" },
           { id: "analyse",    label: "Analyse · SWOT" },
           { id: "executie",   label: "Executie · 7·3·3" },
         ]}
-        activeTabId={null}
-        onTabClick={(id) => {
-          const el = document.getElementById(`strat-section-${id}`);
-          if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        }}
+        activeTabId={activeSectie}
+        onTabClick={(id) => setActiveSectie(id)}
         actieknoppen={
           <>
             <WerkbladActieknoppen
-              onAnalyse={handleAnalyze}
               onBekijken={() => setShowAdvies(true)}
               onRapportage={() => setShowOnePager(true)}
-              analyseLabel={
-                analysisLoading
-                  ? appLabel("werkblad.action.analyseert", "Analyseren…")
-                  : analysis
-                    ? appLabel("werkblad.action.analyseer_opnieuw", "Opnieuw analyseren")
-                    : appLabel("werkblad.action.analyseer", "Analyse draaien")
-              }
-              analysing={analysisLoading}
-              bekijkenDisabled={!analysis}
+              bekijkenDisabled={false}
               appLabel={appLabel}
             />
             <button
               onClick={() => setAutoDraftOpen(true)}
               disabled={autoDraftRunning}
+              data-testid="strategie-full-draft"
               className="flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors disabled:opacity-50"
               style={{ background: "var(--color-accent)", color: "var(--color-primary)" }}
             >
@@ -1146,6 +1175,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
       <div className="flex-1 overflow-y-auto px-8 py-12 space-y-10">
 
         {/* SECTIE 1: IDENTITEIT */}
+        {activeSectie === "identiteit" && (
         <section id="strat-section-identiteit" className="space-y-6 scroll-mt-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">1</div>
@@ -1263,8 +1293,10 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             />
           </div>
         </section>
+        )}
 
         {/* SECTIE 2: ANALYSE */}
+        {activeSectie === "analyse" && (
         <section id="strat-section-analyse" className="space-y-6 pb-6 scroll-mt-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--color-analysis)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">2</div>
@@ -1308,8 +1340,10 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             />
           </div>
         </section>
+        )}
 
         {/* SECTIE 3: EXECUTIE 7-3-3 */}
+        {activeSectie === "executie" && (
         <section id="strat-section-executie" className="space-y-6 pb-8 scroll-mt-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] text-white text-xs font-black flex items-center justify-center flex-shrink-0">3</div>
@@ -1413,6 +1447,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             )}
           </div>
         </section>
+        )}
       </div>
 
       {/* ── Strategie OnePager overlay ── */}
@@ -1429,7 +1464,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         </Suspense>
       )}
 
-      {/* ── Inzichten overlay (sprint B, issue #68) ── */}
+      {/* ── Inzichten overlay — S2 instructie B: Analyse-handler verhuist hier
+            als hoofdactie zodat werkblad-header alleen Inzichten + Rapportage
+            + Full Draft heeft (geen Analyse-knop meer). ── */}
       {showAdvies && (
         <InzichtenOverlay
           key={canvasId}
@@ -1442,7 +1479,21 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           canvasName={canvasName}
           generatedAt={analysisUpdatedAt}
           worksheetName={appLabel("werkblad.strategie.title", "Strategie")}
+          onAnalyse={handleAnalyze}
+          analysing={analysisLoading}
+          analyseLabel={
+            analysisLoading
+              ? appLabel("werkblad.action.analyseert", "Analyseren…")
+              : analysis
+                ? appLabel("werkblad.action.analyseer_opnieuw", "Opnieuw analyseren")
+                : appLabel("werkblad.action.analyseer", "Analyse draaien")
+          }
         />
+      )}
+
+      {/* Over Platform Workbench dialog — via OverflowMenu in WerkbladHeader laag 1 */}
+      {showOverDialog && (
+        <OverDialog onClose={() => setShowOverDialog(false)} />
       )}
     </div>
   );
