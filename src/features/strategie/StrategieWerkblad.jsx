@@ -120,18 +120,18 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                 {!ksfKpiDraft.loading && (
                   <div className="flex gap-2">
                     <button onClick={onAcceptKsfKpiDraft}
-                      className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
+                      className="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
                       Alles toevoegen
                     </button>
                     <button onClick={onRejectKsfKpiDraft}
-                      className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                      className="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
                       Weggooien
                     </button>
                   </div>
                 )}
               </div>
               {ksfKpiDraft.loading && (
-                <div className="px-4 py-3 text-[10px] text-amber-700 animate-pulse">
+                <div className="px-4 py-3 text-xs text-amber-700 animate-pulse">
                   {loadingMsg}
                 </div>
               )}
@@ -153,8 +153,8 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                     <div key={`kpi-${i}`} className="group grid grid-cols-[20px_1fr_90px_90px_20px] gap-2 items-center px-3 py-2 bg-white hover:bg-amber-50/30 transition-colors">
                       <span className="text-[8px] font-black text-[var(--color-success)]/70 uppercase">KPI</span>
                       <span className="text-xs text-slate-700">{k.description}</span>
-                      <span className="text-[10px] text-slate-400 text-center">{k.current_value || "—"}</span>
-                      <span className="text-[10px] text-[var(--color-success)] font-semibold text-center">{k.target_value || "—"}</span>
+                      <span className="text-xs text-slate-400 text-center">{k.current_value || "—"}</span>
+                      <span className="text-xs text-[var(--color-success)] font-semibold text-center">{k.target_value || "—"}</span>
                       <button onClick={() => onRemoveDraftItem?.("kpi", i)}
                         className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
                         <X size={11} />
@@ -162,7 +162,7 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                     </div>
                   ))}
                   {(ksfKpiDraft.ksf || []).length === 0 && (ksfKpiDraft.kpi || []).length === 0 && (
-                    <p className="text-[10px] text-slate-400 italic px-4 py-3">Alle items verwijderd — klik Annuleer of genereer opnieuw.</p>
+                    <p className="text-xs text-slate-400 italic px-4 py-3">Alle items verwijderd — klik Annuleer of genereer opnieuw.</p>
                   )}
                 </div>
               )}
@@ -180,13 +180,13 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                 </h5>
                 {ksfs.length < 3 && (
                   <button onClick={() => onAddKsfKpi("ksf")}
-                    className="text-[10px] font-bold text-[var(--color-primary)] hover:text-[var(--color-primary)]/70 flex items-center gap-1">
+                    className="text-xs font-bold text-[var(--color-primary)] hover:text-[var(--color-primary)]/70 flex items-center gap-1">
                     <Plus size={10} /> Toevoegen
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-[1fr_20px] gap-1.5 pb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
                 <span />
               </div>
               <div className="space-y-1.5 overflow-y-auto max-h-60">
@@ -207,15 +207,15 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
                 </h5>
                 {kpis.length < 3 && (
                   <button onClick={() => onAddKsfKpi("kpi")}
-                    className="text-[10px] font-bold text-[var(--color-success)] hover:text-[var(--color-success)]/70 flex items-center gap-1">
+                    className="text-xs font-bold text-[var(--color-success)] hover:text-[var(--color-success)]/70 flex items-center gap-1">
                     <Plus size={10} /> Toevoegen
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-[1fr_90px_90px_20px] gap-1.5 pb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center">Huidig</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-success)] text-center">Target</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Omschrijving</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Huidig</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-success)] text-center">Target</span>
                 <span />
               </div>
               <div className="space-y-1.5 overflow-y-auto max-h-60">
@@ -301,14 +301,14 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
 
       {/* Laden */}
       {magicResult?.loading && (
-        <div className="text-[10px] bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 animate-pulse">
+        <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700 animate-pulse">
           Analyseren…
         </div>
       )}
 
       {/* Geen chunks */}
       {magicResult?.noChunks && (
-        <div className="text-[10px] text-slate-400 italic px-1">Geen documenten gevonden voor dit veld.</div>
+        <div className="text-xs text-slate-400 italic px-1">Geen documenten gevonden voor dit veld.</div>
       )}
 
       {/* Voorgestelde items (regel-voor-regel) */}
@@ -329,11 +329,11 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
               </span>
               <div className="flex gap-1.5">
                 <button onClick={acceptAll}
-                  className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
+                  className="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors">
                   Alle toevoegen
                 </button>
                 <button onClick={dismissAll}
-                  className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                  className="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
                   Weggooien
                 </button>
               </div>
@@ -427,7 +427,7 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
                   <div className="absolute right-0 top-full mt-1 z-50 bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[160px]">
                     {IMPROVE_PRESETS.map(p => (
                       <button key={p.key} onClick={() => { onImprove(p.key); setImproveOpen(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[10px] hover:bg-slate-50 text-slate-600 flex items-center gap-2">
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 text-slate-600 flex items-center gap-2">
                         <span>{p.icon}</span>{p.label}
                       </button>
                     ))}
@@ -1307,7 +1307,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 onClick={handleAutoTag}
                 disabled={autoTagLoading}
                 title="AI classificeert externe items als kans/bedreiging en interne items als sterkte/zwakte — alleen bij zekerheid"
-                className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-analysis)]/60 hover:text-[var(--color-analysis)] border border-[var(--color-analysis)]/30 hover:border-[var(--color-analysis)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
+                className="flex items-center gap-1 text-xs font-bold text-[var(--color-analysis)]/60 hover:text-[var(--color-analysis)] border border-[var(--color-analysis)]/30 hover:border-[var(--color-analysis)]/60 rounded-md px-2 py-1 transition-colors disabled:opacity-40 flex-shrink-0"
               >
                 <AiIcon variant="improve" size={10} />
                 {autoTagLoading ? "Bezig…" : appLabel("strat.autotag.button", "Auto-tag")}
@@ -1374,21 +1374,21 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                   <div className="flex gap-2">
                     <button onClick={acceptAllThemaDraft}
                       disabled={themas.length >= 7}
-                      className="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
+                      className="text-xs font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
                       Alle toevoegen
                     </button>
                     <button onClick={() => setThemaDraft(null)}
-                      className="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
+                      className="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded px-2 py-0.5 transition-colors">
                       Weggooien
                     </button>
                   </div>
                 )}
               </div>
               {themaDraft.loading && (
-                <div className="px-4 py-3 text-[10px] text-amber-700 animate-pulse">{themaDraft.loadingMsg}</div>
+                <div className="px-4 py-3 text-xs text-amber-700 animate-pulse">{themaDraft.loadingMsg}</div>
               )}
               {!themaDraft.loading && themaDraft.error && (
-                <div className="px-4 py-3 text-[10px] text-red-600">{themaDraft.error}</div>
+                <div className="px-4 py-3 text-xs text-red-600">{themaDraft.error}</div>
               )}
               {!themaDraft.loading && (themaDraft.lines || []).map((line, i) => (
                 <div key={i} className="group flex items-center gap-3 px-4 py-2.5 bg-white hover:bg-amber-50/30 border-b border-amber-100 last:border-0 transition-colors">
@@ -1398,12 +1398,12 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                     <button
                       onClick={() => acceptThemaDraftLine(line)}
                       disabled={themas.length >= 7}
-                      className="text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
+                      className="text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded px-2 py-0.5 transition-colors disabled:opacity-40">
                       ✓ Toevoegen
                     </button>
                     <button
                       onClick={() => setThemaDraft(prev => ({ ...prev, lines: prev.lines.filter((_, j) => j !== i) }))}
-                      className="text-[10px] text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-2 py-0.5 transition-colors">
+                      className="text-xs text-slate-400 hover:text-red-400 bg-slate-50 hover:bg-red-50 rounded px-2 py-0.5 transition-colors">
                       ×
                     </button>
                   </div>
