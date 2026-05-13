@@ -176,12 +176,15 @@ function AppInner() {
             <Maximize2 size={14} /> {t("header.tips")}
           </button>
 
-          {/* Consistency-check — primary action, behoudt prominentie */}
+          {/* Consistency-check — canvas-niveau-tool, secondary-outline-stijl
+              consistent met Dossier+Tips (retro-fix Bev. 3). Footer-CTA bij
+              "Alles compleet" (regel ~312) blijft accent-styled — prestatie-
+              CTA is een andere rol dan tool-action. */}
           <button
             onClick={() => setShowConsistency(true)}
             data-testid="header-tool-consistency"
-            className="flex items-center gap-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-primary)] px-3 py-2 rounded-md text-sm transition-all"
-            style={{ color: "var(--color-primary)" }}
+            className="flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-3 py-2 rounded-md text-sm transition-all"
+            title={t("header.consistency")}
           >
             <ShieldCheck size={14} /> {t("header.consistency")}
           </button>
