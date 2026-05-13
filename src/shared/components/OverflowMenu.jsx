@@ -87,6 +87,7 @@ export default function OverflowMenu({
                   }}
                   role="menuitem"
                   data-testid={`overflow-menu-item-${item.id}`}
+                  data-danger={item.danger ? "true" : "false"}
                   className={`flex items-center gap-2 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-neutral-100 ${
                     item.danger ? "text-danger" : "text-neutral-900"
                   }`}
