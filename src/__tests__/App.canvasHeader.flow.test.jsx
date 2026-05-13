@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
 // ── Mock auth.service: AuthProvider als pass-through + useAuth-stub ──
@@ -138,5 +138,60 @@ describe("Canvas-header — retro-fix Bev. 3 (Consistency-styling)", () => {
     // Geen accent-bg class — anders zou de styling weer accent-CTA zijn (Fase-3-keuze die we terugdraaien)
     expect(btn.className).not.toMatch(/bg-\[var\(--color-accent\)\]/);
     expect(btn.className).not.toMatch(/bg-accent/);
+  });
+});
+
+describe("Canvas-header — retro-fix Bev. 2 (Canvas-delete OverflowMenu-item)", () => {
+  beforeEach(() => { mockHandleDeleteCanvas.mockClear(); });
+
+  test("3. OverflowMenu bevat 'Canvas verwijderen'-item met danger-styling", async () => {
+    render(<App />);
+    // Open overflow-menu
+    fireEvent.click(await screen.findByTestId("overflow-menu-trigger"));
+    const item = await screen.findByTestId("overflow-menu-item-delete-canvas");
+    expect(item).toBeInTheDocument();
+    expect(item).toHaveTextContent(/Canvas verwijderen/i);
+    expect(item).toHaveAttribute("data-danger", "true");
+  });
+
+  test("4. Click op item opent inline-confirm-dialog met canvas-naam", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByTestId("overflow-menu-trigger"));
+    fireEvent.click(await screen.findByTestId("overflow-menu-item-delete-canvas"));
+
+    const dialog = await screen.findByTestId("delete-canvas-confirm-dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(/Test Canvas/);
+    expect(dialog).toHaveTextContent(/geüploade documenten en chunks/);
+  });
+
+  test("5. Confirm-knop roept handleDeleteCanvas met activeCanvasId aan en sluit dialog", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByTestId("overflow-menu-trigger"));
+    fireEvent.click(await screen.findByTestId("overflow-menu-item-delete-canvas"));
+    await screen.findByTestId("delete-canvas-confirm-dialog");
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-canvas-confirm"));
+    });
+
+    expect(mockHandleDeleteCanvas).toHaveBeenCalledWith("canvas-1");
+    await waitFor(() =>
+      expect(screen.queryByTestId("delete-canvas-confirm-dialog")).not.toBeInTheDocument()
+    );
+  });
+
+  test("6. Annuleer-knop sluit dialog zonder delete-call", async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByTestId("overflow-menu-trigger"));
+    fireEvent.click(await screen.findByTestId("overflow-menu-item-delete-canvas"));
+    await screen.findByTestId("delete-canvas-confirm-dialog");
+
+    fireEvent.click(screen.getByTestId("delete-canvas-cancel"));
+
+    expect(mockHandleDeleteCanvas).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByTestId("delete-canvas-confirm-dialog")).not.toBeInTheDocument()
+    );
   });
 });
