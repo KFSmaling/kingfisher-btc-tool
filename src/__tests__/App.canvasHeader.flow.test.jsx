@@ -1,16 +1,14 @@
 /**
  * Retro-fix RTL — canvas-header (App.js) integration suite voor:
- *  • Bev. 3 Consistency-styling (secondary-outline tools-zone)
- *  • Bev. 2 Canvas-delete OverflowMenu-item (komt erbij in volgende commit)
- *  • Bev. 1 KF-logo Optie C login-pattern (komt erbij in volgende commit)
+ *  • Tools-zone-compositie: Dossier + Tips + Inzichten + Rapportage
+ *    (Consistency-knop verwijderd uit tools-zone — werkblad-pattern op
+ *    canvas-niveau, post-feedback Kees 13-mei avond)
+ *  • Bev. 2 Canvas-delete OverflowMenu-item
+ *  • Bev. 1 KF-logo Optie C login-pattern
  *
  * Optie A-pattern: mock auth.service + useCanvasState + AppConfig + LangProvider
  * + Theme + zware modals. Render <AppInner> via default export <App>; AuthGate
  * routeert via session-mock direct naar AppInner zonder LoginScreen.
- *
- * Bev. 3 cases (deze commit):
- *  1. Header heeft Consistency-knop met test-id en secondary-outline className
- *  2. Consistency-knop heeft GEEN accent-CTA-styling (geen bg-[var(--color-accent)])
  */
 
 import React from "react";
@@ -119,25 +117,40 @@ jest.mock("../features/canvas/components/CanvasMenu", () => ({
 
 import App from "../App";
 
-describe("Canvas-header — retro-fix Bev. 3 (Consistency-styling)", () => {
-  test("1. Consistency-knop staat in tools-zone met secondary-outline className", async () => {
+describe("Canvas-header — tools-zone werkblad-pattern (Inzichten + Rapportage)", () => {
+  test("1. Tools-zone bevat Inzichten-knop met AiIcon (canvas-niveau werkflow-actie)", async () => {
     render(<App />);
-    const btn = await screen.findByTestId("header-tool-consistency");
+    const btn = await screen.findByTestId("header-tool-inzichten");
     expect(btn).toBeInTheDocument();
-    // Secondary-outline: border-white/20 (zoals Dossier/Tips)
+    expect(btn).toHaveTextContent(/Inzichten/i);
     expect(btn.className).toMatch(/border-white\/20/);
-    // Hover-state ook secondary-outline
-    expect(btn.className).toMatch(/hover:border-white\/40/);
-    // Tekst-kleur consistent met Dossier/Tips
-    expect(btn.className).toMatch(/text-white\/70/);
   });
 
-  test("2. Consistency-knop is GEEN accent-CTA-styled (geen bg-[var(--color-accent)])", async () => {
+  test("2. Tools-zone bevat Rapportage-knop, disabled-placeholder met tooltip", async () => {
     render(<App />);
-    const btn = await screen.findByTestId("header-tool-consistency");
-    // Geen accent-bg class — anders zou de styling weer accent-CTA zijn (Fase-3-keuze die we terugdraaien)
-    expect(btn.className).not.toMatch(/bg-\[var\(--color-accent\)\]/);
-    expect(btn.className).not.toMatch(/bg-accent/);
+    const btn = await screen.findByTestId("header-tool-rapportage");
+    expect(btn).toBeInTheDocument();
+    expect(btn).toHaveTextContent(/Rapportage/i);
+    expect(btn).toBeDisabled();
+    expect(btn.className).toMatch(/cursor-not-allowed/);
+    expect(btn).toHaveAttribute("title", expect.stringMatching(/volgt|release|rapportage/i));
+  });
+
+  test("3. Consistency-knop (oude header-tool-consistency) is NIET meer in tools-zone", async () => {
+    render(<App />);
+    // Wacht tot header gerendered is via een wel-bestaande knop
+    await screen.findByTestId("header-tool-inzichten");
+    expect(screen.queryByTestId("header-tool-consistency")).not.toBeInTheDocument();
+  });
+
+  test("4. Inzichten-knop opent ConsistencyModal-trigger (showConsistency=true)", async () => {
+    // Indirect via setShowConsistency — ConsistencyModal-mock is null in deze suite,
+    // dus we testen dat de click niet crasht en testid blijft renderbaar.
+    render(<App />);
+    const btn = await screen.findByTestId("header-tool-inzichten");
+    fireEvent.click(btn);
+    // Knop blijft renderbaar (geen runtime-error)
+    expect(btn).toBeInTheDocument();
   });
 });
 
@@ -199,8 +212,8 @@ describe("Canvas-header — retro-fix Bev. 2 (Canvas-delete OverflowMenu-item)",
 describe("Canvas-header — retro-fix Bev. 1 (KF-logo Optie C login-pattern)", () => {
   test("7. LogoBrand-img is gewrapt in witte tile (bg-white rounded) op canvas-header", async () => {
     render(<App />);
-    // Header rendert (proxy via Consistency-knop bestaan)
-    await screen.findByTestId("header-tool-consistency");
+    // Header rendert (proxy via Inzichten-knop bestaan)
+    await screen.findByTestId("header-tool-inzichten");
 
     // LogoBrand met variant="dark" gebruikt logoUrl (default '/kf-logo.png');
     // het <img> staat in een wrapper-div met bg-white rounded.

@@ -3,8 +3,9 @@ import { LangProvider, useLang } from "./i18n";
 import {
   Zap, X, LogOut, Save, AlertOctagon,
   SlidersHorizontal, Database, ShieldCheck, Maximize2,
-  Info, Languages, Settings, FolderClock, Trash2,
+  Info, Languages, Settings, FolderClock, Trash2, FileText,
 } from "lucide-react";
+import AiIcon from "./shared/components/AiIcon";
 import OverflowMenu from "./shared/components/OverflowMenu";
 import OverDialog from "./shared/components/OverDialog";
 import { AuthProvider, useAuth } from "./shared/services/auth.service";
@@ -191,17 +192,32 @@ function AppInner() {
             <Maximize2 size={14} /> {t("header.tips")}
           </button>
 
-          {/* Consistency-check — canvas-niveau-tool, secondary-outline-stijl
-              consistent met Dossier+Tips (retro-fix Bev. 3). Footer-CTA bij
-              "Alles compleet" (regel ~312) blijft accent-styled — prestatie-
-              CTA is een andere rol dan tool-action. */}
+          {/* Inzichten — canvas-niveau-werkflow-knop. Spiegelt werkblad-
+              WerkbladActieknoppen-pattern (Inzichten = AI-analyse). Opent
+              ConsistencyModal die cross-block-coherentie-check doet — voor
+              nu identiek aan de oude Consistency-check, in latere sprint
+              uit te breiden naar volwaardige AI-driven canvas-inzichten. */}
           <button
             onClick={() => setShowConsistency(true)}
-            data-testid="header-tool-consistency"
+            data-testid="header-tool-inzichten"
             className="flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-3 py-2 rounded-md text-sm transition-all"
-            title={t("header.consistency")}
+            title={appLabel("header.inzichten.tooltip", "Canvas-brede inzichten en consistentie-check")}
           >
-            <ShieldCheck size={14} /> {t("header.consistency")}
+            <AiIcon variant="generate" size={14} colorClass="text-white/70" />
+            {appLabel("header.inzichten", "Inzichten")}
+          </button>
+
+          {/* Rapportage — canvas-niveau-werkflow-knop, placeholder tot canvas-
+              brede print/PDF gebouwd is (analoog aan WerkbladActieknoppen
+              rapportage-disabled-pattern). */}
+          <button
+            type="button"
+            disabled
+            data-testid="header-tool-rapportage"
+            title={appLabel("header.rapportage.tooltip", "Canvas-rapportage volgt in volgende release")}
+            className="flex items-center gap-2 text-white/40 border border-white/10 px-3 py-2 rounded-md text-sm cursor-not-allowed opacity-60"
+          >
+            <FileText size={14} /> {appLabel("header.rapportage", "Rapportage")}
           </button>
 
           {/* Overflow-menu — vervangt 2x hamburger-icoon + losse logout */}
