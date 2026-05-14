@@ -32,6 +32,7 @@ import { useCanvasState } from "./features/canvas/hooks/useCanvasState";
 
 // Dossier feature
 import MasterImporterPanel from "./features/dossier/components/MasterImporterPanel";
+import { useCanvasUploads } from "./features/klanten/hooks/useCanvasUploads";
 
 // T1 B1 — versie + build-timestamp helpers. REACT_APP_BUILD_TIME wordt in
 // build-script (package.json) ingespoten als ISO-string (date -u +%Y...). Bij
@@ -106,9 +107,12 @@ function AppInner() {
 
   const activeBlock = BLOCKS.find(b => b.id === activeBlockId);
   const allDone     = BLOCKS.every(b => (bullets[b.id] || []).length > 0);
-  // T1 B2: subtiele doc-count badge op Dossier-knop. Hergebruikt count-bron
-  // uit CanvasMenu (canvases[].canvas_uploads.length). 0 → geen badge.
-  const activeDocCount = (canvases.find(c => c.id === activeCanvasId)?.canvas_uploads?.length) || 0;
+
+  // T1 B2 (post-feedback v2): directe count-query via useCanvasUploads ipv
+  // afhankelijk zijn van `canvases[].canvas_uploads`-join die alleen ververst bij
+  // page-refresh (Kees-feedback: "werkt wel maar vertraagd"). Directe fetch
+  // levert snelle accurate count + reload-trigger na MasterImporter-sluit.
+  const { uploadCount: activeDocCount, reload: reloadDocCount } = useCanvasUploads(activeCanvasId);
 
   // ── Herlaad guideline counts als gebruiker het richtlijnen werkblad sluit ────
   // + S1 design-systeem F12: herlaad canvas-summary na elke werkblad-close
@@ -462,7 +466,7 @@ function AppInner() {
           key={activeCanvasId}
           canvasId={activeCanvasId}
           userId={user?.id}
-          onClose={() => setShowImporter(false)}
+          onClose={() => { setShowImporter(false); reloadDocCount(); }}
         />
       )}
 

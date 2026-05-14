@@ -117,6 +117,23 @@ jest.mock("../features/canvas/components/CanvasMenu", () => ({
   default: () => <div data-testid="canvas-menu-stub" />,
 }));
 
+// T1 B2 post-feedback v2: useCanvasUploads aangeroepen vanuit App.js voor
+// directe count-fetch. We mocken klanten.service.fetchUploadsStatus zodat tests
+// de uploadCount kunnen sturen zonder echte Supabase-roundtrip.
+const mockUploadCount = { value: 0 };
+jest.mock("../features/klanten/services/klanten.service", () => ({
+  __esModule: true,
+  fetchUploadsStatus: (_canvasId) => Promise.resolve({
+    data: {
+      hasUploads:        mockUploadCount.value > 0,
+      hasIndexedChunks:  false,
+      uploadCount:       mockUploadCount.value,
+      indexedChunkCount: 0,
+    },
+    error: null,
+  }),
+}));
+
 import App from "../App";
 
 describe("T1 — Platform-logo + useTheme-fix (A1, OBS-14)", () => {
@@ -210,19 +227,21 @@ describe("T1 — Leidende-principes 5 categorieën (A9)", () => {
   });
 });
 
-describe("T1 — Dossier-doc-count badge (B2)", () => {
-  test("7. Dossier-icoon toont count-badge bij N docs", () => {
-    mockCanvases[0].canvas_uploads = [{ id: "u1" }, { id: "u2" }, { id: "u3" }];
-    render(<App />);
-    const badge = screen.getByTestId("header-dossier-count");
+describe("T1 — Dossier-doc-count badge (B2, post-feedback directe count-fetch)", () => {
+  test("7. Dossier-icoon toont count-badge bij N docs (via fetchUploadsStatus)", async () => {
+    mockUploadCount.value = 3;
+    await act(async () => { render(<App />); });
+    const badge = await screen.findByTestId("header-dossier-count");
     expect(badge).toHaveTextContent("3");
     // Cleanup voor case 8
-    mockCanvases[0].canvas_uploads = [];
+    mockUploadCount.value = 0;
   });
 
-  test("8. Dossier-icoon GEEN badge bij 0 docs (negative)", () => {
-    mockCanvases[0].canvas_uploads = [];
-    render(<App />);
+  test("8. Dossier-icoon GEEN badge bij 0 docs (negative)", async () => {
+    mockUploadCount.value = 0;
+    await act(async () => { render(<App />); });
+    // Wacht tot fetchUploadsStatus is settled — header-tool-dossier is dan al gerendered
+    await screen.findByTestId("header-tool-dossier");
     expect(screen.queryByTestId("header-dossier-count")).not.toBeInTheDocument();
   });
 });
