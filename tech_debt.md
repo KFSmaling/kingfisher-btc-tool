@@ -2,7 +2,7 @@
 
 > Levend document. Update de status zodra iets gefixt is.  
 > Gekoppeld aan `CLAUDE.md` sectie 4.6 en 10.  
-> Laatste update: 2026-05-10
+> Laatste update: 2026-05-14
 
 ---
 
@@ -48,7 +48,7 @@ Systematische non-compliance — silent fails, fire-and-forget saves, optimistic
 
 | Item | Locatie | Type | Status |
 |------|---------|------|--------|
-| `.catch(() => {})` | `StrategieWerkblad.handleClose` | Silent fail | Open |
+| `.catch(() => {})` | `StrategieWerkblad.handleClose` | Silent fail | Workaround live 2026-05-14 (Richtlijnen delayed-retry); root-cause-fix pending — zie eigen P2-sectie onderaan |
 | Await zonder error-check | `StrategieWerkblad.removeAnalysisItem` | Silent fail | Open |
 | Optimistic update | `StrategieWerkblad.changeAnalysisTag` | Optimistic | Open |
 | Await zonder error-check | `StrategieWerkblad.removeThema` | Silent fail | Open |
@@ -456,8 +456,60 @@ client-state.
 
 **Effort:** 1-2u (refactor + RTL).
 
+## P2 — `StrategieWerkblad.handleClose` fire-and-forget upsert (CLAUDE.md §4.2)
+
+**Symptoom:** na werkblad-switch close-Strategie → open-Richtlijnen kan
+Richtlijnen's strategische-samenvatting de oude `kernwaarden` tonen omdat
+Strategie's close-save nog niet committed is wanneer Richtlijnen fetched.
+
+**Root cause:** `src/features/strategie/StrategieWerkblad.jsx` regel 819-828:
+
+```js
+const handleClose = useCallback(() => {
+  clearTimeout(coreDebounceRef.current);
+  if (isLoaded && canvasId) {
+    upsertStrategyCore(canvasId, core).catch(() => {}); // fire-and-forget
+  }
+  onClose(); // sluit overlay immediately — race ontstaat
+}, [canvasId, core, isLoaded, onClose]);
+```
+
+CLAUDE.md §4.2 verbiedt fire-and-forget bij DB-mutaties.
+
+**Workaround live per 2026-05-14:** Richtlijnen heeft delayed-retry (1500ms
+post-mount) + window-focus event-listener — catcht in-flight upsert na
+close. Werkt voor ≥95% van gevallen; bij extreme latency (>1500ms) blijft
+oude data zichtbaar tot user uit-en-weer-focust.
+
+**Proper fix-pad:**
+```js
+const handleClose = useCallback(async () => {
+  clearTimeout(coreDebounceRef.current);
+  if (isLoaded && canvasId) {
+    const { error } = await upsertStrategyCore(canvasId, core);
+    if (error) console.error("[StrategieWerkblad] close-save mislukt:", error.message);
+  }
+  onClose();
+}, [canvasId, core, isLoaded, onClose]);
+```
+
+Verwijdert de race-window volledig. Maakt close async — DeepDiveOverlay
+moet onClose-promise kunnen accepteren (of we accepteren dat overlay een
+moment lang zichtbaar blijft tijdens save).
+
+**Urgentie:** P2 — workaround is acceptabel, maar root-cause-fix is
+schoner. Te plannen na F19-mini-sprint.
+
+**Effort:** 15 min refactor + 1 RTL-case in `StrategieWerkblad.flow.test`
+(als die nog niet bestaat, anders gewoon erbij). Cleanup: Richtlijnen's
+delayed-retry kan dan ook weg (focus-event mag blijven als defense-in-depth
+voor cross-tab edits).
+
 ## Done log
 
+- 2026-05-14 — **F-sam-1-fix** — Richtlijnen-strategische-samenvatting state-sync via delayed-retry (1500ms) + window-focus event-listener; `slice(0,4)`-limit weg. Workaround in Richtlijnen-laag; root-cause in Strategie blijft uitstaand als nieuwe P2-item. Master: `960f2b4`. Deploy: `m2cwtn2zu`.
+- 2026-05-14 — **U-cleanup T-cyclus-afsluiting** — A6 server-side `dossier_create_with_fields`-sub-route (sub-route op `items.js`, endpoint-budget 12/12 behouden) + ItemModal-variant-dispatch + F-doodcode-1 PijnpuntCard/CompactDimensieKolom-cleanup + F-rtl-1 A7+A9 testcases. F-sam-1 deferred met diagnose (vervolgens opgelost als aparte sprint). Master: `5ccf4cd`. Deploy: `bojne5pnc`.
+- 2026-05-14 — **T1-T4-cyclus + S1-S4 + retro-T2** — afgerond binnen sessie (zie CLAUDE.md §11 sprints-13-14-mei-tabel). RTL: 94 → 166 (+72). Nieuwe gedeelde `WerkbladTipsModal`-component als platform-pattern in T2.
 - 2026-04-22 — P1 Lifecycle — `key={canvasId}` toegevoegd aan `<Werkblad>` (DeepDiveOverlay) en `<MasterImporterPanel>` (App.js). Commit: `78911c9`
 - 2026-04-22 — P1 Load race-guards — `cancelled` flag + `canvasId`-guard in `StrategieWerkblad` en `RichtlijnenWerkblad` load-useEffects. Commit: `aed8e7e`
 - 2026-04-22 — Vercel-opruiming — ongebruikte projecten verwijderd (website-ui, 

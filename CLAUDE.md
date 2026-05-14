@@ -671,15 +671,15 @@ RFC-004-akkoord als 11.M Proces-bouwer-implementatie.
 
 Daarna: **tech_debt.md** (open P3/P4-items + done-log), **WORKFLOW.md** (sprint-rituelen), **`handoff/to-builder/`** (pending instructies, oudste eerst). Bij twijfel over scope: question-file naar reviewer in `handoff/to-reviewer/`.
 
-### Huidige hoofd-state (per einde 2026-05-12 — eind-dag-administratie)
+### Huidige hoofd-state (per einde 2026-05-14 — eind-dag-administratie)
 
 | Aspect | Waarde |
 |---|---|
-| Laatste deploy | `platform-canvas-tool-ota2dgboq` (12 mei einde) op `kingfisher-btcprod.vercel.app` |
-| Master HEAD | `9e5f537` — F26-iteratie volle-breedte-strip + chevron-shape + rapport-scroll-fixes na Kees-feedback. **3 UI-polish-issues open voor clean sprint 13 mei** (chevron-proporties + pain-badge-clipping + rapport-witte-canvas-extend); zie eind-dag-result-file. |
+| Laatste deploy | `platform-canvas-tool-m2cwtn2zu` (14 mei 23:30, F-sam-1-fix) op `kingfisher-btcprod.vercel.app` — deploy-id `dpl_8iptdjbRx5njemcB9MNxFzcdNZkN` |
+| Master HEAD | `960f2b4` — Merge `fix/F-sam-1-richtlijnen-samenvatting-sync` (Richtlijnen samenvatting state-sync + slice weg). |
 | Test-credentials | `keessmaling+test@gmail.com` / staat in `.env.test` (gitignored) — KF tenant_admin |
 | E2E-suite | `npm run test:e2e` — J1-blueprint live, J2/J3/J5/J6 nog niet (mini-sprint 11.G.5) |
-| RTL | **94/94 PASS over 13 suites** (was 65/65, +29 vandaag): KlantenWerkblad.flow + PijnpuntenView.flow + AnalyseView.flow + VerbeterrichtingenView.flow + DossierAffordances.flow + ItemModal.flow + ItemModal.archetypes + ItemModal.klantreis (Optie A) + DimensieModal.flow (F21) + AppConfigContext.flow (F30) + RapportView.flow (F32) + KlantreisChevronOverview.flow (F26) + PijnpuntChevronCard.flow (F26-iter) |
+| RTL | **166/166 PASS over 23 suites** (was 94/94 op 12 mei, +72 over 13-14 mei via S1-S4 + T1-T4 + U-cleanup + F-sam-1) |
 | Endpoint-budget Vercel | 12/12 (Hobby), 4 rewrites + sub-route-dispatchers (incl. dossier_extract op items.js + pain_points.js) — geen wijzigingen vandaag |
 | Klanten-labels | **~270 totaal** `label.klanten.*` (was 232, **+40 vandaag** via 4 MCP-applied migrations). Plus 1 enum-key `enum.klanten.klantreis.stap_type` (nieuwe `enum`-categorie naast prompt/label/setting). |
 | Klanten-prompts | 7 totaal `prompt.klanten.*` (4 analyse + 3 dossier, allen `tenant_overridable=true`) |
@@ -702,6 +702,24 @@ Daarna: **tech_debt.md** (open P3/P4-items + done-log), **WORKFLOW.md** (sprint-
 
 **Totaal:** 6 master-merges, 6 deploys (incl. 2 post-Kees-feedback-fix-deploys), 4 migrations via MCP, 40 nieuwe label-keys, 13 RTL-suite-uitbreidingen.
 
+### Sprints afgerond 13-14 mei — chronologisch
+
+| Sprint | Master | Deploy-id | RTL | Onderwerp |
+|---|---|---|---|---|
+| S1 + S2 (UI-polish) | — | — | — | Chevron-proporties + pain-badge-clipping + rapport-canvas-extend |
+| S3 (in andere sessie afgerond) | — | — | — | Vervolg UI-polish |
+| S4 — Klanten conform mockup | `1383b2…` (via `feat/S4-klanten-conform-mockup`) | — | — | SuggestionCard + IntentCard + VerbeteractiesView gecombineerde flow (RFC-007 C1) |
+| Retro-fix S1/S2-regressies | `5d85f0…` | — | — | Boy-scout regressie-fix |
+| T1 — Canvas-doorloop | `81a559…` | — | — | Canvas-pagina structuur-fixes |
+| T2 — Strategie-doorloop | `14fd29…` | — | — | Strategie-werkblad fixes; gedeelde `WerkbladTipsModal`-component opgeleverd als platform-pattern |
+| Retro-fix T2 (label-prefix + helper→placeholder) | `9b8475…` | — | — | T2-retro: Bev. 1 `label.`-prefix DB-rename + Bev. 2 helper→placeholder |
+| T3 — Richtlijnen-doorloop | `9d6a86…` / `51a3b29` + `e70a487` | — | — | 5 categorie-tabs + uitklap-pattern; RichtlijnenWerkblad.flow.test live |
+| T4 — Klanten-doorloop | `e86d28…` / `8c700f2` + `c967567` | — | — | 11 fixes + 2 layout-reworks; B1 pijnpunten-lijst-pattern + testid-rename (`pijnpunt-rij-X`); A6 deferred |
+| U-cleanup T-cyclus-afsluiting | `204df4f` + `5ccf4cd` | `dpl_J8ZKXRJ7uFYyHvX5h1Fw8Q1VV6Ve` (`bojne5pnc`) | 164/164 | A6 server-side dossier-create-with-fields-endpoint + ItemModal-variant-dispatch + F-doodcode-1 (PijnpuntCard verwijderd) + F-rtl-1 (A7+A9 testcases); F-sam-1 deferred met diagnose. 1 nieuwe label (`label.klanten.dossier.create_with_fields`) via MCP |
+| F-sam-1-fix Richtlijnen samenvatting | `35ac770` + `960f2b4` | `dpl_8iptdjbRx5njemcB9MNxFzcdNZkN` (`m2cwtn2zu`) | 166/166 | Delayed-retry 1500ms post-mount + window-focus event-listener voor cross-werkblad-edit-state-sync; `slice(0, 4)`-limit weg. Root-cause in `StrategieWerkblad.handleClose` (fire-and-forget upsert) blijft uitstaand — C1 verbood Strategie-wijziging |
+
+**Totaal 13-14 mei:** ~10 sprints, +72 RTL-cases (94 → 166), 1 nieuwe label-key (A6), geen DB-schema-wijzigingen. Endpoint-budget 12/12 behouden via sub-route-pattern (A6 via `items.js?_subpath=dossier_create_with_fields`).
+
 ### 3 open UI-polish-issues (verse-sessie-werk 13 mei)
 
 Niet-test-detecteerbaar — alle suites groen. Pure visuele render-symptomen op
@@ -723,6 +741,19 @@ Volledige diagnose-aanbevelingen + voorgestelde clean-sprint-structuur in
 **Inbox `to-builder/` per einde 12 mei:** leeg. Reviewer schrijft 13 mei
 nieuwe diagnose-eerst-instructie voor UI-polish-mini-sprint (~2-3u).
 
+**Inbox `to-builder/` per einde 14 mei:** 1 pending instructie —
+`2026-05-14-1705-instruction-F19-diagnose-RLS-hardcoded.md` (~1-2u
+diagnose-werk: RLS hardcoded-email + onConflict-mismatch oplossen).
+Test-account-workaround: log in als `smaling.kingfisher@icloud.com`
+i.p.v. test-account.
+
+**Result-files per einde 14 mei** (2 nieuw in `handoff/to-reviewer/`):
+- `2026-05-14-1830-result-U-cleanup-T-cyclus-afsluiting.md` —
+  A6 + F-doodcode-1 + F-rtl-1 done; F-sam-1 deferred met diagnose
+- `2026-05-14-1930-result-F-sam-1-fix-richtlijnen-state-sync.md` —
+  Richtlijnen-only-workaround; root-cause-fix in Strategie blijft
+  uitstaand voor vervolg-sprint
+
 ### Verwachte volgende stappen
 
 **Hoofdspoor (volgens nieuwe roadmap-volgorde klant → proces → org → IT → roadmap):**
@@ -734,11 +765,12 @@ nieuwe diagnose-eerst-instructie voor UI-polish-mini-sprint (~2-3u).
 
 **Parallelle/secundaire sporen:**
 
-- **UI-polish-mini-sprint 13 mei** (3 open issues) — chevron-proporties + pain-badge-clipping + rapport-witte-canvas-extend. Diagnose-eerst-discipline per stap_type-fix-leerpunt (geen trial-and-error). Volledige aanbevelingen in eind-dag-result-file.
-- **Kees-handmatige-test 11.K** — magic-staff-AI-flow end-to-end testen op `kingfisher-btcprod.vercel.app` (PDF upload → A1+A2+A3 affordances → draft-rendering + accept/reject + RapportView-filter + F18-rebrand op fase 4). Bij output-kwaliteit-issues: prompts tunen via Admin-UI groep "Klanten & Dienstverlening" (geen redeploy nodig — tenant_overridable=true).
+- **F19 mini-sprint** (pending in inbox, ~1-2u) — RLS hardcoded-email + onConflict-mismatch oplossen; test-account-workaround vereist
+- **F-sam-1 root-cause-fix** (~15 min) — `StrategieWerkblad.handleClose` async-await + non-fire-and-forget (CLAUDE.md §4.2 compliance). Workaround in Richtlijnen is functioneel maar root-cause sit in Strategie. Te plannen na F19.
+- **Kees-handmatige-test A6 + 11.K** — magic-velden-vullen-knop 0-items-flow + dossier-driven-flow end-to-end op `kingfisher-btcprod.vercel.app`. Bij output-kwaliteit: prompts tunen via Admin-UI groep "Klanten & Dienstverlening" (tenant_overridable=true).
+- **Kees-handmatige-test F-sam-1** — Richtlijnen → Strategie → kernwaarde toevoegen → terug naar Richtlijnen → samenvatting toont nieuwe waarde (binnen 1.5s via delayed-retry)
 - **Stap 11.G.5** — J2+J3+J5+J6 Playwright-specs (niet acuut)
-- **F19 mini-sprint** — RLS hardcoded-email + onConflict-mismatch oplossen
-- **F20** — code-fallbacks-strings sync met verbeteractie-rename (boy-scout — grotendeels gedaan 12 mei in Bundle 1+2, mogelijk nog restanten)
+- **F20** — code-fallbacks-strings sync met verbeteractie-rename (boy-scout — grotendeels gedaan 12 mei, mogelijk nog restanten)
 - **3 P3-items uit 11.I.2** — drag-and-drop is_ordered-UI / gestructureerde DMU-editor / strict type-validatie
 
 **Post-MVP klanten:**
