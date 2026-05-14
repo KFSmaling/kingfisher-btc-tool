@@ -168,13 +168,28 @@ describe("T2 — Strategie invultips (Tips-knop + WerkbladTipsModal)", () => {
     expect(screen.queryByTestId("strat-tips-voorbeeld-samenvatting")).not.toBeInTheDocument();
   });
 
-  test("5. Helper-tekst zichtbaar onder alle 5 velden (kort-keys)", async () => {
+  test("5. Invultips als placeholder-in-veld (T2-retro-fix Bev. 2: van helper-onder-veld naar placeholder)", async () => {
     await renderWerkblad();
-    expect(await screen.findByTestId("strat-helper-missie")).toBeInTheDocument();
-    expect(screen.getByTestId("strat-helper-visie")).toBeInTheDocument();
-    expect(screen.getByTestId("strat-helper-ambitie")).toBeInTheDocument();
-    expect(screen.getByTestId("strat-helper-kernwaarden")).toBeInTheDocument();
-    expect(screen.getByTestId("strat-helper-samenvatting")).toBeInTheDocument();
+    // Wacht tot Identiteit-sectie zichtbaar is — fallback voor "Identiteit" via
+    // strat.section.identiteit-key in mocked AppConfig.
+    await waitFor(() =>
+      expect(document.querySelector("textarea")).toBeInTheDocument()
+    );
+    // Alle 5 invultips komen uit `tips.strategie.<blok>.kort`-fixture en zijn
+    // beschikbaar als placeholder-attribuut op textarea/input.
+    const placeholders = [...document.querySelectorAll("textarea, input")]
+      .map(el => el.getAttribute("placeholder"))
+      .filter(Boolean);
+    expect(placeholders).toEqual(expect.arrayContaining([
+      TIPS_FIXTURE["tips.strategie.missie.kort"],
+      TIPS_FIXTURE["tips.strategie.visie.kort"],
+      TIPS_FIXTURE["tips.strategie.ambitie.kort"],
+      TIPS_FIXTURE["tips.strategie.kernwaarden.kort"],
+      TIPS_FIXTURE["tips.strategie.samenvatting.kort"],
+    ]));
+    // Negative: oude helper-onder-veld-testids zijn weg
+    expect(screen.queryByTestId("strat-helper-missie")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("strat-helper-kernwaarden")).not.toBeInTheDocument();
   });
 
   test("6. WerkbladTipsModal is shared component — hergebruikbaar met eigen sections-prop", () => {
