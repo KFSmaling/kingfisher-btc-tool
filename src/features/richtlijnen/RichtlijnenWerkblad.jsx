@@ -446,6 +446,43 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
     return () => { cancelled = true; };           // cleanup: markeer als afgebroken
   }, [canvasId]);
 
+  // ── F-sam-1-fix: re-fetch strategy_core na cross-werkblad-edit ─────────────
+  // Reden: StrategieWerkblad.handleClose doet `upsertStrategyCore(...).catch(()=>{})`
+  // fire-and-forget gevolgd door onClose(). Race-conditie: Richtlijnen's initial
+  // fetch (de useEffect hierboven) start vóórdat Strategie's upsert committed,
+  // waardoor `core.kernwaarden` oud is na switch close-Strategie → open-Richtlijnen.
+  //
+  // Workaround in Richtlijnen-laag (C1 verbiedt Strategie-wijziging):
+  //   1. Delayed-retry 1500ms post-mount → catcht in-flight close-race
+  //   2. window-focus event-listener → catcht cross-tab edits
+  //
+  // Root cause sit in StrategieWerkblad.handleClose — proper fix vereist
+  // await + non-fire-and-forget (CLAUDE.md §4.2). Voor U-cleanup buiten scope.
+  const refetchStrategyCore = useCallback(async () => {
+    if (!canvasId) return;
+    const { data: co, error } = await loadStrategyCore(canvasId);
+    if (error || !co) return;
+    setCore(prev => ({
+      ...prev,
+      missie:       co.missie       || "",
+      visie:        co.visie        || "",
+      ambitie:      co.ambitie      || "",
+      kernwaarden:  co.kernwaarden  || [],
+      samenvatting: co.samenvatting || "",
+    }));
+  }, [canvasId]);
+
+  useEffect(() => {
+    if (!canvasId) return undefined;
+    const retryTimer = setTimeout(() => { refetchStrategyCore(); }, 1500);
+    const onFocus = () => { refetchStrategyCore(); };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearTimeout(retryTimer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [canvasId, refetchStrategyCore]);
+
   // ── Debounced save ────────────────────────────────────────────────────────
   const scheduleDbSave = useCallback((id, patch) => {
     pendingUpdates.current[id] = { ...(pendingUpdates.current[id] || {}), ...patch };
@@ -752,8 +789,13 @@ export default function RichtlijnenWerkblad({ canvasId, onClose }) {
               </p>
             )}
             {core.kernwaarden?.length > 0 && (
-              <p className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-100 flex-shrink-0 truncate">
-                {core.kernwaarden.slice(0, 4).join(" · ")}
+              // F-sam-1 F2: slice(0, 4) verwijderd — toon alle kernwaarden.
+              // `truncate`-class capt visuele overflow op één regel bij veel waarden.
+              <p
+                data-testid="richtl-samenvatting-kernwaarden"
+                className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-100 flex-shrink-0 truncate"
+              >
+                {core.kernwaarden.join(" · ")}
               </p>
             )}
           </div>

@@ -85,11 +85,21 @@ jest.mock("../services/guidelines.service", () => ({
   loadGuidelineAnalysis:   () => Promise.resolve({ data: null, error: null }),
   upsertGuidelineAnalysis: () => Promise.resolve({ data: null, error: null }),
 }));
+// F-sam-1: loadStrategyCore moet over tests heen mockable zijn (re-fetch-flow),
+// dus jest.fn() i.p.v. statische Promise.resolve.
 jest.mock("../../strategie/services/strategy.service", () => ({
   __esModule: true,
-  loadStrategyCore:    () => Promise.resolve({ data: { missie: "", visie: "", ambitie: "Onze ambitie", kernwaarden: [], samenvatting: "Samenvatting-tekst" }, error: null }),
+  loadStrategyCore:    jest.fn(),
   loadStrategicThemes: () => Promise.resolve({ data: [{ id: "t1", title: "Thema 1" }], error: null }),
 }));
+import { loadStrategyCore } from "../../strategie/services/strategy.service";
+
+beforeEach(() => {
+  loadStrategyCore.mockResolvedValue({
+    data: { missie: "", visie: "", ambitie: "Onze ambitie", kernwaarden: [], samenvatting: "Samenvatting-tekst" },
+    error: null,
+  });
+});
 jest.mock("../../../shared/services/canvas.service", () => ({
   __esModule: true,
   loadCanvasById: () => Promise.resolve({ data: { id: "c1", name: "Test Canvas" }, error: null }),
@@ -179,5 +189,53 @@ describe("T3 — Richtlijnen-werkblad categorie-tabs + uitklap-pattern", () => {
     await renderWerkblad();
     expect(screen.getByTestId("richtl-samenvatting-titel")).toHaveTextContent("Strategische samenvatting");
     expect(screen.queryByText(/Stip op de Horizon/i)).not.toBeInTheDocument();
+  });
+
+  // F-sam-1-fix — twee testcases
+  test("9. F-sam-1 F2: ALLE kernwaarden gerendered (negative-assert tegen slice(0,4))", async () => {
+    loadStrategyCore.mockResolvedValue({
+      data: {
+        missie: "", visie: "", ambitie: "Onze ambitie",
+        kernwaarden: ["Integriteit", "Vakmanschap", "Klantgericht", "Lef", "Samenwerking", "Innovatie"],
+        samenvatting: "Samenvatting-tekst",
+      },
+      error: null,
+    });
+    await renderWerkblad();
+    const kw = await screen.findByTestId("richtl-samenvatting-kernwaarden");
+    // Alle 6 zichtbaar in DOM-tekst (geen slice(0,4))
+    expect(kw).toHaveTextContent("Integriteit");
+    expect(kw).toHaveTextContent("Vakmanschap");
+    expect(kw).toHaveTextContent("Klantgericht");
+    expect(kw).toHaveTextContent("Lef");
+    expect(kw).toHaveTextContent("Samenwerking");
+    expect(kw).toHaveTextContent("Innovatie");
+  });
+
+  test("10. F-sam-1 F1: window-focus → re-fetch strategy_core → updated kernwaarden zichtbaar", async () => {
+    // Initial: 2 kernwaarden
+    loadStrategyCore.mockResolvedValueOnce({
+      data: { missie: "", visie: "", ambitie: "Onze ambitie", kernwaarden: ["Eerste", "Tweede"], samenvatting: "" },
+      error: null,
+    });
+    await renderWerkblad();
+    const kw = await screen.findByTestId("richtl-samenvatting-kernwaarden");
+    expect(kw).toHaveTextContent("Eerste");
+    expect(kw).toHaveTextContent("Tweede");
+
+    // Cross-werkblad-edit: Strategie heeft inmiddels 3e kernwaarde toegevoegd
+    loadStrategyCore.mockResolvedValueOnce({
+      data: { missie: "", visie: "", ambitie: "Onze ambitie", kernwaarden: ["Eerste", "Tweede", "Derde"], samenvatting: "" },
+      error: null,
+    });
+
+    // Trigger refetch via focus-event
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("richtl-samenvatting-kernwaarden")).toHaveTextContent("Derde");
+    });
   });
 });
