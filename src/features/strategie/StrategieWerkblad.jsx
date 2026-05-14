@@ -398,9 +398,11 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
 }
 
 /** Tekstveld met Draft-modus, Magic Staff en Improve-menu.
- *  T2 A1: optionele `helper`-prop rendert subtle hint-tekst onder het veld
- *  (invultips uit `tips.strategie.<blok>.kort`-DB-keys). */
-function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, onImprove, onAcceptDraft, onEditDraft, onRejectDraft, placeholder, multiline = true, rows = 5, magicResult, helper }) {
+ *  T2-retro-fix Bev. 2: invultips uit `tips.strategie.<blok>.kort` worden nu
+ *  als `placeholder`-attribuut doorgegeven (verdwijnt bij typen). De eerdere
+ *  `helper`-prop (onder-veld-tekst) is verwijderd — placeholder-in-veld is
+ *  Kees-keuze + platform-pattern voor T3/T4. */
+function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, onImprove, onAcceptDraft, onEditDraft, onRejectDraft, placeholder, multiline = true, rows = 5, magicResult }) {
   const hasDraft = draft !== null && draft !== undefined;
   const [improveOpen, setImproveOpen] = useState(false);
   const IMPROVE_PRESETS = [
@@ -460,16 +462,6 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
           placeholder={placeholder || `${label}…`}
           className="w-full text-sm text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:border-[var(--color-primary)]/40 placeholder:text-slate-300"
         />
-      )}
-
-      {/* T2 A1: helper-tekst onder veld (subtle hint, invultips per blok) */}
-      {helper && (
-        <p
-          className="text-xs text-neutral-500 leading-relaxed pl-1"
-          data-testid={fieldKey ? `strat-helper-${fieldKey}` : undefined}
-        >
-          {helper}
-        </p>
       )}
 
       {/* Magic Staff result — alleen bij error of geen chunks */}
@@ -1218,8 +1210,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onEditDraft={() => editDraft("missie")}
               onRejectDraft={() => clearDraft("missie")}
               magicResult={magic.missie}
-              placeholder="Waarom bestaan wij?"
-              helper={appLabel("tips.strategie.missie.kort", "Waarom bestaat de organisatie? Tijdloos, verandert niet bij een nieuwe strategie.")}
+              placeholder={appLabel("tips.strategie.missie.kort", "Waarom bestaat de organisatie? Tijdloos, verandert niet bij een nieuwe strategie.")}
             />
             <WerkbladTextField
               label={appLabel("strat.field.visie", "Visie")}
@@ -1233,8 +1224,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onEditDraft={() => editDraft("visie")}
               onRejectDraft={() => clearDraft("visie")}
               magicResult={magic.visie}
-              placeholder="Waar staan wij over 5 jaar?"
-              helper={appLabel("tips.strategie.visie.kort", "Hoe ziet de wereld — of jullie rol daarin — eruit als de missie slaagt? Een beeld, geen doel.")}
+              placeholder={appLabel("tips.strategie.visie.kort", "Hoe ziet de wereld — of jullie rol daarin — eruit als de missie slaagt? Een beeld, geen doel.")}
             />
             <WerkbladTextField
               label={appLabel("strat.field.ambitie", "Ambitie (BHAG)")}
@@ -1248,8 +1238,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onEditDraft={() => editDraft("ambitie")}
               onRejectDraft={() => clearDraft("ambitie")}
               magicResult={magic.ambitie}
-              placeholder="Onze grote, haast onmogelijke doelstelling…"
-              helper={appLabel("tips.strategie.ambitie.kort", "Waar wil de organisatie concreet naartoe? Tijdsgebonden, met horizon, in principe toetsbaar.")}
+              placeholder={appLabel("tips.strategie.ambitie.kort", "Waar wil de organisatie concreet naartoe? Tijdsgebonden, met horizon, in principe toetsbaar.")}
             />
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -1276,7 +1265,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                 <input
                   value={newKernwaardeInput}
                   onChange={e => setNewKernwaardeInput(e.target.value)}
-                  placeholder="Nieuwe waarde + Enter, of klik Toevoegen…"
+                  placeholder={appLabel("tips.strategie.kernwaarden.kort", "Welke principes sturen gedrag en keuzes? Niet wat je doet, maar hoe je het doet.")}
                   onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -1284,16 +1273,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                     }
                   }}
                   data-testid="strat-kernwaarde-input"
-                  className="text-sm bg-transparent border-none focus:outline-none placeholder:text-slate-300 text-slate-600 min-w-[180px] flex-1"
+                  className="text-sm bg-transparent border-none focus:outline-none placeholder:text-slate-300 text-slate-600 min-w-[260px] flex-1"
                 />
               </div>
-              {/* T2 A1: helper-tekst voor Kernwaarden (eigen UI buiten WerkbladTextField) */}
-              <p
-                className="text-xs text-neutral-500 leading-relaxed pl-1"
-                data-testid="strat-helper-kernwaarden"
-              >
-                {appLabel("tips.strategie.kernwaarden.kort", "Welke principes sturen gedrag en keuzes? Niet wat je doet, maar hoe je het doet.")}
-              </p>
               {/* Draft voor kernwaarden */}
               {drafts.kernwaarden && (
                 <div className="border border-amber-200 bg-amber-50 rounded-lg overflow-hidden">
@@ -1329,8 +1311,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               onRejectDraft={() => clearDraft("samenvatting")}
               magicResult={magic.samenvatting}
               rows={3}
-              placeholder="Schrijf in max. 2 zinnen waar de organisatie over 3 jaar staat en wat de belangrijkste richting is…"
-              helper={appLabel("tips.strategie.samenvatting.kort", "Vat missie, visie, ambitie en kernwaarden samen in een paar zinnen die als geheel kloppen.")}
+              placeholder={appLabel("tips.strategie.samenvatting.kort", "Vat missie, visie, ambitie en kernwaarden samen in een paar zinnen die als geheel kloppen.")}
             />
           </div>
         </section>
