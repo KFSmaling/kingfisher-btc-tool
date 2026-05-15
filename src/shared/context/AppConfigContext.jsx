@@ -87,6 +87,16 @@ const LABEL_FALLBACKS = {
   "richtl.segment.organisatie.sub": "Mens & Proces",
   "richtl.segment.it":              "IT",
   "richtl.segment.it.sub":          "Technologie & Data",
+  // Processen & Organisatie werkblad (11.M — RFC-005)
+  "processen.werkblad.titel":         "Processen & Organisatie",
+  "processen.fase.1.titel":           "Inventarisatie",
+  "processen.fase.2.titel":           "Pijnpunten",
+  "processen.fase.3.titel":           "Verbeteracties",
+  "processen.subtab.bedrijfsprocessen":    "Bedrijfsprocessen",
+  "processen.subtab.lijnorganisatie":      "Lijnorganisatie",
+  "processen.subtab.veranderorganisatie":  "Veranderorganisatie",
+  "processen.subtab.besturing":            "Besturing",
+  "processen.coverage.banner.empty":   "Voeg eerst pijnpunten toe of genereer concepten op basis van inventaris-data",
   // Klanten & Dienstverlening werkblad (stap 11.D MVP)
   "klanten.werkblad.titel":           "Klanten & Dienstverlening",
   "klanten.section.werkruimte":       "Werkruimte",
