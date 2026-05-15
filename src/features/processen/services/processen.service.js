@@ -177,3 +177,64 @@ export async function fetchCoverageAggregate(canvasId) {
   const { data, error } = await call("GET", "coverage_aggregate", undefined, { canvas_id: canvasId });
   return { data: data?.counts ?? null, error };
 }
+
+// ── 11.M.1 Block-1 — Dossier-AI affordances ────────────────────────────────
+
+/**
+ * Bulk-extract entities uit dossier voor opgegeven entity_type.
+ * entityType: 'processes' | 'departments' | 'business_units' | 'value_teams' |
+ *             'control_processes' | 'pain_points'
+ */
+export async function extractFromDossier(canvasId, entityType) {
+  if (!canvasId || !entityType) return { data: null, error: new Error("canvasId + entityType required") };
+  const { data, error } = await call("POST", "dossier_extract", { canvas_id: canvasId, entity_type: entityType });
+  return {
+    data: data?.items ?? null,
+    error,
+    meta: data && {
+      ai_model: data.ai_model,
+      prompt_version: data.prompt_version,
+      chunk_count: data.chunk_count,
+      note: data.note,
+    },
+  };
+}
+
+/**
+ * Vul 5 jsonb-archetype-velden voor een pr_processes-row uit dossier.
+ */
+export async function fillProcessFieldsFromDossier(processId) {
+  if (!processId) return { data: null, error: new Error("processId required") };
+  const { data, error } = await call("POST", "dossier_fields_fill", undefined, { id: processId });
+  return {
+    data: data?.item ?? null,
+    error,
+    meta: data && { proposed_fields: data.proposed_fields, note: data.note, ai_model: data.ai_model },
+  };
+}
+
+/**
+ * Rich-text verbeter voor vo_change_approach.text_md.
+ */
+export async function improveChangeApproach(canvasId) {
+  if (!canvasId) return { data: null, error: new Error("canvasId required") };
+  const { data, error } = await call("POST", "improve_change_approach", { canvas_id: canvasId });
+  return {
+    data: data?.row ?? null,
+    error,
+    meta: data && { before: data.before, after: data.after, ai_model: data.ai_model },
+  };
+}
+
+/**
+ * Rich-text verbeter voor gov_steering_model.text_md.
+ */
+export async function improveSteering(canvasId) {
+  if (!canvasId) return { data: null, error: new Error("canvasId required") };
+  const { data, error } = await call("POST", "improve_steering_text", { canvas_id: canvasId });
+  return {
+    data: data?.row ?? null,
+    error,
+    meta: data && { before: data.before, after: data.after, ai_model: data.ai_model },
+  };
+}
