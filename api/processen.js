@@ -39,6 +39,10 @@
 
 const { requireAuth } = require("./_auth");
 const { userScopedClient } = require("./_template");
+const {
+  extractFromDossier, fillProcessFieldsFromDossier,
+  improveChangeApproachText, improveSteeringText,
+} = require("./_processen_dossier_extract");
 
 // ── Tabel-specs voor generic CRUD ───────────────────────────────────────────
 // Per tabel: PK-veld, allowed-fields voor create/update, canvas-config-flag,
@@ -138,11 +142,15 @@ module.exports = async function handler(req, res) {
     if (subpath === "intent_pain_point_links")       return await handleIntentPainLinks(ctx);
     if (subpath === "coverage_aggregate")            return await handleCoverageAggregate(ctx);
 
-    // ── AI-sub-routes (C5 follow-up — placeholder) ──────────────────────
-    if (subpath === "dossier_extract"
-        || subpath === "dossier_fields_fill"
-        || subpath === "ai_improvements_generate") {
-      return res.status(501).json({ error: `Sub-route '${subpath}' wordt opgeleverd in 11.M C5 (dossier-AI + verbeteracties-AI)` });
+    // ── AI-sub-routes (11.M.1 block-1: dossier-AI volledig) ─────────────
+    if (subpath === "dossier_extract")      return await handleDossierExtract(ctx);
+    if (subpath === "dossier_fields_fill")  return await handleDossierFieldsFill(ctx);
+    if (subpath === "improve_change_approach") return await handleImproveChangeApproach(ctx);
+    if (subpath === "improve_steering_text")   return await handleImproveSteeringText(ctx);
+
+    // Verbeteracties-AI (B4 — block-2 follow-up)
+    if (subpath === "ai_improvements_generate") {
+      return res.status(501).json({ error: `Sub-route 'ai_improvements_generate' wordt opgeleverd in 11.M.1 block-2 (verbeteracties-AI)` });
     }
 
     return res.status(400).json({ error: `Onbekende subpath: ${subpath}` });
@@ -510,4 +518,70 @@ async function handleCoverageAggregate(ctx) {
     if (counts[row.coverage_status] !== undefined) counts[row.coverage_status]++;
   }
   return res.status(200).json({ counts });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 11.M.1 Block-1 — Dossier-AI handlers
+// ══════════════════════════════════════════════════════════════════════════
+
+async function handleDossierExtract(ctx) {
+  const { supabase, req, res, tenantId, user } = ctx;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const { canvas_id, entity_type } = req.body || {};
+  // Profiel-role voor audit-actor_role
+  const { data: profile } = await supabase.from("user_profiles").select("role").maybeSingle();
+  const result = await extractFromDossier({
+    supabase, req,
+    canvasId: canvas_id, entityType: entity_type,
+    userId: user.id, userRole: profile?.role || null, tenantId,
+  });
+  return res.status(result.status).json(result.body || {});
+}
+
+async function handleDossierFieldsFill(ctx) {
+  const { supabase, req, res, user } = ctx;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const id = req.query.id;
+  if (!id) return res.status(400).json({ error: "id is verplicht" });
+  const { data: profile } = await supabase.from("user_profiles").select("role").maybeSingle();
+  const result = await fillProcessFieldsFromDossier({
+    supabase, req, itemId: id, userId: user.id, userRole: profile?.role || null,
+  });
+  return res.status(result.status).json(result.body || {});
+}
+
+async function handleImproveChangeApproach(ctx) {
+  const { supabase, req, res, user } = ctx;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const { canvas_id } = req.body || {};
+  const { data: profile } = await supabase.from("user_profiles").select("role").maybeSingle();
+  const result = await improveChangeApproachText({
+    supabase, req, canvasId: canvas_id,
+    userId: user.id, userRole: profile?.role || null,
+  });
+  return res.status(result.status).json(result.body || {});
+}
+
+async function handleImproveSteeringText(ctx) {
+  const { supabase, req, res, user } = ctx;
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  const { canvas_id } = req.body || {};
+  const { data: profile } = await supabase.from("user_profiles").select("role").maybeSingle();
+  const result = await improveSteeringText({
+    supabase, req, canvasId: canvas_id,
+    userId: user.id, userRole: profile?.role || null,
+  });
+  return res.status(result.status).json(result.body || {});
 }
