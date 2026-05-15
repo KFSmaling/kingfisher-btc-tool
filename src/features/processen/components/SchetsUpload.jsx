@@ -102,7 +102,8 @@ export default function SchetsUpload({ canvasId, existingUploads = [], onUploade
   }
 
   async function handleDelete(upload) {
-    if (!confirm("Schets verwijderen?")) return;
+    // eslint-disable-next-line no-restricted-globals
+    if (!window.confirm("Schets verwijderen?")) return;
     // Eerst storage-object verwijderen, dan metadata-rij (rollback bij faal)
     const { error: storErr } = await supabase.storage
       .from("processen-schets")
