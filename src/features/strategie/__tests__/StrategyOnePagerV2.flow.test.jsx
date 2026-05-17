@@ -237,15 +237,18 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     expect(screen.getByTestId("strategie-onepager-kernwaarde-2")).toHaveTextContent(/Mee-denkend/);
   });
 
-  test("7. 5+ thema's → compact-layout met max 1 KSF / 2 KPI's per kaart", async () => {
+  test("7. 5+ thema's → alle 5 zichtbaar + ALLE KSFs/KPIs per kaart (11.S-retro-2 slice-removal)", async () => {
+    // 11.S-retro-2 nieuw platform-principe: alle structurele input zichtbaar.
+    // Oude test verwachtte `slice(0, 1)`/`slice(0, 2)` compact-truncation — die
+    // is verwijderd. Nu moeten alle 5 thema's + ALLE KSFs/KPIs renderen.
     const manyThemas = Array.from({ length: 5 }, (_, i) => ({
       id: `t${i + 1}`, title: `Thema ${i + 1}`, sort_order: i + 1,
       ksf_kpi: [
         { id: `ks${i}a`, type: "ksf", description: `KSF A van thema ${i + 1}`, sort_order: 1 },
-        { id: `ks${i}b`, type: "ksf", description: `KSF B (mag verborgen)`,    sort_order: 2 },
-        { id: `kp${i}a`, type: "kpi", description: `KPI A`, target_value: "10", current_value: "5", sort_order: 1 },
-        { id: `kp${i}b`, type: "kpi", description: `KPI B`, target_value: "20", current_value: "8", sort_order: 2 },
-        { id: `kp${i}c`, type: "kpi", description: `KPI C (mag verborgen)`, sort_order: 3 },
+        { id: `ks${i}b`, type: "ksf", description: `KSF B van thema ${i + 1}`, sort_order: 2 },
+        { id: `kp${i}a`, type: "kpi", description: `KPI A van thema ${i + 1}`, target_value: "10", current_value: "5", sort_order: 1 },
+        { id: `kp${i}b`, type: "kpi", description: `KPI B van thema ${i + 1}`, target_value: "20", current_value: "8", sort_order: 2 },
+        { id: `kp${i}c`, type: "kpi", description: `KPI C van thema ${i + 1}`, sort_order: 3 },
       ],
     }));
     const config = buildStrategieRapportageConfig({
@@ -257,14 +260,17 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     const data = buildData(config, ["identiteit", "kpi-strip", "themas", "samenvatting"]);
     await renderOnePager({ data, selectedModels: [], withAi: false, insights: [] });
 
-    // 5 thema-kaarten, compact-modus
-    expect(screen.getByTestId("strategie-onepager-thema-T1")).toBeInTheDocument();
-    expect(screen.getByTestId("strategie-onepager-thema-T5")).toBeInTheDocument();
-    // KSF B en KPI C zijn verborgen in compact-modus
+    // Alle 5 thema-kaarten aanwezig (Fix 1 — geen meer 5e thema verbergen)
+    for (let i = 1; i <= 5; i++) {
+      expect(screen.getByTestId(`strategie-onepager-thema-T${i}`)).toBeInTheDocument();
+    }
+    // ALLE 2 KSFs en 3 KPIs zichtbaar in elk kaart (Fix 2 — slice removed)
     const t1 = screen.getByTestId("strategie-onepager-thema-T1");
     expect(within(t1).getByText(/KSF A van thema 1/)).toBeInTheDocument();
-    expect(within(t1).queryByText(/KSF B/)).not.toBeInTheDocument();
-    expect(within(t1).queryByText(/KPI C/)).not.toBeInTheDocument();
+    expect(within(t1).getByText(/KSF B van thema 1/)).toBeInTheDocument();
+    expect(within(t1).getByText(/KPI A van thema 1/)).toBeInTheDocument();
+    expect(within(t1).getByText(/KPI B van thema 1/)).toBeInTheDocument();
+    expect(within(t1).getByText(/KPI C van thema 1/)).toBeInTheDocument();
   });
 
   test("8. Print-CSS hooks — source-tags + model-block class-namen aanwezig", async () => {
