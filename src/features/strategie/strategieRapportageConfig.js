@@ -144,9 +144,9 @@ export function buildStrategieRapportageConfig({
       },
     ],
 
-    // ── Data-completeness fallback (designer rapportage-spec.md regel 112-119) ─
-    // Returnt per blok-id { ready: bool, completeness_msg?: string, text?: ... }
-    // Block 3: completeness-check; Block 4 vult `text`/`data`-payload per blok.
+    // ── Data-completeness + payload (Block 4 v2 vult `data` per blok) ────
+    // Returnt per blok-id { ready: bool, completeness_msg?: string, text?: ..., data?: ... }
+    // StrategyOnePager v2 leest `data` per render-blok.
     dataResolver: (blokId) => {
       switch (blokId) {
         case "identiteit": {
@@ -157,26 +157,121 @@ export function buildStrategieRapportageConfig({
               "onepager.preview.fallback.identiteit",
               "Vul Missie, Visie en Ambitie eerst in onder Strategie-werkblad → Identiteit."
             ),
+            data: {
+              missie:       strategyCore?.missie || null,
+              visie:        strategyCore?.visie || null,
+              ambitie:      strategyCore?.ambitie || null,
+              kernwaarden:  Array.isArray(strategyCore?.kernwaarden) ? strategyCore.kernwaarden : [],
+            },
           };
         }
         case "kpi-strip": {
-          const ready = kpiCount >= 4;
+          // Auto-pick eerste KPI per thema in sort_order (instructie §1.5).
+          const sortedThemas = [...themas].sort((a, b) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0));
+          const topKpis = sortedThemas
+            .map(t => {
+              const ksfKpi = Array.isArray(t?.ksf_kpi) ? t.ksf_kpi : [];
+              const themaKpis = ksfKpi
+                .filter(k => k.type === "kpi")
+                .sort((a, b) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0));
+              if (themaKpis.length === 0) return null;
+              // Verrijk met thema-code + thema-titel voor render
+              const themaIdx = sortedThemas.indexOf(t);
+              return {
+                ...themaKpis[0],
+                _themaCode: `T${themaIdx + 1}`,
+                _themaTitle: t.title || t.titel || "",
+                isFallback: false,
+              };
+            })
+            .filter(Boolean)
+            .slice(0, 4);
+
+          // Fallback bij <4 KPI's: BHAG (numeriek uit ambitie) + Horizon.
+          if (topKpis.length < 4) {
+            const ambitieText = strategyCore?.ambitie ?? "";
+            const numMatch = typeof ambitieText === "string" ? ambitieText.match(/[\d.,]+/) : null;
+            if (numMatch && topKpis.length < 4) {
+              topKpis.push({
+                id: "bhag-fallback",
+                description: lbl("strategie.onepager.kpi.bhag_fallback.label", "BHAG"),
+                target_value: numMatch[0],
+                current_value: null,
+                _themaCode: "BHAG",
+                _themaTitle: lbl("strategie.onepager.kpi.bhag_fallback.label", "BHAG"),
+                isFallback: true,
+              });
+            }
+            while (topKpis.length < 4) {
+              topKpis.push({
+                id: `horizon-fallback-${topKpis.length}`,
+                description: lbl("strategie.onepager.kpi.horizon_fallback.label", "Horizon"),
+                target_value: lbl("strategie.onepager.kpi.horizon_fallback.target", "5 jaar"),
+                current_value: null,
+                _themaCode: "H",
+                _themaTitle: lbl("strategie.onepager.kpi.horizon_fallback.label", "Horizon"),
+                isFallback: true,
+              });
+            }
+          }
+
           return {
-            ready,
-            completeness_msg: ready ? null : lbl(
+            ready: topKpis.length > 0,
+            completeness_msg: topKpis.length === 0 ? lbl(
               "onepager.preview.fallback.kpi",
               "Voeg minstens 4 KPI's toe verdeeld over de thema's voor een complete strip."
-            ),
+            ) : null,
+            data: { kpis: topKpis.slice(0, 4) },
           };
         }
         case "themas": {
           const ready = themasCount > 0;
+          // Verrijk themas met code (T1..Tn) op basis van sort_order.
+          const sortedThemas = [...themas]
+            .sort((a, b) => (a?.sort_order ?? 0) - (b?.sort_order ?? 0))
+            .map((t, idx) => ({ ...t, _code: `T${idx + 1}` }));
           return {
             ready,
             completeness_msg: ready ? null : lbl(
               "onepager.preview.fallback.themas",
               "Geen strategische thema's gedefinieerd — voeg eerst minstens één thema toe."
             ),
+            data: { themas: sortedThemas },
+          };
+        }
+        case "swot": {
+          const ready = analysisCount > 0;
+          // Designer-spec: 2×2 quadranten gevuld uit analysis_items op (type, tag).
+          // Defensive op variant tag-namen ("sterk"/"sterkte", "zwak"/"zwakte" etc).
+          const items = Array.isArray(analysisItems) ? analysisItems : [];
+          const matchTag = (it, expected) => {
+            const tag = (it?.tag || "").toLowerCase();
+            return expected.some(e => tag === e || tag.startsWith(e));
+          };
+          return {
+            ready,
+            completeness_msg: ready ? null : lbl(
+              "strategie.model.swot.disabled_reason",
+              "Vul de SWOT-tabbladen in onder Strategie → Analyse."
+            ),
+            data: {
+              sterkten:     items.filter(i => i.type === "intern" && matchTag(i, ["sterk", "sterkte"])),
+              zwakten:      items.filter(i => i.type === "intern" && matchTag(i, ["zwak", "zwakte"])),
+              kansen:       items.filter(i => i.type === "extern" && matchTag(i, ["kans"])),
+              bedreigingen: items.filter(i => i.type === "extern" && matchTag(i, ["bedreig"])),
+            },
+          };
+        }
+        case "kernwaarden": {
+          const kernwaarden = Array.isArray(strategyCore?.kernwaarden) ? strategyCore.kernwaarden : [];
+          const ready = kernwaarden.length > 0;
+          return {
+            ready,
+            completeness_msg: ready ? null : lbl(
+              "strategie.model.kernwaardenbord.disabled_reason",
+              "Voeg eerst minstens één kernwaarde toe onder Identiteit."
+            ),
+            data: { kernwaarden },
           };
         }
         case "samenvatting": {
@@ -188,10 +283,11 @@ export function buildStrategieRapportageConfig({
               "onepager.preview.fallback.samenvatting",
               "Strategische samenvatting nog niet gegenereerd. → Genereer in werkblad."
             ),
+            data: { samenvatting: strategyCore?.samenvatting || null },
           };
         }
         default:
-          return { ready: true };
+          return { ready: true, data: null };
       }
     },
   };

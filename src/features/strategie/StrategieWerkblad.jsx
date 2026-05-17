@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, Crosshair, Info, Settings, LogOut } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
 import WerkbladActieknoppen from "../../shared/components/WerkbladActieknoppen";
@@ -9,6 +9,7 @@ import { apiFetch } from "../../shared/services/apiClient";
 import { useLang } from "../../i18n";
 import { useAuth } from "../../shared/services/auth.service";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
+import { useTheme } from "../../shared/hooks/useTheme";
 import WandButton from "../../shared/components/WandButton";
 import MagicResult from "../../shared/components/MagicResult";
 import TagPill, { EXTERN_TAGS, INTERN_TAGS } from "../../shared/components/TagPill";
@@ -33,7 +34,10 @@ import {
 } from "./services/strategy.service";
 import { searchDocumentChunks } from "../../shared/services/embedding.service";
 
-const StrategyOnePager = lazy(() => import("./StrategyOnePager"));
+// 11.S Block 4 — StrategyOnePager v2 wordt geinjecteerd in OnepagerBuilder
+// via `LayoutComponent`-prop (zie `LayoutComponent={StrategyOnePager}` hieronder).
+// v1 dead-code-render onder `showOnePager`-state is verwijderd; v2 vervangt v1.
+import StrategyOnePager from "./StrategyOnePager";
 
 /** KSF/KPI tabel-rij — KSF heeft geen Huidig/Target */
 const KsfKpiRow = React.memo(function KsfKpiRow({ item, type, onChange, onDelete }) {
@@ -508,6 +512,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   // Eén actieve sectie tegelijk; default "identiteit" bij canvas-load.
   const [activeSectie, setActiveSectie] = useState("identiteit");
   const { prompt: appPrompt, label: appLabel } = useAppConfig();
+  // 11.S Block 4 — brand-naam voor StrategyOnePager v2 brand-strip + footer
+  const { brandName: tenantBrand } = useTheme();
   const [mounted, setMounted]   = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -524,7 +530,6 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [magic, setMagic]       = useState({});
   const [autoDraftRunning, setAutoDraftRunning] = useState(false);
   const [autoDraftOpen, setAutoDraftOpen]       = useState(false);
-  const [showOnePager,   setShowOnePager]       = useState(false);
   // 11.S Block 2 — RapportageMenu dialog-zichtbaarheid
   const [rapportageMenuOpen, setRapportageMenuOpen] = useState(false);
   // 11.S Block 3 — OnepagerBuilder overlay-zichtbaarheid
@@ -1192,10 +1197,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
             <WerkbladActieknoppen
               onTips={() => setShowInvultips(true)}
               onBekijken={() => setShowAdvies(true)}
-              // 11.S Block 2 — Rapportage-knop opent RapportageMenu i.p.v. direct
-              // StrategyOnePager. Tile 1 (One-pager) is in Block 2 dood-href; Block 3
-              // wire't OnepagerBuilder. Bestaande StrategyOnePager-render hieronder
-              // blijft tijdelijk dead-code tot Block 3/4 deze vervangt.
+              // 11.S Block 2-4 — Rapportage-knop opent RapportageMenu (Block 2),
+              // Tile 1 opent OnepagerBuilder (Block 3) met StrategyOnePager v2-
+              // layout-injectie (Block 4). Print/PDF via window.print() in Builder.
               onRapportage={() => setRapportageMenuOpen(true)}
               bekijkenDisabled={false}
               appLabel={appLabel}
@@ -1514,20 +1518,6 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         )}
       </div>
 
-      {/* ── Strategie OnePager overlay ── */}
-      {showOnePager && (
-        <Suspense fallback={null}>
-          <StrategyOnePager
-            core={core}
-            items={items}
-            themas={themas}
-            canvasId={canvasId}
-            onClose={() => setShowOnePager(false)}
-            analysis={analysis}
-          />
-        </Suspense>
-      )}
-
       {/* ── Inzichten overlay — S2 instructie B: Analyse-handler verhuist hier
             als hoofdactie zodat werkblad-header alleen Inzichten + Rapportage
             + Full Draft heeft (geen Analyse-knop meer). ── */}
@@ -1580,10 +1570,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         />
       )}
 
-      {/* ── 11.S Block 3 — OnepagerBuilder overlay. Werkblad-agnostisch via
-            buildStrategieRapportageConfig (vasteBlokken + modelLib +
-            dataResolver per blok). LayoutComponent=null → A4Preview rendert
-            skelet-placeholder (Block 4 injecteert StrategyOnePager v2). ── */}
+      {/* ── 11.S Block 3+4 — OnepagerBuilder overlay met StrategyOnePager v2-
+            layout (Block 4 vervangt Block 3 skelet via LayoutComponent-prop).
+            Werkblad-agnostisch via buildStrategieRapportageConfig. ── */}
       {onepagerBuilderOpen && (
         <OnepagerBuilder
           open={onepagerBuilderOpen}
@@ -1600,6 +1589,15 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           })}
           insights={Array.isArray(analysis) ? analysis : []}
           appLabel={appLabel}
+          // 11.S Block 4 — werkblad-specifieke v2-layout-injectie + extra-props
+          // worden via PreviewComponent.LayoutComponent doorgegeven aan StrategyOnePager.
+          LayoutComponent={(layoutProps) => (
+            <StrategyOnePager
+              {...layoutProps}
+              tenantBrand={tenantBrand}
+              canvasName={canvasName}
+            />
+          )}
         />
       )}
 

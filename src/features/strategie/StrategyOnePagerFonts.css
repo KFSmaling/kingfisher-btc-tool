@@ -1,0 +1,81 @@
+/*
+ * StrategyOnePagerFonts.css — lokale font-stack voor StrategyOnePager v2.
+ *
+ * RFC-008 §F2 — lokaal hosten i.p.v. Google Fonts CDN:
+ *   - GDPR (geen IP-hits naar fonts.googleapis.com / fonts.gstatic.com)
+ *   - Print-betrouwbaarheid (fonts ingebed bij PDF-rendering, geen network-race)
+ *   - Offline-flow indien tenant geen internet heeft tijdens consultancy-sessie
+ *
+ * Bestanden: src/features/strategie/fonts/*.woff2 (8 weights, ~170 KB totaal).
+ * Bron: fontsource CDN (@fontsource/inter, source-serif-4, jetbrains-mono).
+ * Locatie binnen src/ zodat CRA webpack url-loader hashes + cache-bust toepast.
+ *
+ * font-display: swap — toon system-fallback tot custom-font geladen,
+ * voorkomt FOIT (Flash Of Invisible Text) in builder-preview.
+ */
+
+@font-face {
+  font-family: "InterStrategy";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/Inter-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "InterStrategy";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./fonts/Inter-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "InterStrategy";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./fonts/Inter-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "SourceSerifStrategy";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/SourceSerif4-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SourceSerifStrategy";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/SourceSerif4-Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "SourceSerifStrategy";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./fonts/SourceSerif4-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrainsStrategy";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrainsStrategy";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./fonts/JetBrainsMono-Medium.woff2") format("woff2");
+}
+
+/* CSS-variable-shortcuts voor consistent gebruik binnen StrategyOnePager v2. */
+.strategie-onepager {
+  --font-body:    "InterStrategy", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "SourceSerifStrategy", Georgia, "Times New Roman", serif;
+  --font-mono:    "JetBrainsStrategy", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
