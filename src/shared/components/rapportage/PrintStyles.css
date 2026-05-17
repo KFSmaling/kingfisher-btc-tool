@@ -33,27 +33,24 @@
     display: none !important;
   }
 
-  /* ── A4-preview vult hele pagina, zonder scale-transform ──────────────── */
-  /* Builder viewport-container krijgt geen padding/bg meer. */
+  /* ── A4-preview viewport: geen padding/bg in print ────────────────────── */
   [data-testid="a4-preview-viewport"] {
     padding: 0 !important;
     margin: 0 !important;
     min-height: 0 !important;
     background: white !important;
     overflow: visible !important;
+    display: block !important;
   }
-  /* Wrapper-div (gescaled in builder) → reset naar A4-eenheden in mm. */
-  [data-testid="a4-preview-canvas"] {
+  /* ── Flow-container (11.S-simplify): vult breedte; verberg shadow + page-marker ── */
+  .a4-preview-page-flow,
+  [data-testid="a4-preview-page-flow"] {
     width: 297mm !important;
-    height: 210mm !important;
-  }
-  /* De échte canvas die in builder transform:scale(...) heeft → reset naar 1:1 */
-  [data-testid="a4-preview-page"] {
-    transform: none !important;
-    transform-origin: top left !important;
-    width: 297mm !important;
-    height: 210mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    background: white !important;
     box-shadow: none !important;
+    background-image: none !important; /* verberg dashed page-marker uit A4Preview.css */
     border: none !important;
   }
 

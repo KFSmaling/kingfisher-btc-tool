@@ -122,13 +122,12 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     await renderOnePager({ data, selectedModels: [{ id: "swot", label: "SWOT" }], withAi: true, insights: fullInsights });
 
     expect(screen.getByTestId("strategie-onepager-v2")).toBeInTheDocument();
-    // 11.S-retro multi-page: brand-strip + footer renderen op elke pagina (2 pagina's hier).
-    expect(screen.getAllByTestId("strategie-onepager-brand-strip").length).toBe(2);
-    expect(screen.getAllByTestId("strategie-onepager-footer").length).toBe(2);
-    // Page-1 specifieke testids (single match)
+    // 11.S-simplify (flow-mode): één BrandStrip + één Footer per render,
+    // geen multi-page herhaling meer. Browser-print regelt eigen splitsing.
+    expect(screen.getAllByTestId("strategie-onepager-brand-strip").length).toBe(1);
+    expect(screen.getAllByTestId("strategie-onepager-footer").length).toBe(1);
     expect(screen.getByTestId("strategie-onepager-titel-block")).toBeInTheDocument();
-    // 11.S-retro-3: H1 is vaste-titel "Samenvatting Strategie", niet de
-    // samenvatting-tekst zelf (Kees-keuze 18 mei).
+    // H1 = vaste-titel "Samenvatting Strategie" (retro-3 winst behouden).
     expect(screen.getByTestId("strategie-onepager-h1")).toHaveTextContent(/Samenvatting Strategie/i);
     expect(screen.getByTestId("strategie-onepager-h1")).not.toHaveTextContent(/Onze strategie verschuift/i);
     expect(screen.getByTestId("strategie-onepager-identiteit-band")).toBeInTheDocument();
@@ -136,14 +135,9 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     expect(screen.getByTestId("strategie-onepager-themas-grid")).toBeInTheDocument();
     expect(screen.getByTestId("strategie-onepager-thema-T1")).toBeInTheDocument();
     expect(screen.getByTestId("strategie-onepager-thema-T2")).toBeInTheDocument();
-    // Page-2 specifieke testid: AI-blok
     expect(screen.getByTestId("strategie-onepager-ai-block")).toBeInTheDocument();
-    // Kernwaarden inline in identiteits-band
-    // 11.S-retro-3 Fix 3: kernwaarden-render uit identiteits-band verwijderd
-    // (duplicatie-fix; kernwaarden blijven in body-zone Kernwaarden-bord-model).
+    // Kernwaarden NIET in identiteits-band (retro-3 Fix 3 winst behouden).
     expect(screen.queryByTestId("strategie-onepager-kernwaarden-inline")).not.toBeInTheDocument();
-    // 11.S-retro: data-total-pages-attribuut weerspiegelt page-count
-    expect(screen.getByTestId("strategie-onepager-v2")).toHaveAttribute("data-total-pages", "2");
   });
 
   test("2. Fallback bij ontbrekende velden — placeholder + waarschuwing + BHAG/Horizon-fallback", async () => {
@@ -170,7 +164,7 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     expect(fallbackCells.length).toBeGreaterThanOrEqual(3); // ≥3 horizon fallbacks (kunnen 4 zijn als geen BHAG)
   });
 
-  test("3. AI-toggle off + geen modellen → 1-page-distributie, geen page 2 / geen body / geen AI", async () => {
+  test("3. AI-toggle off + geen modellen → geen body-zone, geen AI (flow-mode)", async () => {
     const config = buildStrategieRapportageConfig({
       strategyCore: fullStrategyCore,
       themas: fullThemas,
@@ -180,12 +174,11 @@ describe("StrategyOnePager v2 — RFC-008 §F + 11.S Block 4", () => {
     const data = buildData(config, ["identiteit", "kpi-strip", "themas", "swot", "samenvatting"]);
     await renderOnePager({ data, selectedModels: [], withAi: false, insights: fullInsights });
 
-    // 11.S-retro page-distributie: withAi=false + 0 modellen → 1 pagina (geen body/AI).
-    expect(screen.getByTestId("strategie-onepager-v2")).toHaveAttribute("data-total-pages", "1");
+    // 11.S-simplify (flow-mode): geen modellen + withAi=false → BodyZone renders null.
+    expect(screen.queryByTestId("strategie-onepager-body")).not.toBeInTheDocument();
     expect(screen.queryByTestId("strategie-onepager-ai-block")).not.toBeInTheDocument();
     expect(screen.queryByTestId("strategie-onepager-ai-empty")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("strategie-onepager-body")).not.toBeInTheDocument();
-    // Brand-strip + footer komen 1x voor (page 1 only)
+    // Brand-strip + footer altijd één keer (flow-mode).
     expect(screen.getAllByTestId("strategie-onepager-brand-strip").length).toBe(1);
     expect(screen.getAllByTestId("strategie-onepager-footer").length).toBe(1);
   });
