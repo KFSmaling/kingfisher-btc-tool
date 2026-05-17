@@ -1,0 +1,30 @@
+/*
+ * A4Preview.css — flow-preview-styling (11.S-simplify).
+ *
+ * Visual hint voor consultant: dashed line per 842px in builder-preview
+ * geeft "hier komt browser-print pagina-grens"-indicator. Geen functionele
+ * page-splitsing (browser-print regelt eigen multi-page-distribution via
+ * @page A4 landscape + page-break-inside: avoid op .strategie-onepager-
+ * model-block — zie PrintStyles.css uit Block 4).
+ *
+ * Page-marker hoogte 842px = A4 landscape @ 96 dpi (CSS px).
+ * Dashed top-border van 1px op een pseudo-laag die zich per 842px herhaalt.
+ *
+ * Print-CSS (PrintStyles.css) verbergt deze marker + box-shadow + background
+ * zodat papier-output schoon is.
+ */
+
+.a4-preview-page-flow {
+  /* Dashed page-marker — herhaalt zich per 842px verticaal.
+     `linear-gradient` met transparant grootste-deel + thin slate-200-strip
+     op de breukgrens. Geen border-bottom-of-children-trick zodat dit ook
+     werkt als modellen overflowen over marker-grens (visuele hint, niet
+     content-grenzen). */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 840px,
+    rgba(148, 163, 184, 0.4) 840px,
+    rgba(148, 163, 184, 0.4) 842px
+  );
+}

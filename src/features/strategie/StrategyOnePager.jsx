@@ -459,19 +459,15 @@ function KernwaardenBordModel({ data, appLabel }) {
 }
 
 // ── AI-aandachtspunten-blok ──────────────────────────────────────────────────
-// 11.S-retro-2: optionele `chunk`-prop (array van pre-filtered insights uit
-// page-distribution-helper) overrulet de interne in_rapport-filter. Wanneer
-// `chunk` afwezig: filter intern op in_rapport=true en render ALLES (geen
-// `slice(0, 4)`-truncation meer — structurele input mag niet worden
-// weggehaald). Multi-page-distribution kan AI over meerdere pagina's chunken
-// zonder content te verliezen.
-function AiBlock({ insights, appLabel, chunk = null, chunkIdx = 0, totalChunks = 1 }) {
+// 11.S-simplify: chunking-props verwijderd. Filter intern op in_rapport=true en
+// render ALLES in één doorlopend blok. Browser-print-engine regelt eigen
+// page-splitsing via `page-break-inside: avoid` op `.strategie-onepager-model-
+// block` (PrintStyles.css uit Block 4).
+function AiBlock({ insights, appLabel }) {
   const lbl = (k, fb) => (appLabel ? appLabel(k, fb) : fb);
-  const items = Array.isArray(chunk)
-    ? chunk
-    : (Array.isArray(insights) ? insights : []).filter(i => i.in_rapport === true);
+  const items = (Array.isArray(insights) ? insights : []).filter(i => i.in_rapport === true);
 
-  if (items.length === 0 && chunkIdx === 0) {
+  if (items.length === 0) {
     return (
       <div
         data-testid="strategie-onepager-ai-empty"
@@ -486,18 +482,10 @@ function AiBlock({ insights, appLabel, chunk = null, chunkIdx = 0, totalChunks =
     );
   }
 
-  // Chunk-suffix bij multi-page AI ("Aandachtspunten · vervolg" voor chunk 2+)
-  const titel = lbl("strategie.onepager.ai.titel", "AI · Aandachtspunten");
-  const vervolgSuffix = totalChunks > 1 && chunkIdx > 0
-    ? ` · ${lbl("strategie.onepager.ai.vervolg", "vervolg")}`
-    : "";
-
   return (
     <aside
       data-testid="strategie-onepager-ai-block"
-      data-chunk-idx={chunkIdx}
-      data-total-chunks={totalChunks}
-      className="strategie-onepager-model-block p-2 rounded border h-full overflow-hidden"
+      className="strategie-onepager-model-block p-2 rounded border"
       style={{
         borderColor: "var(--color-ai-accent, var(--color-accent))",
         background: "var(--color-ai-accent-bg, rgba(249,115,22,0.04))",
@@ -507,7 +495,7 @@ function AiBlock({ insights, appLabel, chunk = null, chunkIdx = 0, totalChunks =
         className="text-[8px] font-bold uppercase tracking-[0.18em] mb-1.5"
         style={{ color: "var(--color-ai-accent, var(--color-accent))" }}
       >
-        {titel}{vervolgSuffix}
+        {lbl("strategie.onepager.ai.titel", "AI · Aandachtspunten")}
       </p>
       <div className="flex flex-col gap-2">
         {items.map((ins) => {
@@ -538,12 +526,14 @@ function AiBlock({ insights, appLabel, chunk = null, chunkIdx = 0, totalChunks =
 }
 
 // ── Footer ───────────────────────────────────────────────────────────────────
-function Footer({ tenantBrand, appLabel, pageNum = 1, totalPages = 1 }) {
+// 11.S-simplify (Kees-keuze 18 mei avond): geen pageNum/totalPages-props meer.
+// Browser-print-engine regelt eigen page-counting (CSS `counter-increment` of
+// vendor-specific). Builder-preview = enkele flow zonder counter.
+function Footer({ tenantBrand, appLabel }) {
   const lbl = (k, fb) => (appLabel ? appLabel(k, fb) : fb);
   return (
     <footer
       data-testid="strategie-onepager-footer"
-      data-page-num={pageNum}
       className="flex items-center justify-between px-6 text-[8px]"
       style={{
         height: 24,
@@ -560,40 +550,18 @@ function Footer({ tenantBrand, appLabel, pageNum = 1, totalPages = 1 }) {
         {" · "}
         {lbl("strategie.onepager.werkblad.naam", "STRATEGIE")}
       </span>
-      <span className="opacity-60" style={{ fontFamily: "var(--font-mono)" }}>
-        {totalPages > 1 ? `${pageNum} / ${totalPages}` : pageNum}
-      </span>
     </footer>
   );
 }
 
-// ── BodyZone (configurabel per page-recipe) ──────────────────────────────────
-// 11.S-retro-2: ondersteunt nu content-aware multi-page distribution.
-//
-// Drie body-modes:
-//   - "models-with-ai": modellen LINKS (1fr) + AI-aside RECHTS (280px) — page 2
-//     wanneer modellen + AI klein genoeg samen
-//   - "models-only":   modellen full-width (1fr) — page 2 wanneer AI uit OR AI
-//     overflowed naar eigen pagina
-//   - "ai-only":       AI full-width — eigen pagina voor AI-chunk (3e+ pagina)
-//
-// Props:
-//   mode:           "models-with-ai" | "models-only" | "ai-only"
-//   selectedModels: alleen relevant voor "models-with-ai" / "models-only"
-//   aiChunk:        pre-filtered insights array voor deze pagina (uit
-//                   computePages-helper) — bypasst AiBlock interne filter
-//   chunkIdx:       0-based; >0 toont "· vervolg" suffix in AI-titel
-//   totalChunks:    aantal AI-chunks totaal (voor "vervolg"-logica)
-//   data:           per-id payload uit dataResolver
-function BodyZone({
-  mode,
-  selectedModels = [],
-  aiChunk = null,
-  chunkIdx = 0,
-  totalChunks = 1,
-  data,
-  appLabel,
-}) {
+
+// ── BodyZone (flow-mode, 11.S-simplify) ──────────────────────────────────────
+// Eén enkele body-render: selectie-modellen LINKS + AI-aside RECHTS wanneer
+// withAi=true, anders alleen modellen full-width. Geen mode-switching meer
+// (de retro-1/2/3 page-distribution-logic is verwijderd — browser-print
+// regelt eigen page-splitsing via @page + page-break-inside: avoid op
+// .strategie-onepager-model-block).
+function BodyZone({ selectedModels = [], withAi, insights, data, appLabel }) {
   const lbl = (k, fb) => (appLabel ? appLabel(k, fb) : fb);
 
   function renderModel(modelId) {
@@ -612,289 +580,93 @@ function BodyZone({
     .map(m => renderModel(m.id))
     .filter(Boolean);
 
-  // Layout per mode
-  const bodyGridCols =
-    mode === "models-with-ai" ? "1fr 280px" :
-    mode === "ai-only"        ? "1fr" :
-    /* models-only */            "1fr";
+  const bodyGridCols = withAi ? "1fr 280px" : "1fr";
+  const hasBodyContent = modelComponents.length > 0 || !!withAi;
+  if (!hasBodyContent) return null;
 
   return (
     <section
       data-testid="strategie-onepager-body"
-      data-body-mode={mode}
-      className="flex-1 px-6 py-3 min-h-0"
+      className="px-6 py-3"
     >
-      <div className="grid gap-3 h-full" style={{ gridTemplateColumns: bodyGridCols }}>
-        {/* Modellen-kolom (alleen bij modes met modellen) */}
-        {mode !== "ai-only" && (
-          <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
-            {modelComponents.length === 0 ? (
-              <p className="text-[9px] italic text-slate-400">
-                {lbl("strategie.onepager.body.empty", "Geen modellen geselecteerd — kies in linker paneel.")}
-              </p>
-            ) : (
-              modelComponents
-            )}
-          </div>
-        )}
-        {/* AI-blok (alleen bij modes met AI) */}
-        {(mode === "models-with-ai" || mode === "ai-only") && (
-          <AiBlock
-            chunk={aiChunk}
-            chunkIdx={chunkIdx}
-            totalChunks={totalChunks}
-            appLabel={appLabel}
-          />
+      <div className="grid gap-3" style={{ gridTemplateColumns: bodyGridCols }}>
+        <div className="flex flex-col gap-3">
+          {modelComponents.length === 0 ? (
+            <p className="text-[9px] italic text-slate-400">
+              {lbl("strategie.onepager.body.empty", "Geen modellen geselecteerd — kies in linker paneel.")}
+            </p>
+          ) : (
+            modelComponents
+          )}
+        </div>
+        {withAi && (
+          <AiBlock insights={insights} appLabel={appLabel} />
         )}
       </div>
     </section>
   );
 }
 
-// ── computePages — content-aware page-distribution helper ────────────────────
-// 11.S-retro-2 Optie A (heuristic-based) + 11.S-retro-3 Fix 2 (identiteits-
-// band content-aware split):
+// ── Hoofdcomponent (flow-mode, 11.S-simplify) ────────────────────────────────
+// Eén lange flow-render: BrandStrip + TitelBlock + IdentiteitsBand + KpiStrip
+// + ThemasGrid + BodyZone + Footer. Geen page-distribution, geen scaling,
+// geen A4Page-sub-frames. Builder-preview = enkele scrollende pagina (met
+// optioneel dashed page-marker via CSS in A4Preview). Browser-print-engine
+// regelt multi-page-output native via PrintStyles.css (Block 4):
+//   @page { size: A4 landscape; margin: 0; }
+//   .strategie-onepager-model-block { page-break-inside: avoid; }
 //
-//   Page 1:
-//     Short identiteit-content  → "main"          (Titel + Identiteit + KPI + Themas)
-//     Long identiteit-content   → "main-identity" (Titel + Identiteit only)
-//                                 + "main-kpi-themas" (KPI + Themas) op page 2
-//   Body-pages (volgen):
-//     "body"     — BrandStrip + (modellen + eerste AI-chunk) + Footer
-//     "ai-only"  — BrandStrip + AI-vervolg-chunk + Footer (page 3+)
+// Behoud uit Block 4 + retro-2 + retro-3:
+//   - H1 vaste-titel "Samenvatting Strategie" (retro-3 Fix 1)
+//   - IdentiteitsBand zonder kernwaarden (retro-3 Fix 3)
+//   - ThemasGrid max 4 cols + min-w-0 (retro-2 Fix 1)
+//   - SWOT + AI: alle items zichtbaar (retro-2 Fix 2 — geen slice-truncation)
+//   - KernwaardenBordModel in body-zone (Block 4)
 //
-// hasBodyContent  = ≥1 selectedModel OR withAi=true
-//                   withAi=true reserveert altijd body-page voor "AI uit"-fallback
-//                   wanneer 0 in_rapport-insights (Block 4 §2g intent behouden).
-//
-// IDENTITY_SPLIT_THRESHOLD = 500 chars cumulatief (missie + visie + ambitie).
-//   Bouwer-tunable startwaarde. Bij overschrijding → vaste-blokken-distributie
-//   splitsen naar 2 pages. Geen DOM-measure-pass (font-async-flicker-vrij).
-//   Kernwaarden NIET meegerekend (retro-3 Fix 3 — kernwaarden-render verwijderd
-//   uit identiteits-band).
-//
-// AI-chunking: MAX_AI_PER_PAGE (default 6) — meer dan dat → extra pagina's.
-//
-// Returns array van page-recipes.
-function computePages({
-  selectedModels,
-  withAi,
-  insights,
-  data,
-  MAX_AI_PER_PAGE = 6,
-  IDENTITY_SPLIT_THRESHOLD = 500,
+// Verwijderd uit retro-1/2/3:
+//   - computePages + IDENTITY_SPLIT_THRESHOLD + page-recipes
+//   - PageShell + per-page BrandStrip/Footer-repetitie
+//   - AiBlock chunking-props (chunk/chunkIdx/totalChunks)
+//   - BodyZone mode-switch
+//   - Page-prop voor multi-page render
+//   - data-total-pages-attribuut + Footer pageNum/totalPages
+export default function StrategyOnePager({
+  vasteBlokken = [],   // [{id, label, sub_label}] — niet direct gebruikt; voor API-compat
+  selectedModels = [], // [{id, label}] in volgorde
+  withAi = true,
+  insights = [],
+  data = {},
+  appLabel,
+  tenantBrand = null,
+  canvasName = null,
 }) {
-  const pages = [];
-
-  // ── Vaste-blokken-distributie (page 1, eventueel split naar page 2) ────
-  // Char-count-heuristic op missie/visie/ambitie (kernwaarden weg uit
-  // identiteits-band sinds retro-3, dus niet meetellen).
-  const identiteit = data?.identiteit?.data || {};
-  const identityContentLength =
-    (identiteit.missie?.length || 0) +
-    (identiteit.visie?.length || 0) +
-    (identiteit.ambitie?.length || 0);
-  const splitIdentity = identityContentLength > IDENTITY_SPLIT_THRESHOLD;
-
-  if (splitIdentity) {
-    pages.push({ type: "main-identity" });
-    pages.push({ type: "main-kpi-themas" });
-  } else {
-    pages.push({ type: "main" });
-  }
-
-  // ── Body-distributie (modellen + AI-chunking) ──────────────────────────
-  const hasSelectedModels = Array.isArray(selectedModels) && selectedModels.length > 0;
-  const hasBodyContent = hasSelectedModels || !!withAi;
-  if (!hasBodyContent) return pages;
-
-  const inRapport = (Array.isArray(insights) ? insights : []).filter(i => i.in_rapport === true);
-  // Bij 0 insights + withAi=true: 1 chunk (toont ai-empty fallback).
-  // Bij ≥1 insights: ceil(N / MAX_AI_PER_PAGE) chunks.
-  const totalAiChunks = withAi
-    ? Math.max(1, Math.ceil(inRapport.length / MAX_AI_PER_PAGE))
-    : 0;
-
-  // Body-page: eerste AI-chunk hier (samen met modellen indien aanwezig).
-  pages.push({
-    type: "body",
-    mode: hasSelectedModels
-      ? (withAi ? "models-with-ai" : "models-only")
-      : "ai-only",
-    selectedModels,
-    aiChunk: withAi ? inRapport.slice(0, MAX_AI_PER_PAGE) : null,
-    chunkIdx: 0,
-    totalChunks: totalAiChunks,
-  });
-
-  // Extra AI-pages (alleen bij AI-overflow).
-  if (withAi && inRapport.length > MAX_AI_PER_PAGE) {
-    let chunkStart = MAX_AI_PER_PAGE;
-    let chunkIdx = 1;
-    while (chunkStart < inRapport.length) {
-      pages.push({
-        type: "ai-only",
-        mode: "ai-only",
-        selectedModels: [],
-        aiChunk: inRapport.slice(chunkStart, chunkStart + MAX_AI_PER_PAGE),
-        chunkIdx,
-        totalChunks: totalAiChunks,
-      });
-      chunkStart += MAX_AI_PER_PAGE;
-      chunkIdx += 1;
-    }
-  }
-
-  return pages;
-}
-
-// ── Page-content wrappers ────────────────────────────────────────────────────
-// Elke pagina krijgt zijn eigen `.strategie-onepager`-class-scope zodat de
-// font-family CSS-variables (--font-body/display/mono) per pagina werken.
-// Vaste 100% width/height vult de A4Page (1190×842 CSS px).
-function PageShell({ children }) {
   return (
     <div
-      className="strategie-onepager w-full h-full flex flex-col"
+      data-testid="strategie-onepager-v2"
+      className="strategie-onepager flex flex-col"
       style={{
         background: "white",
         fontFamily: "var(--font-body)",
         color: "var(--color-primary)",
       }}
     >
-      {children}
+      <BrandStrip tenantBrand={tenantBrand} appLabel={appLabel} />
+      <TitelBlock
+        canvasName={canvasName}
+        tenantBrand={tenantBrand}
+        appLabel={appLabel}
+      />
+      <IdentiteitsBand data={data?.identiteit?.data} appLabel={appLabel} />
+      <KpiStrip        data={data?.["kpi-strip"]?.data} appLabel={appLabel} />
+      <ThemasGrid      data={data?.themas?.data} appLabel={appLabel} />
+      <BodyZone
+        selectedModels={selectedModels}
+        withAi={withAi}
+        insights={insights}
+        data={data}
+        appLabel={appLabel}
+      />
+      <Footer tenantBrand={tenantBrand} appLabel={appLabel} />
     </div>
   );
 }
-
-// ── Hoofdcomponent ────────────────────────────────────────────────────────────
-// 11.S-retro-2 (18 mei): content-aware multi-page distribution via computePages()
-// helper. Eerste pagina = main (vaste-blokken). Volgende pagina's = body / ai-only
-// chunks afhankelijk van selectedModels + AI-insight-count.
-//
-// **Nieuw platform-principe (Kees 18 mei):** alle structurele input zichtbaar.
-// Geen slice/truncation op thema's / KSFs / KPIs / SWOT-items / AI-insights.
-// Bij overflow → multi-page distribution.
-export default function StrategyOnePager({
-  vasteBlokken = [],   // [{id, label, sub_label}] — meta van Block 3 (niet direct gebruikt)
-  selectedModels = [], // [{id, label}] in volgorde
-  withAi = true,
-  insights = [],       // ALLE insights — computePages filtert op in_rapport=true voor chunking
-  data = {},           // per-id payload uit strategieRapportageConfig.dataResolver
-  appLabel,
-  tenantBrand = null,
-  canvasName = null,
-  // 11.S-retro: Page-slot uit A4Preview. Default = passthrough <div> zonder
-  // shadow/counter — handig voor RTL-tests zonder A4Preview-wrapper.
-  Page = ({ children }) => <div data-testid="strategie-onepager-page-fallback">{children}</div>,
-}) {
-  // Content-aware page-distribution. computePages returnt array van recipes.
-  // `data` doorgegeven voor identiteits-band-char-count-heuristic (retro-3).
-  const pages = computePages({ selectedModels, withAi, insights, data });
-  const totalPages = pages.length;
-
-  // ── Render-helpers per recipe-type ──────────────────────────────────────
-  // Houdt hoofdcomponent leesbaar; ieder helper bouwt PageShell-inhoud.
-  function renderMainFull(pageNum) {
-    return (
-      <PageShell>
-        <BrandStrip tenantBrand={tenantBrand} appLabel={appLabel} />
-        <TitelBlock
-          canvasName={canvasName}
-          tenantBrand={tenantBrand}
-          appLabel={appLabel}
-        />
-        <IdentiteitsBand data={data?.identiteit?.data} appLabel={appLabel} />
-        <KpiStrip        data={data?.["kpi-strip"]?.data} appLabel={appLabel} />
-        <ThemasGrid      data={data?.themas?.data} appLabel={appLabel} />
-        <div className="flex-1" />
-        <Footer tenantBrand={tenantBrand} appLabel={appLabel} pageNum={pageNum} totalPages={totalPages} />
-      </PageShell>
-    );
-  }
-  function renderMainIdentity(pageNum) {
-    // 11.S-retro-3 Fix 2: identiteits-band-only-pagina bij lange content
-    return (
-      <PageShell>
-        <BrandStrip tenantBrand={tenantBrand} appLabel={appLabel} />
-        <TitelBlock
-          canvasName={canvasName}
-          tenantBrand={tenantBrand}
-          appLabel={appLabel}
-        />
-        <IdentiteitsBand data={data?.identiteit?.data} appLabel={appLabel} />
-        <div className="flex-1" />
-        <Footer tenantBrand={tenantBrand} appLabel={appLabel} pageNum={pageNum} totalPages={totalPages} />
-      </PageShell>
-    );
-  }
-  function renderMainKpiThemas(pageNum) {
-    // 11.S-retro-3 Fix 2: KPI + Themas op eigen pagina wanneer identiteit
-    // overflow heeft veroorzaakt. BrandStrip + Footer per pagina (retro-1).
-    return (
-      <PageShell>
-        <BrandStrip tenantBrand={tenantBrand} appLabel={appLabel} />
-        <KpiStrip   data={data?.["kpi-strip"]?.data} appLabel={appLabel} />
-        <ThemasGrid data={data?.themas?.data} appLabel={appLabel} />
-        <div className="flex-1" />
-        <Footer tenantBrand={tenantBrand} appLabel={appLabel} pageNum={pageNum} totalPages={totalPages} />
-      </PageShell>
-    );
-  }
-  function renderBody(recipe, pageNum) {
-    return (
-      <PageShell>
-        <BrandStrip tenantBrand={tenantBrand} appLabel={appLabel} />
-        <BodyZone
-          mode={recipe.mode}
-          selectedModels={recipe.selectedModels}
-          aiChunk={recipe.aiChunk}
-          chunkIdx={recipe.chunkIdx}
-          totalChunks={recipe.totalChunks}
-          data={data}
-          appLabel={appLabel}
-        />
-        <Footer tenantBrand={tenantBrand} appLabel={appLabel} pageNum={pageNum} totalPages={totalPages} />
-      </PageShell>
-    );
-  }
-
-  return (
-    <div
-      data-testid="strategie-onepager-v2"
-      data-total-pages={totalPages}
-    >
-      {pages.map((recipe, idx) => {
-        const pageNum = idx + 1;
-        let content;
-        let key;
-        switch (recipe.type) {
-          case "main":
-            content = renderMainFull(pageNum);
-            key = "main";
-            break;
-          case "main-identity":
-            content = renderMainIdentity(pageNum);
-            key = "main-identity";
-            break;
-          case "main-kpi-themas":
-            content = renderMainKpiThemas(pageNum);
-            key = "main-kpi-themas";
-            break;
-          default:
-            // "body" of "ai-only"
-            content = renderBody(recipe, pageNum);
-            key = `p${pageNum}-${recipe.mode}-${recipe.chunkIdx}`;
-        }
-        return (
-          <Page key={key} pageNum={pageNum} totalPages={totalPages} appLabel={appLabel}>
-            {content}
-          </Page>
-        );
-      })}
-    </div>
-  );
-}
-
-// Export voor RTL-tests: helper laat zich isoleren-testen op page-distribution-logica.
-export { computePages };
