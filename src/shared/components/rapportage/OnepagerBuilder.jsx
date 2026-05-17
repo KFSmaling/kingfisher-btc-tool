@@ -30,6 +30,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { ArrowLeft, Printer, Sparkles } from "lucide-react";
 import A4Preview from "./A4Preview";
 import ModelLibrary from "./ModelLibrary";
+import "./PrintStyles.css"; // 11.S Block 4 — print-CSS verbergt app-chrome bij window.print()
 
 // ── AI-toggle (boven linker paneel) ──────────────────────────────────────────
 // RFC-008 §11 rij 4 — kleur-tokens AI-accent.
@@ -131,16 +132,20 @@ export default function OnepagerBuilder({
   const inRapportCount = (Array.isArray(insights) ? insights : [])
     .filter(i => i.in_rapport === true).length;
 
-  // Per-blok data via dataResolver (vaste blokken)
+  // Per-blok data via dataResolver. Resolved set:
+  //   - alle vasteBlokken (identiteit / kpi-strip / themas / ...)
+  //   - alle configureerbare model-ids uit modelLib (swot / kernwaarden / ...)
+  //   - "samenvatting" voor H1
+  // Pre-resolved (niet on-demand) zodat A4Preview/LayoutComponent een dichte
+  // data-map krijgt en geen dataResolver-fn-prop nodig heeft.
   const blokData = useMemo(() => {
     const data = {};
-    if (typeof config?.dataResolver === "function") {
-      (config.vasteBlokken || []).forEach(b => {
-        data[b.id] = config.dataResolver(b.id);
-      });
-      // Samenvatting is geen vast blok maar wel data-resolved voor H1
-      data.samenvatting = config.dataResolver("samenvatting");
-    }
+    if (typeof config?.dataResolver !== "function") return data;
+    (config.vasteBlokken || []).forEach(b => { data[b.id] = config.dataResolver(b.id); });
+    (config.modelLib || []).forEach(g => {
+      (g.models || []).forEach(m => { data[m.id] = config.dataResolver(m.id); });
+    });
+    data.samenvatting = config.dataResolver("samenvatting");
     return data;
   }, [config]);
 
@@ -198,12 +203,12 @@ export default function OnepagerBuilder({
         </h1>
         <button
           type="button"
-          // Block 3 dood-href + TODO Block 4 — window.print() met print-CSS
-          onClick={() => {
-            // TODO Block 4 — window.print() + print-CSS hides app-chrome/builder-paneel/builder-knoppen
-          }}
+          // 11.S Block 4 — window.print() + print-CSS verbergt app-chrome
+          // (PrintStyles.css). Browser-print-dialog laat user kiezen tussen
+          // print of "Opslaan als PDF" (standaard browser-functionaliteit).
+          onClick={() => { window.print(); }}
           data-testid="onepager-builder-print"
-          title={lbl("onepager.builder.action.print.tooltip", "Print of opslaan als PDF (komt in Block 4)")}
+          title={lbl("onepager.builder.action.print.tooltip", "Print of opslaan als PDF")}
           className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-[var(--color-accent)] text-[var(--color-primary)] hover:opacity-90 transition-opacity"
         >
           <Printer size={14} />

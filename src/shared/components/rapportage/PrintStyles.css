@@ -1,0 +1,87 @@
+/*
+ * PrintStyles.css — print-CSS voor OnepagerBuilder + StrategyOnePager v2.
+ *
+ * RFC-008 §F + instructie 11.S Block 4 §5.
+ * Scope per reviewer-besluit Block 3-vraag #4: hele app-chrome verbergen
+ * (werkblad-header, builder-paneel, overlay-knoppen) — alleen A4-preview
+ * blijft over. Page-breaks toegestaan met page-break-inside: avoid op
+ * model-blokken.
+ */
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  /* ── Verberg hele app-chrome ──────────────────────────────────────────── */
+  /* Tagged class-names op de overlay-onderdelen — alle non-A4-preview-rendering. */
+  .app-nav,
+  .werkblad-header,
+  .canvas-header,
+  [data-print="hide"],
+  .onepager-builder-header,
+  .onepager-builder-leftpanel,
+  /* Block 1/2/3 dialogs sluiten doorgaans vóór print, maar voor robuustheid: */
+  .rapportage-menu,
+  .inzichten-overlay-chrome {
+    display: none !important;
+  }
+
+  /* ── Source-tags (debug-bron-labels uit StrategyOnePager v2) ──────────── */
+  .strategie-onepager-source-tag {
+    display: none !important;
+  }
+
+  /* ── A4-preview vult hele pagina, zonder scale-transform ──────────────── */
+  /* Builder viewport-container krijgt geen padding/bg meer. */
+  [data-testid="a4-preview-viewport"] {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+  /* Wrapper-div (gescaled in builder) → reset naar A4-eenheden in mm. */
+  [data-testid="a4-preview-canvas"] {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+  /* De échte canvas die in builder transform:scale(...) heeft → reset naar 1:1 */
+  [data-testid="a4-preview-page"] {
+    transform: none !important;
+    transform-origin: top left !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* ── Body-reset zodat geen grijze bg meer rondom A4 ──────────────────── */
+  html, body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Page-breaks per model-blok (RFC-008 §F architect-besluit) ───────── */
+  .strategie-onepager-model-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ── OnepagerBuilder-overlay zelf: laat doorlopen naar bg=white,
+        verwijder z-index-stacking en flex-layouts die print verstoren ──── */
+  [data-testid="onepager-builder-overlay"] {
+    position: static !important;
+    background: white !important;
+    display: block !important;
+  }
+  [data-testid="onepager-builder-rightpanel"] {
+    overflow: visible !important;
+  }
+}
