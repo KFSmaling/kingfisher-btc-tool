@@ -48,6 +48,10 @@ export default function WerkbladActieknoppen({
   const rapportageOff = !onRapportage;
   const showAnalyse   = typeof onAnalyse === "function";
   const showTips      = typeof onTips === "function";
+  // 11.U Block 2: `onBekijken=null` → knop wordt verborgen (in plaats van
+  // disabled). Wordt gebruikt om Inzichten-knop te hiden wanneer fase 3
+  // al actief is in KlantenWerkblad.
+  const showBekijken  = typeof onBekijken === "function";
 
   return (
     <div className="flex items-center gap-2" data-testid="werkblad-actieknoppen">
@@ -83,6 +87,7 @@ export default function WerkbladActieknoppen({
       )}
 
       {/* 2 — Inzichten bekijken (disabled tot er een analyse is) */}
+      {showBekijken && (
       <button
         type="button"
         onClick={bekijkenDisabled ? undefined : onBekijken}
@@ -103,6 +108,7 @@ export default function WerkbladActieknoppen({
         />
         {lbl("werkblad.action.bekijk_inzichten", "Inzichten")}
       </button>
+      )}
 
       {/* 3 — Rapportage */}
       <button

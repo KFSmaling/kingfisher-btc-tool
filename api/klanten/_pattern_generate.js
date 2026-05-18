@@ -73,29 +73,30 @@ async function handleGenerate(req, res) {
     const { data: profileRow } = await supabase.from("user_profiles").select("role").maybeSingle();
     const userRole = profileRow?.role || null;
 
-    // ── 2. parent-suggestion-validatie (refine-deeper) ───────────────────────
+    // ── 2. parent-intent-validatie (refine-deeper) ───────────────────────────
+    // 11.U Block 2 refactor (RFC-007-rev2): leest nu uit cd_improvement_intents
+    // i.p.v. cd_pattern_suggestions. source_type='ai_<action>' is de discriminator.
     let parentRow = null;
     if (parent_id) {
       const { data: parent, error: pErr } = await supabase
-        .from("cd_pattern_suggestions")
-        .select("id, canvas_id, pattern_type, text_md, current_status, scope")
+        .from("cd_improvement_intents")
+        .select("id, canvas_id, source_type, intent_md, status")
         .eq("id", parent_id)
         .maybeSingle();
       if (pErr)        return res.status(500).json({ error: pErr.message });
-      if (!parent)     return res.status(404).json({ error: "parent suggestion niet gevonden" });
+      if (!parent)     return res.status(404).json({ error: "parent intent niet gevonden" });
       if (parent.canvas_id !== canvas_id) {
         return res.status(400).json({ error: "parent_id zit in ander canvas" });
       }
       parentRow = parent;
-      // Refine-deeper: kind erft type van parent. Cluster-parent met paradox-prompt-
-      // call zou onbruikbare output geven; AI heeft de parent-context nodig om
-      // zinvol "dieper te graven". Uitzondering: parent.pattern_type='eigen' (consultant-
-      // eigen patroon zonder AI-prompt) — daar mag elke action-keuze, want de AI-call
-      // is een nieuwe analyse onafhankelijk van consultant-eigen-tekst. Validatie
-      // bevestigd door reviewer 2026-05-07T21:00 (akkoord op open punt 4).
-      if (parent.pattern_type !== action && parent.pattern_type !== "eigen") {
+      // Refine-deeper-validatie: kind erft type van parent. action='cluster'
+      // tegen parent.source_type='ai_cluster' = OK; tegen 'ai_paradox' niet OK
+      // (AI heeft parent-type-context nodig). Uitzondering: parent.source_type='eigen'
+      // = consultant-eigen, mag elke action-keuze.
+      const expectedSourceType = `ai_${action}`;
+      if (parent.source_type !== expectedSourceType && parent.source_type !== "eigen") {
         return res.status(400).json({
-          error: `action=${action} klopt niet bij parent.pattern_type=${parent.pattern_type}`,
+          error: `action=${action} klopt niet bij parent.source_type=${parent.source_type}`,
         });
       }
     }
@@ -181,79 +182,97 @@ async function handleGenerate(req, res) {
       return res.status(200).json({ pattern_suggestions: [], note: "AI vond geen patronen" });
     }
 
-    // ── 9. bulk-INSERT in cd_pattern_suggestions ─────────────────────────────
-    const rows = items.map(item => ({
-      canvas_id,
-      tenant_id: tenantId,
-      pattern_type: parent_id ? parentRow.pattern_type : action, // bij refine-deeper: kind erft type
-      text_md: String(item.text || "").trim().slice(0, 8000),
-      original_ai_text_md: String(item.text || "").trim().slice(0, 8000),
-      parent_id: parent_id || null,
-      scope: "canvas",
-      scope_target_id: null,
-      current_status: "open",
-      is_user_edited: false,
-      vanuit: Array.isArray(item.vanuit) ? item.vanuit : null,
-    })).filter(r => r.text_md.length > 0);
+    // ── 9. bulk-INSERT in cd_improvement_intents (11.U Block 2 refactor) ────
+    // RFC-007-rev2 §B: cd_pattern_suggestions opgaan in cd_improvement_intents.
+    // - source_type='ai_<action>' (cluster/paradox/positionering/overstijgend/algemeen)
+    //   Refine-deeper: kind erft source_type van parent.
+    // - status='concept' (was current_status='open')
+    // - original_ai_text_md + ai_generated_at gevuld voor audit-trail
+    // - parent_intent_id voor refine-tree (self-FK; UNIQUE-index op niet-null)
+    const effectiveSourceType = parent_id ? parentRow.source_type : `ai_${action}`;
+    const aiGeneratedAt = new Date().toISOString();
+
+    const rows = items.map(item => {
+      const text = String(item.text || "").trim().slice(0, 8000);
+      return {
+        canvas_id,
+        tenant_id: tenantId,
+        title: text.slice(0, 100) || "Concept-actie",
+        intent_md: text,
+        source_type: effectiveSourceType,
+        parent_intent_id: parent_id || null,
+        is_user_edited: false,
+        original_ai_text_md: text,
+        ai_generated_at: aiGeneratedAt,
+        status: "concept",
+        vanuit: Array.isArray(item.vanuit) ? item.vanuit : null,
+        sort_order: 0,
+      };
+    }).filter(r => r.intent_md.length > 0);
 
     if (rows.length === 0) {
       return res.status(500).json({ error: "Geen geldige suggestions in AI-output (lege text-velden)" });
     }
 
-    const { data: insertedSuggestions, error: insErr } = await supabase
-      .from("cd_pattern_suggestions")
+    const { data: insertedIntents, error: insErr } = await supabase
+      .from("cd_improvement_intents")
       .insert(rows)
       .select();
     if (insErr) {
       if (insErr.code === "P0001") return res.status(400).json({ error: insErr.message });
       if (insErr.code === "42501") return res.status(403).json({ error: insErr.message });
+      if (insErr.code === "23505") return res.status(409).json({ error: "Diamond-tree-violatie: meerdere children met zelfde parent" });
       return res.status(500).json({ error: insErr.message });
     }
 
-    // ── 10. INSERT ai_generated-event per nieuwe suggestion ──────────────────
-    const eventRows = insertedSuggestions.map(s => ({
-      suggestion_id: s.id,
-      event_type: "ai_generated",
+    // ── 10. INSERT 'created'-event per nieuwe intent (cd_improvement_intent_events) ──
+    const eventRows = insertedIntents.map(intentRow => ({
+      intent_id: intentRow.id,
+      event_type: "created",
       actor_user_id: user.id,
       actor_role: userRole,
       text_before_md: null,
-      text_after_md: s.text_md,
+      text_after_md: intentRow.intent_md,
       metadata: {
         ai_model: model,
         prompt_key: promptKey,
         prompt_version: PROMPT_VERSION,
         action,
-        parent_id: parent_id || null,
+        source: "ai_generate",
+        parent_intent_id: parent_id || null,
         refinement_focus: refinement_focus || null,
       },
       tenant_id: tenantId,
       canvas_id,
     }));
     const { error: evErr } = await supabase
-      .from("cd_pattern_suggestion_events")
+      .from("cd_improvement_intent_events")
       .insert(eventRows);
     if (evErr) {
       console.error("[pattern_suggestions/generate] event-bulk-insert faalde:", evErr.message);
-      // niet-fataal voor de response — suggesties zijn opgeslagen
+      // niet-fataal voor de response — intents zijn opgeslagen
     }
 
-    // ── 11. bij refine-deeper: refined_dig_deeper-event op PARENT ────────────
+    // ── 11. bij refine-deeper: 'edited'-event op PARENT met child-refs ───────
+    // RFC-007-rev2: refined_dig_deeper-vocabulary verdwijnt; we slaan een
+    // 'edited'-event op parent met metadata.child_intent_ids voor audit-trail.
     if (parent_id) {
       const { error: parentEvErr } = await supabase
-        .from("cd_pattern_suggestion_events")
+        .from("cd_improvement_intent_events")
         .insert({
-          suggestion_id: parent_id,
-          event_type: "refined_dig_deeper",
+          intent_id: parent_id,
+          event_type: "edited",
           actor_user_id: user.id,
           actor_role: userRole,
-          text_before_md: parentRow.text_md,
-          text_after_md: parentRow.text_md,
+          text_before_md: parentRow.intent_md,
+          text_after_md: parentRow.intent_md,
           metadata: {
             ai_model: model,
             prompt_key: promptKey,
             prompt_version: PROMPT_VERSION,
             refinement_focus: refinement_focus || null,
-            child_suggestion_ids: insertedSuggestions.map(s => s.id),
+            child_intent_ids: insertedIntents.map(s => s.id),
+            note: "refined_dig_deeper",  // legacy-vocabulary in metadata voor analytics
           },
           tenant_id: tenantId,
           canvas_id,
@@ -263,8 +282,11 @@ async function handleGenerate(req, res) {
       }
     }
 
+    // Backwards-compat: returnt `pattern_suggestions` key voor minimale UI-diff.
+    // Block 2b UI-refactor renames naar `intents` in client-helpers.
     return res.status(201).json({
-      pattern_suggestions: insertedSuggestions,
+      pattern_suggestions: insertedIntents,
+      intents: insertedIntents,  // 11.U Block 2: nieuwe key
       ai_model: model,
       prompt_version: PROMPT_VERSION,
       context_chars: contextString.length,
