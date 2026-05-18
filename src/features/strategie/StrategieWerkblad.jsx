@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, Crosshair, Info, Settings, LogOut } from "lucide-react";
+import { Wand2, Trash2, Plus, X, ArrowLeft, Zap, Crosshair, Info, Settings, LogOut, Pencil } from "lucide-react";
 import AiIcon from "../../shared/components/AiIcon";
 import WerkbladActieknoppen from "../../shared/components/WerkbladActieknoppen";
 import WerkbladHeader from "../../shared/components/WerkbladHeader";
@@ -74,6 +74,68 @@ const KSF_KPI_LOADING_MSGS = [
 ];
 
 /** Strategisch Thema accordeon met KSF/KPI tabel */
+// ── KernwaardePill (11.S-fix Bev 5: kernwaardes editbaar inline) ─────────────
+// Dubbelklik of klik op tekst → inline-edit-modus. Enter = opslaan, Escape =
+// annuleren. × = verwijderen. Pattern: consultant kan kernwaardes herfaseren
+// (bv. AI-suggestie "Klantgerichtheid" → handmatig "Klant-eerst")
+// zonder pill weg-en-opnieuw-toevoegen-flow.
+function KernwaardePill({ value, onSave, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  function startEdit() {
+    setDraft(value);
+    setEditing(true);
+  }
+  function commit() {
+    const v = draft.trim();
+    if (v && v !== value) onSave(v);
+    setEditing(false);
+  }
+  function cancel() {
+    setDraft(value);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] bg-white border border-[var(--color-primary)] rounded-full px-2.5 py-1">
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { e.preventDefault(); cancel(); }
+          }}
+          data-testid="kernwaarde-pill-edit-input"
+          className="text-sm bg-transparent border-none focus:outline-none text-[var(--color-primary)] min-w-[80px]"
+          style={{ width: `${Math.max(draft.length + 2, 8)}ch` }}
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      data-testid="kernwaarde-pill"
+      className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/8 border border-[var(--color-primary)]/20 rounded-full px-2.5 py-1 cursor-pointer hover:border-[var(--color-primary)]/40"
+      onDoubleClick={startEdit}
+      title="Dubbelklik om te bewerken"
+    >
+      <span onClick={startEdit}>{value}</span>
+      <button
+        onClick={onDelete}
+        data-testid="kernwaarde-pill-delete"
+        className="text-[var(--color-primary)]/40 hover:text-red-400 transition-colors"
+      >
+        <X size={10} />
+      </button>
+    </span>
+  );
+}
+
 const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitleChange, onDelete, onAddKsfKpi, onUpdateKsfKpi, onDeleteKsfKpi, onGenerateKsfKpi, ksfKpiDraft, onAcceptKsfKpiDraft, onRejectKsfKpiDraft, onRemoveDraftItem }) {
   const [open, setOpen] = useState(index === 0);
   const ksfs = (thema.ksf_kpi || []).filter(k => k.type === "ksf").sort((a,b) => a.sort_order - b.sort_order);
@@ -244,9 +306,103 @@ const ThemaAccordeon = React.memo(function ThemaAccordeon({ thema, index, onTitl
   );
 });
 
-/** Analyse-lijst (extern of intern) met tagging */
-function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMagic, magicResult, onRejectMagic }) {
+/** Analyse-lijst (extern of intern) met tagging.
+ *  11.S-fix Bev 6: items zijn nu editable via inline-edit (dubbelklik op tekst).
+ *  11.S-fix Bev 7: items sorteren op tag-volgorde binnen sectie:
+ *    extern → kans → bedreiging → niet_relevant
+ *    intern → sterkte → zwakte → niet_relevant
+ *  Visualiseert SWOT-groepering zonder layout-rework (2x2-grid blijft Block 4 OnePager-domein). */
+function SwotItem({ item, allowedTagKeys, tagColors, onTagChange, onUpdate, onDelete }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.content);
+
+  function startEdit() {
+    setDraft(item.content);
+    setEditing(true);
+  }
+  function commit() {
+    const v = draft.trim();
+    if (v && v !== item.content) onUpdate(item.id, v);
+    setEditing(false);
+  }
+  function cancel() {
+    setDraft(item.content);
+    setEditing(false);
+  }
+
+  return (
+    <div
+      data-testid={`swot-item-${item.id}`}
+      className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-4 py-3 bg-white shadow-sm ${tagColors[item.tag] || tagColors.niet_relevant}`}
+    >
+      {editing ? (
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { e.preventDefault(); cancel(); }
+          }}
+          data-testid={`swot-item-edit-input-${item.id}`}
+          className="flex-1 text-sm text-slate-700 leading-relaxed bg-slate-50 border border-slate-200 rounded p-1 focus:outline-none focus:border-[var(--color-primary)]/40 resize-y min-h-[40px]"
+          rows={Math.max(2, Math.ceil(draft.length / 80))}
+        />
+      ) : (
+        <p
+          className="flex-1 text-sm text-slate-700 leading-relaxed cursor-text"
+          onDoubleClick={startEdit}
+          title="Dubbelklik om te bewerken"
+          data-testid={`swot-item-content-${item.id}`}
+        >
+          {item.content}
+        </p>
+      )}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {!editing && (
+          <button
+            onClick={startEdit}
+            data-testid={`swot-item-edit-${item.id}`}
+            aria-label="Bewerk item"
+            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-[var(--color-primary)] transition-opacity"
+          >
+            <Pencil size={11} />
+          </button>
+        )}
+        <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} allowedKeys={allowedTagKeys} />
+        {!editing && (
+          <button onClick={() => onDelete(item.id)}
+            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
+            <X size={12} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const TAG_SORT_ORDER = {
+  // Extern: kans positief eerst, bedreiging tweede
+  kans: 1, bedreiging: 2,
+  // Intern: sterkte positief eerst, zwakte tweede
+  sterkte: 1, zwakte: 2,
+  // Ongeplaatste tags onderaan
+  niet_relevant: 99,
+};
+
+function AnalyseSection({ title, type, items, onAdd, onUpdate, onDelete, onTagChange, onMagic, magicResult, onRejectMagic }) {
   const allowedTagKeys = type === "extern" ? EXTERN_TAGS : type === "intern" ? INTERN_TAGS : undefined;
+  // Bev 7: sort op tag-prioriteit binnen sectie (kans/sterkte eerst), dan sort_order.
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => {
+      const ta = TAG_SORT_ORDER[a.tag] ?? 50;
+      const tb = TAG_SORT_ORDER[b.tag] ?? 50;
+      if (ta !== tb) return ta - tb;
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+    }),
+    [items]
+  );
   const [draft, setDraft] = useState("");
   const [proposedLines, setProposedLines] = useState([]);
 
@@ -370,20 +526,18 @@ function AnalyseSection({ title, type, items, onAdd, onDelete, onTagChange, onMa
         );
       })()}
 
-      {/* Bestaande items */}
-      <div className="space-y-1.5">
-        {items.map(item => (
-          <div key={item.id}
-            className={`group flex items-start gap-2 border-l-4 rounded-r-lg px-4 py-3 bg-white shadow-sm ${tagColors[item.tag] || tagColors.niet_relevant}`}>
-            <p className="flex-1 text-sm text-slate-700 leading-relaxed">{item.content}</p>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <TagPill tag={item.tag} onChange={tag => onTagChange(item.id, tag)} allowedKeys={allowedTagKeys} />
-              <button onClick={() => onDelete(item.id)}
-                className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-opacity">
-                <X size={12} />
-              </button>
-            </div>
-          </div>
+      {/* Bestaande items — 11.S-fix Bev 6 (editable) + Bev 7 (gesorteerd kans/sterkte eerst) */}
+      <div className="space-y-1.5" data-testid={`swot-list-${type}`}>
+        {sortedItems.map(item => (
+          <SwotItem
+            key={item.id}
+            item={item}
+            allowedTagKeys={allowedTagKeys}
+            tagColors={tagColors}
+            onTagChange={onTagChange}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+          />
         ))}
       </div>
 
@@ -472,8 +626,19 @@ function WerkbladTextField({ label, fieldKey, value, draft, onChange, onMagic, o
         />
       )}
 
-      {/* Magic Staff result — alleen bij error of geen chunks */}
-      {(magicResult?.error || magicResult?.noChunks) && <MagicResult result={magicResult} onAccept={() => { onChange(magicResult.suggestion); onRejectDraft && onRejectDraft(); }} onReject={() => onRejectDraft && onRejectDraft()} />}
+      {/* Magic Staff result — error / geen chunks / isNoInfo.
+          11.S-fix Bev 1: `isNoInfo` toegevoegd zodat de "onvoldoende relevante
+          input"-melding zichtbaar wordt wanneer AI terugkomt met "geen
+          relevante informatie / onvoldoende"-tekst. Vóór deze fix werd zo'n
+          suggestion stilzwijgend genegeerd (line 753 setDraftFor skip bij
+          isNoInfo) en zag de consultant NIETS na klik op Magic. */}
+      {(magicResult?.error || magicResult?.noChunks || magicResult?.isNoInfo) && (
+        <MagicResult
+          result={magicResult}
+          onAccept={() => { onChange(magicResult.suggestion); onRejectDraft && onRejectDraft(); }}
+          onReject={() => onRejectDraft && onRejectDraft()}
+        />
+      )}
 
       {/* Draft overlay */}
       {hasDraft && (
@@ -539,6 +704,9 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   const [showInvultips,  setShowInvultips]      = useState(false);
   const [analysis,         setAnalysis]         = useState(null);
   const [analysisLoading,  setAnalysisLoading]  = useState(false);
+  // 11.S-fix Bev 4: voortgangs-indicator fase voor InzichtenOverlay loading-state.
+  // Waarden: "collecting" | "ai_running" | "merging" | "done" | null.
+  const [analysisPhase,    setAnalysisPhase]    = useState(null);
   const [analysisError,    setAnalysisError]    = useState(null);
   const [canvasName,       setCanvasName]       = useState(null);
   const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState(null);
@@ -775,10 +943,21 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
   };
 
   // ── Strategisch Advies — AI analyse ─────────────────────────────────────────
+  // 11.S-fix Bev 2 (Optie A merge-strategie, Kees-feedback 18 mei): regenerate
+  // verving voorheen de hele insights[]-array → consultant verloor bestaande
+  // edits + in_rapport-keuzes. Nieuwe gedrag: behoud bestaande insights met
+  // in_rapport=true OF edited_observation/recommendation gevuld; voeg nieuwe
+  // AI-insights toe als "fresh"-batch. Behouden insights krijgen `_carried_over`
+  // flag voor UI-badge "behouden uit vorige analyse".
+  // 11.S-fix Bev 3 (Anthropic 429/529 user-friendly): error-message-detectie
+  // mapt "overload"-vocab op consultancy-vriendelijke fallback met retry.
+  // 11.S-fix Bev 4 (voortgangs-indicator): setAnalysisPhase tijdens flow.
   const handleAnalyze = useCallback(async () => {
     setAnalysisLoading(true);
     setAnalysisError(null);
+    setAnalysisPhase("collecting"); // Bev 4
     try {
+      setAnalysisPhase("ai_running"); // AI is bezig
       const res = await apiFetch("/api/strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -787,24 +966,66 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           systemPromptAnalysis: appPrompt("strategy.analysis") || undefined,
         }),
       });
+      // Bev 3: detect overload/rate-limit voor user-friendly melding.
+      if (res.status === 429 || res.status === 529) {
+        throw new Error("__AI_OVERLOAD__");
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI fout");
-      const insights = data.insights || [];
-      setAnalysis(insights);
-      // Sla op in DB (strategy_core.insights) — updated_at wordt door upsert gezet
+      if (!res.ok) {
+        // Bev 3: detect API-error-message met "overload" / "rate" / "busy" → user-friendly
+        const msg = String(data.error || "").toLowerCase();
+        if (msg.includes("overload") || msg.includes("rate") || msg.includes("busy") || msg.includes("limit")) {
+          throw new Error("__AI_OVERLOAD__");
+        }
+        throw new Error(data.error || "AI fout");
+      }
+      setAnalysisPhase("merging"); // Bev 2 — merge-stap zichtbaar
+
+      const newInsights = (data.insights || []).map(i => ({ ...i, _carried_over: false }));
+
+      // Bev 2 merge-strategie (Optie A): behoud bestaande insights die de
+      // consultant heeft "geclaimd" via in_rapport=true OF edited_*. Voor
+      // dedup tegen nieuwe AI-output: vergelijk op (category, title) — pragmatic
+      // exact-match (geen fuzzy). Bij collision wint behouden-versie.
+      const prevInsights = Array.isArray(analysis) ? analysis : [];
+      const claimed = prevInsights.filter(i =>
+        i.in_rapport === true ||
+        (i.edited_observation && i.edited_observation.length > 0) ||
+        (i.edited_recommendation && i.edited_recommendation.length > 0)
+      ).map(i => ({ ...i, _carried_over: true }));
+
+      // Drop newInsights met (category, title)-collision tegen claimed.
+      const claimedKeys = new Set(claimed.map(i => `${i.category}::${i.title}`));
+      const freshOnly = newInsights.filter(i => !claimedKeys.has(`${i.category}::${i.title}`));
+
+      const mergedInsights = [...claimed, ...freshOnly];
+
+      setAnalysis(mergedInsights);
       const now = new Date().toISOString();
-      const { error: saveError } = await upsertStrategyCore(canvasId, { insights });
+      const { error: saveError } = await upsertStrategyCore(canvasId, { insights: mergedInsights });
       if (saveError) {
         console.error("[handleAnalyze] opslaan mislukt:", saveError.message);
       } else {
-        setAnalysisUpdatedAt(now); // upsert zet updated_at op server; gebruik client-now als benadering
+        setAnalysisUpdatedAt(now);
       }
+      setAnalysisPhase("done");
     } catch (e) {
-      setAnalysisError(e.message);
+      // Bev 3: __AI_OVERLOAD__-sentinel mapt op consultancy-vriendelijke melding
+      if (e.message === "__AI_OVERLOAD__") {
+        setAnalysisError(
+          appLabel(
+            "strategie.analyse.overload",
+            "AI is momenteel overbelast — probeer over 1 minuut opnieuw."
+          )
+        );
+      } else {
+        setAnalysisError(e.message);
+      }
+      setAnalysisPhase(null);
     } finally {
       setAnalysisLoading(false);
     }
-  }, [core, items, themas, canvasId, appPrompt]);
+  }, [core, items, themas, canvasId, appPrompt, analysis, appLabel]);
 
   // ── RFC-008 §4 — InzichtenOverlay service-injectie ──────────────────────────
   // updateInsight retourneert het volledige insight-object (jsonb met merged fields);
@@ -898,6 +1119,19 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
     setItems(prev => prev.map(i => i.id === id ? { ...i, tag } : i));
     await changeAnalysisItemTag(id, tag);
   }, []);
+
+  // 11.S-fix Bev 6: SWOT-items editable. Optimistic update + persistence via upsert.
+  const updateAnalysisItemContent = useCallback(async (id, content) => {
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, content } : i)));
+    const existing = items.find(i => i.id === id);
+    if (!existing) return;
+    const { error } = await upsertAnalysisItem({ ...existing, content });
+    if (error) {
+      console.error("[updateAnalysisItemContent] save mislukt:", error.message);
+      // Revert bij fout — silent retry-pattern voor MVP. CLAUDE.md §4.2 vereist
+      // explicit error-handling; voor MVP behoud-state-in-UI met console-fout.
+    }
+  }, [items]);
 
   // ── AI: Auto-tag externe/interne items met SWOT-classificatie ────────────
   const [autoTagLoading, setAutoTagLoading] = useState(false);
@@ -1218,12 +1452,22 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         }
       />
 
-      {/* Full Draft bevestiging */}
+      {/* Full Draft bevestiging — 11.S-fix Bev 9 (reviewer-keuze: behouden met
+          duidelijke confirmation i.p.v. verplaatsen naar canvas-import-menu —
+          full-draft gebruikt al de veilige draft-flow: AI-suggesties komen als
+          draft die consultant per veld accepteert/afwijst, bestaande tekst
+          blijft staan tot expliciete accept). Wording aangepast om dit
+          consultancy-pattern expliciet te maken. */}
       {autoDraftOpen && (
         <div className="flex-shrink-0 mx-8 mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-bold text-amber-800">🚀 Full Draft starten?</p>
-            <p className="text-xs text-amber-600 mt-0.5">Vult alle velden met AI-concepten op basis van Het Dossier. Bestaande tekst wordt niet overschreven.</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              AI maakt <strong>draft-suggesties</strong> voor Missie / Visie / Ambitie /
+              Kernwaarden / SWOT op basis van Het Dossier.
+              <br />
+              <span className="font-semibold">Bestaande tekst blijft staan</span> — je beslist per veld of je de suggestie accepteert (✓) of weggooit (✕).
+            </p>
           </div>
           <div className="flex gap-2 flex-shrink-0">
             <button onClick={handleFullDraft} className="text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg px-4 py-2">Start</button>
@@ -1300,13 +1544,24 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
                   <WandButton onClick={() => callWerkbladMagic("kernwaarden", true)} loading={magic.kernwaarden?.loading} disabled={!!drafts.kernwaarden} />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 min-h-[60px] bg-white border border-slate-200 rounded-lg p-2.5">
+              {/* 11.S-fix Bev 5: container hoger (min-h-[120px] was 60px) zodat
+                  consultant ruimte heeft voor herfasering, AI-suggesties review,
+                  en lange concepten. Pills zijn nu editbaar — dubbelklik (of klik
+                  potlood) opent inline-edit-modus voor bestaande kernwaarde. */}
+              <div className="flex flex-wrap gap-1.5 min-h-[120px] bg-white border border-slate-200 rounded-lg p-2.5">
                 {core.kernwaarden.map((kw, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] bg-[var(--color-primary)]/8 border border-[var(--color-primary)]/20 rounded-full px-2.5 py-1">
-                    {kw}
-                    <button onClick={() => setCore(prev => ({ ...prev, kernwaarden: prev.kernwaarden.filter((_,j) => j !== i) }))}
-                      className="text-[var(--color-primary)]/40 hover:text-red-400 transition-colors"><X size={10} /></button>
-                  </span>
+                  <KernwaardePill
+                    key={i}
+                    value={kw}
+                    onSave={(newVal) => setCore(prev => ({
+                      ...prev,
+                      kernwaarden: prev.kernwaarden.map((x, j) => (j === i ? newVal : x)),
+                    }))}
+                    onDelete={() => setCore(prev => ({
+                      ...prev,
+                      kernwaarden: prev.kernwaarden.filter((_, j) => j !== i),
+                    }))}
+                  />
                 ))}
                 <input
                   value={newKernwaardeInput}
@@ -1389,6 +1644,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               type="extern"
               items={externItems}
               onAdd={content => addAnalysisItem("extern", content)}
+              onUpdate={updateAnalysisItemContent}
               onDelete={removeAnalysisItem}
               onTagChange={changeAnalysisTag}
               onMagic={() => callWerkbladMagic("extern", true)}
@@ -1400,6 +1656,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
               type="intern"
               items={internItems}
               onAdd={content => addAnalysisItem("intern", content)}
+              onUpdate={updateAnalysisItemContent}
               onDelete={removeAnalysisItem}
               onTagChange={changeAnalysisTag}
               onMagic={() => callWerkbladMagic("intern", true)}
@@ -1535,6 +1792,7 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           worksheetName={appLabel("werkblad.strategie.title", "Strategie")}
           onAnalyse={handleAnalyze}
           analysing={analysisLoading}
+          analysisPhase={analysisPhase}
           analyseLabel={
             analysisLoading
               ? appLabel("werkblad.action.analyseert", "Analyseren…")
@@ -1577,10 +1835,8 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
         <OnepagerBuilder
           open={onepagerBuilderOpen}
           onClose={() => setOnepagerBuilderOpen(false)}
-          onBackToMenu={() => {
-            setOnepagerBuilderOpen(false);
-            setRapportageMenuOpen(true);
-          }}
+          // 11.S-fix Bev 11: terug-knop gaat direct naar werkblad (geen
+          // RapportageMenu-tussenstop). onBackToMenu-bridge verwijderd.
           config={buildStrategieRapportageConfig({
             strategyCore: core,
             themas,
@@ -1612,26 +1868,53 @@ export default function StrategieWerkblad({ canvasId, onClose, onManualSaved }) 
           WerkbladTipsModal rendert voorbeeld-blok alleen als value niet-leeg. */}
       {showInvultips && (
         <WerkbladTipsModal
+          // 11.S-fix Bev 8: per-tab tips. Tab 1 (Identiteit) toont identiteit-
+          // sub-secties (missie/visie/ambitie/kernwaarden/samenvatting). Tab 2
+          // (Analyse · SWOT) en Tab 3 (Executie · 7·3·3) tonen tab-specifieke
+          // toelichting. Sections-array wisselt op basis van activeSectie.
           title={appLabel("tips.strategie.modal.titel", "Invultips Strategie")}
           testIdPrefix="strat-tips"
           onClose={() => setShowInvultips(false)}
-          sections={[
-            { id: "missie",      titel: appLabel("strat.field.missie", "Missie"),
-              tekst: appLabel("tips.strategie.missie.uitgebreid", ""),
-              voorbeeld: appLabel("tips.strategie.missie.voorbeeld", "") },
-            { id: "visie",       titel: appLabel("strat.field.visie", "Visie"),
-              tekst: appLabel("tips.strategie.visie.uitgebreid", ""),
-              voorbeeld: appLabel("tips.strategie.visie.voorbeeld", "") },
-            { id: "ambitie",     titel: appLabel("strat.field.ambitie", "Ambitie (BHAG)"),
-              tekst: appLabel("tips.strategie.ambitie.uitgebreid", ""),
-              voorbeeld: appLabel("tips.strategie.ambitie.voorbeeld", "") },
-            { id: "kernwaarden", titel: appLabel("strat.field.kernwaarden", "Kernwaarden"),
-              tekst: appLabel("tips.strategie.kernwaarden.uitgebreid", ""),
-              voorbeeld: appLabel("tips.strategie.kernwaarden.voorbeeld", "") },
-            { id: "samenvatting",titel: appLabel("strat.field.samenvatting", "Strategische Samenvatting"),
-              tekst: appLabel("tips.strategie.samenvatting.uitgebreid", ""),
-              voorbeeld: appLabel("tips.strategie.samenvatting.voorbeeld", "") },
-          ]}
+          sections={
+            activeSectie === "analyse" ? [
+              { id: "analyse-intro",  titel: appLabel("strat.field.analyse", "Analyse · SWOT"),
+                tekst: appLabel("tips.strategie.analyse.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.analyse.voorbeeld", "") },
+              { id: "swot-extern",   titel: appLabel("strat.field.extern", "Externe Ontwikkelingen"),
+                tekst: appLabel("tips.strategie.extern.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.extern.voorbeeld", "") },
+              { id: "swot-intern",   titel: appLabel("strat.field.intern", "Interne Ontwikkelingen"),
+                tekst: appLabel("tips.strategie.intern.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.intern.voorbeeld", "") },
+            ] : activeSectie === "executie" ? [
+              { id: "executie-intro", titel: appLabel("strat.section.executie", "Executie · 7·3·3"),
+                tekst: appLabel("tips.strategie.executie.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.executie.voorbeeld", "") },
+              { id: "themas",         titel: appLabel("strat.field.themas", "Strategische thema's"),
+                tekst: appLabel("tips.strategie.themas.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.themas.voorbeeld", "") },
+              { id: "ksf-kpi",        titel: appLabel("strat.field.ksf_kpi", "KSF & KPI"),
+                tekst: appLabel("tips.strategie.ksf_kpi.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.ksf_kpi.voorbeeld", "") },
+            ] : [
+              // Tab 1: identiteit (default)
+              { id: "missie",      titel: appLabel("strat.field.missie", "Missie"),
+                tekst: appLabel("tips.strategie.missie.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.missie.voorbeeld", "") },
+              { id: "visie",       titel: appLabel("strat.field.visie", "Visie"),
+                tekst: appLabel("tips.strategie.visie.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.visie.voorbeeld", "") },
+              { id: "ambitie",     titel: appLabel("strat.field.ambitie", "Ambitie (BHAG)"),
+                tekst: appLabel("tips.strategie.ambitie.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.ambitie.voorbeeld", "") },
+              { id: "kernwaarden", titel: appLabel("strat.field.kernwaarden", "Kernwaarden"),
+                tekst: appLabel("tips.strategie.kernwaarden.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.kernwaarden.voorbeeld", "") },
+              { id: "samenvatting",titel: appLabel("strat.field.samenvatting", "Strategische Samenvatting"),
+                tekst: appLabel("tips.strategie.samenvatting.uitgebreid", ""),
+                voorbeeld: appLabel("tips.strategie.samenvatting.voorbeeld", "") },
+            ]
+          }
         />
       )}
     </div>

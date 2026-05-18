@@ -45,7 +45,11 @@ function BrandStrip({ tenantBrand, appLabel }) {
         }}
       >
         <div className="flex items-center gap-3">
-          <span className="text-[14px] font-semibold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+          {/* 11.S-fix Bev 13 (Kees-feedback): brandnaam wijkt af van overige
+              brand-strip-tekst. Was var(--font-display) (Source Serif), nu
+              var(--font-body) (Inter SemiBold) consistent met "Business
+              Transformation Canvas"-kicker + WERKBLAD/STRATEGIE-eyebrow. */}
+          <span className="text-[14px] font-semibold tracking-tight" style={{ fontFamily: "var(--font-body)" }}>
             {tenantBrand || lbl("strategie.onepager.brand.fallback", "Platform")}
           </span>
           <span className="text-[9px] uppercase tracking-[0.18em] opacity-70">
@@ -85,8 +89,13 @@ function TitelBlock({ canvasName, tenantBrand, appLabel }) {
         <h1
           data-testid="strategie-onepager-h1"
           className="flex-1 leading-tight m-0"
+          // 11.S-fix Bev 13 (Kees-feedback): H1 was var(--font-display) (Source
+          // Serif) terwijl rest van rapportage Inter is. Visueel hiërarchie
+          // komt nu uit font-size (26px) + tracking — niet uit font-family.
+          // Designer-intent SourceSerif-display behouden voor Ambitie-blok
+          // (italic, retro-3 Fix 3).
           style={{
-            fontFamily: "var(--font-display)",
+            fontFamily: "var(--font-body)",
             fontSize: 26,
             fontWeight: 600,
             color: "var(--color-primary)",
@@ -447,7 +456,11 @@ function KernwaardenBordModel({ data, appLabel }) {
           >
             <p
               className="m-0 text-[11px] font-semibold"
-              style={{ color: "var(--color-primary)", fontFamily: "var(--font-display)" }}
+              // 11.S-fix Bev 12 (Kees-feedback): kernwaardes wijken af van rest
+              // van rapportage-typo. Was var(--font-display) (Source Serif italic-
+              // achtige), nu var(--font-body) (Inter) consistent met overige body-
+              // tekst in v2 (KSF/KPI-omschrijvingen, SWOT-bullets, etc).
+              style={{ color: "var(--color-primary)", fontFamily: "var(--font-body)" }}
             >
               {kw}
             </p>

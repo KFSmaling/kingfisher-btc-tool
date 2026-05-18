@@ -68,7 +68,8 @@ describe("RapportageMenu — RFC-008 §6 export-keuze-dialog", () => {
 
     expect(screen.getByTestId("rapportage-menu")).toBeInTheDocument();
     // Header
-    expect(screen.getByText(/Wat wil je delen met de klant\?/i)).toBeInTheDocument();
+    // 11.S-fix Bev 10 (Kees-feedback): "Wat wil je delen met de klant?" → "Kies rapportage"
+    expect(screen.getByText(/Kies rapportage/i)).toBeInTheDocument();
     // Tile 1 + 2
     expect(screen.getByTestId("rapportage-tile-onepager")).toBeInTheDocument();
     expect(screen.getByTestId("rapportage-tile-onepager-badge")).toHaveTextContent(/Populair/i);

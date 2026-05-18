@@ -142,6 +142,8 @@ export default function InzichtItem({ insight, appLabel, onSave, onToggleRapport
   const recDisplay = insight.edited_recommendation ?? recommendation;
   const isEdited   = !!(insight.edited_observation || insight.edited_recommendation);
   const inRapport  = insight.in_rapport === true;
+  // 11.S-fix Bev 2: badge "behouden uit vorige analyse" voor merged insights
+  const carriedOver = insight._carried_over === true;
 
   // ── Edit-mode state ───────────────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
@@ -239,8 +241,17 @@ export default function InzichtItem({ insight, appLabel, onSave, onToggleRapport
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-1 ${color}`}>
-            {typeLabel}
+          <div className={`text-[10px] font-bold uppercase tracking-[0.12em] mb-1 ${color} flex items-center gap-2`}>
+            <span>{typeLabel}</span>
+            {carriedOver && (
+              <span
+                data-testid={`inzicht-carried-over-${id}`}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-medium normal-case tracking-normal bg-slate-100 text-slate-600 border border-slate-200"
+                title={lbl("analysis.label.carried_over.tooltip", "Behouden uit vorige analyse — gemarkeerd als 'in rapport' of door consultant bewerkt")}
+              >
+                {lbl("analysis.label.carried_over", "behouden uit vorige analyse")}
+              </span>
+            )}
           </div>
           <h3 className="text-[18px] font-semibold text-[var(--color-primary)] leading-snug tracking-[-0.005em]">
             {title}
