@@ -121,11 +121,8 @@ function RapportageStack() {
       {onepagerBuilderOpen && (
         <OnepagerBuilder
           open={onepagerBuilderOpen}
+          // 11.S-fix Bev 11: geen onBackToMenu-bridge meer; terug direct naar werkblad.
           onClose={() => setOnepagerBuilderOpen(false)}
-          onBackToMenu={() => {
-            setOnepagerBuilderOpen(false);
-            setRapportageMenuOpen(true);
-          }}
           config={config}
           insights={realisticInsights}
           appLabel={appLabel}
@@ -218,9 +215,9 @@ describe("11.S Block 5 — Strategie OnePager integration", () => {
       fireEvent.click(screen.getByTestId("trigger-rapportage"));
     });
 
-    // RapportageMenu open
+    // RapportageMenu open (11.S-fix Bev 10: titel "Kies rapportage")
     expect(screen.getByTestId("rapportage-menu")).toBeInTheDocument();
-    expect(screen.getByText(/Wat wil je delen met de klant/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kies rapportage/i)).toBeInTheDocument();
 
     // Klik One-pager-tile
     await act(async () => {
@@ -311,6 +308,6 @@ describe("11.S Block 5 — Strategie OnePager integration", () => {
       expect(screen.queryByTestId("inzichten-status-indicator")).not.toBeInTheDocument();
     });
     expect(screen.getByTestId("rapportage-menu")).toBeInTheDocument();
-    expect(within(screen.getByTestId("rapportage-menu")).getByText(/Wat wil je delen/i)).toBeInTheDocument();
+    expect(within(screen.getByTestId("rapportage-menu")).getByText(/Kies rapportage/i)).toBeInTheDocument();
   });
 });

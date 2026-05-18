@@ -189,14 +189,22 @@ export default function OnepagerBuilder({
         data-testid="onepager-builder-header"
         className="flex-shrink-0 flex items-center justify-between gap-3 px-5 py-3 bg-white border-b border-slate-200"
       >
+        {/* 11.S-fix Bev 11 (Kees-feedback 18 mei): terug-knop ging via
+            RapportageMenu-tussenstop ("twee pijltjes terug"-symptoom). Nu
+            direct terug naar werkblad: gebruik `onClose` (verwijder Builder
+            volledig); `onBackToMenu`-bridge prop ondersteund maar caller
+            geeft 'm niet meer. Single ArrowLeft-icon — geen "← terug naar
+            Rapportage"-label meer ("twee pijltjes"-rapportage). */}
         <button
           type="button"
-          onClick={onBackToMenu || onClose}
+          onClick={onClose}
           data-testid="onepager-builder-back"
+          aria-label={lbl("onepager.builder.header.back", "Terug naar werkblad")}
+          title={lbl("onepager.builder.header.back", "Terug naar werkblad")}
           className="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md text-slate-600 hover:text-[var(--color-primary)] hover:bg-slate-100 transition-colors"
         >
           <ArrowLeft size={14} />
-          {lbl("onepager.builder.header.back", "← terug naar Rapportage")}
+          {lbl("onepager.builder.header.back", "Terug naar werkblad")}
         </button>
         <h1 className="text-sm font-semibold text-[var(--color-primary)]">
           {lbl("onepager.builder.header.titel", "One-pager builder")}

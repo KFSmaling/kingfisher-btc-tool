@@ -197,7 +197,8 @@ export default function RapportageMenu({
 
         {/* Header */}
         <h2 className="text-xl font-semibold text-[var(--color-primary)] tracking-[-0.01em] mb-1.5 pr-8">
-          {lbl("rapportage.menu.header", "Wat wil je delen met de klant?")}
+          {/* 11.S-fix Bev 10 (Kees-feedback): "Wat wil je delen met de klant?" → "Kies rapportage" */}
+          {lbl("rapportage.menu.header", "Kies rapportage")}
         </h2>
         {headerLabel && (
           <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 mb-2">

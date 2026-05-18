@@ -211,15 +211,18 @@ describe("OnepagerBuilder — RFC-008 §9 builder-overlay", () => {
     expect(porterRow).toHaveAttribute("data-enabled", "false");
   });
 
-  test("8. Terug naar Rapportage / Close — Builder sluit (Escape + back-knop)", async () => {
+  test("8. Terug → Builder sluit direct naar werkblad (Escape + back-knop allebei onClose)", async () => {
+    // 11.S-fix Bev 11 (Kees-feedback 18 mei): terug-knop ging via RapportageMenu-
+    // tussenstop ("twee pijltjes terug"-symptoom). Nu direct terug naar werkblad —
+    // back-knop roept altijd onClose, geen onBackToMenu-bridge meer.
     const { props } = await renderBuilder();
     // Escape sluit overlay → onClose
     await act(async () => {
       fireEvent.keyDown(document, { key: "Escape" });
     });
     expect(props.onClose).toHaveBeenCalledTimes(1);
-    // Re-render met onBackToMenu prop: back-knop roept onBackToMenu i.p.v. onClose
-    const onBackToMenu = jest.fn();
+
+    // Back-knop klik → ook onClose (geen onBackToMenu-bridge meer)
     const onClose = jest.fn();
     await act(async () => {
       render(
@@ -227,7 +230,6 @@ describe("OnepagerBuilder — RFC-008 §9 builder-overlay", () => {
           <OnepagerBuilder
             open
             onClose={onClose}
-            onBackToMenu={onBackToMenu}
             config={testConfig}
             insights={insightsBaseline}
             appLabel={(k, fb) => fb}
@@ -237,10 +239,9 @@ describe("OnepagerBuilder — RFC-008 §9 builder-overlay", () => {
     });
     const backBtns = screen.getAllByTestId("onepager-builder-back");
     await act(async () => {
-      fireEvent.click(backBtns[backBtns.length - 1]); // de nieuwe overlay (laatst gerendered)
+      fireEvent.click(backBtns[backBtns.length - 1]);
     });
-    expect(onBackToMenu).toHaveBeenCalledTimes(1);
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   test("9. AI-toggle aan + 0 insights in_rapport=true → fallback-blok rendert", async () => {

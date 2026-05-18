@@ -105,6 +105,9 @@ export default function InzichtenOverlay({
   onAnalyse = null,
   analysing = false,
   analyseLabel = null,
+  // 11.S-fix Bev 4: voortgangs-fase tijdens analyse-flow voor user-feedback.
+  // Waarden: "collecting" | "ai_running" | "merging" | "done" | null.
+  analysisPhase = null,
   // RFC-008 §4 service-injectie — werkblad-agnostisch (default null → backwards-compat).
   onSave = null,
   onToggleRapport = null,
@@ -311,10 +314,16 @@ export default function InzichtenOverlay({
               )}
             </header>
 
-            {/* ── Loading ── */}
+            {/* ── Loading — 11.S-fix Bev 4: voortgangs-indicator met fase-tekst ── */}
             {loading && (
-              <p className="text-slate-400 text-sm italic animate-pulse text-center pt-12">
-                {lbl("analysis.loading", "AI analyseert uw strategie…")}
+              <p className="text-slate-400 text-sm italic animate-pulse text-center pt-12" data-testid="analysis-loading-phase">
+                {analysisPhase === "collecting"
+                  ? lbl("analysis.loading.collecting", "Inputs verzamelen…")
+                  : analysisPhase === "ai_running"
+                    ? lbl("analysis.loading.ai_running", "AI analyseert uw strategie… (dit duurt 20-40 seconden)")
+                    : analysisPhase === "merging"
+                      ? lbl("analysis.loading.merging", "Resultaten samenvoegen…")
+                      : lbl("analysis.loading", "AI analyseert uw strategie…")}
               </p>
             )}
 
