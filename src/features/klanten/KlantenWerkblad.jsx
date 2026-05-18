@@ -464,9 +464,11 @@ export default function KlantenWerkblad({ canvasId, onClose }) {
         onTabClick={(id) => setActiveFase(id)}
         actieknoppen={
           <WerkbladActieknoppen
-            onBekijken={() => setActiveFase(3)}
+            // 11.U Block 2: hide Inzichten-knop wanneer fase 3 al actief is
+            // (knop routeert naar fase 3 — redundant op fase 3 zelf).
+            onBekijken={activeFase === 3 ? null : () => setActiveFase(3)}
             onRapportage={() => setView("rapport")}
-            bekijkenDisabled={false}
+            bekijkenDisabled={activeFase === 3}
             appLabel={appLabel}
           />
         }

@@ -1,37 +1,42 @@
 /**
- * api/klanten/pattern_suggestions.js — CRUD + acties voor cd_pattern_suggestions
- * (RFC-001 §2.5).
+ * api/klanten/pattern_suggestions.js — CRUD + acties voor patronen.
  *
- * Method-dispatch:
- *   GET    ?canvas_id=...                      → list suggestions in canvas
- *                                                 (default: status IN open/edited/refined)
- *          ?canvas_id=...&include_done=1       → ook accepted/rejected/promoted
- *   POST   { canvas_id, pattern_type, text_md, scope?, scope_target_id?, vanuit? }
- *                                              → create consultant-eigen patroon
- *                                                 (geen original_ai_text_md; INSERT
- *                                                  ai_generated-event met
- *                                                  metadata.source='consultant_eigen')
- *   PUT    ?id=...   { text_md? }
- *                                              → edit; bij wijziging vs. original
- *                                                 INSERT edited-event +
- *                                                 zet is_user_edited=true
- *   POST   ?id=...&action=accept               → INSERT accepted-event
- *   POST   ?id=...&action=reject               → INSERT rejected-event
- *   POST   ?id=...&action=promote_to_intent    → set promoted_to_intent_at +
- *                                                 INSERT promoted_to_intent-event
- *                                                 (placeholder voor fase 4 —
- *                                                  feitelijke intent-aanmaak komt 11.H)
- *   DELETE ?id=...                              → delete (CASCADE op events)
+ * 11.U Block 2 refactor (RFC-007-rev2 §B):
+ * cd_pattern_suggestions is opgegaan in cd_improvement_intents. Dit endpoint
+ * behoudt zijn signature (frontend-backwards-compat tot Block 2b UI-refactor),
+ * maar leest/schrijft onder de motorkap nu cd_improvement_intents. Vocabulary-
+ * mapping:
  *
- * Auth: JWT via Authorization: Bearer header. RLS-policy
- * "cd_pattern_suggestions tenant + eigenaar" doet tenant + canvas-eigenaar-check.
- * tenant_id wordt server-side ingevuld vanuit current_tenant_id() (via
- * SELECT op tenants).
+ *   OUDE FIELD                  NIEUWE FIELD
+ *   text_md                  → intent_md
+ *   current_status           → status
+ *   parent_id                → parent_intent_id
+ *   pattern_type             → source_type ('ai_<type>' of 'eigen')
+ *   scope/scope_target_id    → bestaat niet meer (canvas-scoped by default)
  *
- * Audit-events worden expliciet geïnsereerd door deze handler — de DB-trigger
- * `cd_ps_sync_current_status` synct daarna `current_status` op de suggestion.
- * `metadata.ai_model` + `metadata.prompt_version` opgeslagen voor reproduceerbaarheid
- * (RFC-001 §6.1, ADR-003 principe 4).
+ *   OUDE STATUS              NIEUWE STATUS
+ *   open / edited / refined  → concept
+ *   accepted                 → concept (geen aparte accepted-state meer)
+ *   rejected                 → dismissed
+ *   promoted                 → definitief
+ *
+ *   OUDE EVENT-TABLE         NIEUWE EVENT-TABLE
+ *   cd_pattern_suggestion_events → cd_improvement_intent_events
+ *
+ * Action-mapping (signatures behouden voor frontend backwards-compat):
+ *   accept              → emit 'edited'-event metadata.legacy_action='accept',
+ *                         geen status-change (concept blijft concept)
+ *   reject              → status='dismissed' + dismissed_at + dismissal_motivation
+ *                         (stub-motivatie ≥20 chars); emit 'dismissed'-event
+ *   unmark (legacy)     → vanaf 'definitief' → back_to_concept; vanaf 'concept' → no-op
+ *   restore             → status='concept' (vanuit 'dismissed'); emit 'restored'-event
+ *   promote_to_intent   → status='definitief' + handover_to_roadmap_at; body
+ *                         { title, intent_md } update title+intent_md tegelijk
+ *                         (in nieuwe model is suggestion al de intent — 1:1)
+ *
+ * Auth: JWT via Authorization: Bearer. RLS-policy
+ * "cd_improvement_intents tenant + eigenaar" doet tenant + canvas-eigenaar-check.
+ * tenant_id wordt server-side ingevuld vanuit current_tenant_id() (via tenants).
  */
 
 const { requireAuth } = require("../_auth");
@@ -43,7 +48,10 @@ const { handleIntents }  = require("./_improvement_intents");
 const TEXT_MAX = 8000;
 const ALLOWED_PATTERN_TYPES = ["cluster", "paradox", "positionering", "overstijgend", "eigen"];
 const ALLOWED_SCOPES = ["canvas", "dimension", "item"];
-const OPEN_STATUSES = ["open", "edited", "refined"];
+
+// 11.U Block 2: legacy stub voor dismissal_motivation als reject-action geen
+// motivation meekrijgt (DB-CHECK eist ≥20 chars wanneer status='dismissed').
+const LEGACY_REJECT_MOTIVATION = "Verwijderd via legacy reject-action (pre-RFC-007-rev2)";
 
 module.exports = async function handler(req, res) {
   // Subpath-dispatch (Vercel rewrites consolideren _generate + _events naar deze
@@ -78,28 +86,37 @@ module.exports = async function handler(req, res) {
       if (!canvasId) return res.status(400).json({ error: "canvas_id is verplicht" });
       const includeDone = req.query.include_done === "1";
 
+      // 11.U Block 2: lees cd_improvement_intents. source_type IS NOT NULL is
+      // altijd waar (alle rijen hebben source_type), maar we filteren op status
+      // om de oude OPEN_STATUSES-semantiek te behouden: default = concept,
+      // include_done = ook dismissed + definitief.
       let q = supabase
-        .from("cd_pattern_suggestions")
+        .from("cd_improvement_intents")
         .select("*")
         .eq("canvas_id", canvasId)
         .order("created_at", { ascending: false });
-      if (!includeDone) q = q.in("current_status", OPEN_STATUSES);
+      if (!includeDone) q = q.eq("status", "concept");
 
       const { data, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ pattern_suggestions: data });
+
+      // Backwards-compat-mapping naar oud schema voor frontend dat nog
+      // cd_pattern_suggestions-velden verwacht (text_md, current_status,
+      // pattern_type, parent_id, scope, scope_target_id).
+      const mapped = (data || []).map(mapIntentToLegacySuggestion);
+      return res.status(200).json({ pattern_suggestions: mapped, intents: data });
     }
 
     if (req.method === "POST") {
       const id = req.query.id;
       const action = req.query.action;
 
-      // ── Action-routes (accept / reject / promote_to_intent) ──────────────
+      // ── Action-routes (accept / reject / promote_to_intent / unmark / restore) ──
       if (id && action) {
         return await handleAction({ supabase, req, res, id, action, tenantId, userRole, userId: user.id });
       }
 
-      // ── Create consultant-eigen patroon ───────────────────────────────────
+      // ── Create consultant-eigen patroon (source_type='eigen') ─────────────
       const {
         canvas_id, pattern_type, text_md,
         scope = "canvas", scope_target_id = null,
@@ -119,6 +136,9 @@ module.exports = async function handler(req, res) {
       if (!ALLOWED_SCOPES.includes(scope)) {
         return res.status(400).json({ error: `scope moet één van: ${ALLOWED_SCOPES.join(', ')}` });
       }
+      // scope/scope_target_id worden in nieuwe model genegeerd (canvas-scoped only).
+      // We accepteren ze nog wel als parameter voor backwards-compat met UI; we
+      // valideren wel de combi om geen stille semantiek-shift te creëren.
       if (scope === "canvas" && scope_target_id) {
         return res.status(400).json({ error: "scope=canvas mag geen scope_target_id hebben" });
       }
@@ -126,21 +146,27 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: `scope=${scope} vereist scope_target_id` });
       }
 
-      // INSERT suggestion
+      const trimmed = text_md.trim();
+      // 11.U Block 2: pattern_type='eigen' → source_type='eigen'; anders 'ai_<type>'
+      // (al kan een consultant via POST nooit een ai_*-rij maken — alleen via generate)
+      const sourceType = pattern_type === "eigen" ? "eigen" : `ai_${pattern_type}`;
+
+      // INSERT intent
       const { data: created, error: insErr } = await supabase
-        .from("cd_pattern_suggestions")
+        .from("cd_improvement_intents")
         .insert({
           canvas_id,
           tenant_id: tenantId,
-          pattern_type,
-          text_md: text_md.trim(),
+          title: trimmed.slice(0, 100) || "Eigen patroon",
+          intent_md: trimmed,
+          source_type: sourceType,
           original_ai_text_md: null,        // consultant-eigen: geen AI-bron
-          parent_id: null,
-          scope,
-          scope_target_id,
-          current_status: "open",
+          ai_generated_at: null,
+          parent_intent_id: null,
+          status: "concept",
           is_user_edited: false,
           vanuit: normalizeVanuit(vanuit),
+          sort_order: 0,
         })
         .select()
         .single();
@@ -148,30 +174,32 @@ module.exports = async function handler(req, res) {
       if (insErr) {
         if (insErr.code === "P0001") return res.status(400).json({ error: insErr.message });
         if (insErr.code === "42501") return res.status(403).json({ error: insErr.message });
+        if (insErr.code === "23505") return res.status(409).json({ error: insErr.message });
         return res.status(500).json({ error: insErr.message });
       }
 
-      // INSERT ai_generated-event met source='consultant_eigen' (RFC §6.1)
+      // INSERT 'created'-event met source='consultant_eigen'
       const { error: evErr } = await supabase
-        .from("cd_pattern_suggestion_events")
+        .from("cd_improvement_intent_events")
         .insert({
-          suggestion_id: created.id,
-          event_type: "ai_generated",
+          intent_id: created.id,
+          event_type: "created",
           actor_user_id: user.id,
           actor_role: userRole,
           text_before_md: null,
-          text_after_md: created.text_md,
-          metadata: { source: "consultant_eigen" },
+          text_after_md: created.intent_md,
+          metadata: { source: "consultant_eigen", legacy_pattern_type: pattern_type },
           tenant_id: tenantId,
           canvas_id,
         });
       if (evErr) {
-        // Suggestion staat — event-fail loggen maar 201 retourneren is verkeerd;
-        // beter: rollback. Maar geen transactie-API in supabase-js → log + 207.
         console.error("[pattern_suggestions POST] event-insert faalde:", evErr.message);
       }
 
-      return res.status(201).json({ pattern_suggestion: created });
+      return res.status(201).json({
+        pattern_suggestion: mapIntentToLegacySuggestion(created),
+        intent: created,
+      });
     }
 
     if (req.method === "PUT") {
@@ -187,10 +215,10 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: `text_md overschrijdt ${TEXT_MAX}-char-limiet` });
       }
 
-      // Lees huidige suggestion voor diff + canvas_id
+      // Lees huidige intent voor diff + canvas_id
       const { data: existing, error: selErr } = await supabase
-        .from("cd_pattern_suggestions")
-        .select("id, text_md, original_ai_text_md, canvas_id, tenant_id")
+        .from("cd_improvement_intents")
+        .select("id, intent_md, original_ai_text_md, canvas_id, tenant_id, source_type")
         .eq("id", id)
         .maybeSingle();
       if (selErr) return res.status(500).json({ error: selErr.message });
@@ -200,9 +228,10 @@ module.exports = async function handler(req, res) {
       const isEditedVsOriginal = existing.original_ai_text_md != null && trimmed !== existing.original_ai_text_md;
 
       const { data: updated, error: upErr } = await supabase
-        .from("cd_pattern_suggestions")
+        .from("cd_improvement_intents")
         .update({
-          text_md: trimmed,
+          intent_md: trimmed,
+          title: trimmed.slice(0, 100) || existing.intent_md.slice(0, 100),
           is_user_edited: isEditedVsOriginal,
         })
         .eq("id", id)
@@ -213,31 +242,34 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: upErr.message });
       }
 
-      // INSERT edited-event (alleen als tekst daadwerkelijk wijzigde)
-      if (existing.text_md !== trimmed) {
+      // INSERT 'edited'-event (alleen als tekst daadwerkelijk wijzigde)
+      if (existing.intent_md !== trimmed) {
         const { error: evErr } = await supabase
-          .from("cd_pattern_suggestion_events")
+          .from("cd_improvement_intent_events")
           .insert({
-            suggestion_id: id,
+            intent_id: id,
             event_type: "edited",
             actor_user_id: user.id,
             actor_role: userRole,
-            text_before_md: existing.text_md,
+            text_before_md: existing.intent_md,
             text_after_md: trimmed,
-            metadata: { is_user_edited: isEditedVsOriginal },
+            metadata: { is_user_edited: isEditedVsOriginal, source: "pattern_edit" },
             tenant_id: existing.tenant_id,
             canvas_id: existing.canvas_id,
           });
         if (evErr) console.error("[pattern_suggestions PUT] event-insert faalde:", evErr.message);
       }
 
-      return res.status(200).json({ pattern_suggestion: updated });
+      return res.status(200).json({
+        pattern_suggestion: mapIntentToLegacySuggestion(updated),
+        intent: updated,
+      });
     }
 
     if (req.method === "DELETE") {
       const id = req.query.id;
       if (!id) return res.status(400).json({ error: "id is verplicht" });
-      const { error } = await supabase.from("cd_pattern_suggestions").delete().eq("id", id);
+      const { error } = await supabase.from("cd_improvement_intents").delete().eq("id", id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(204).end();
     }
@@ -263,128 +295,172 @@ function normalizeVanuit(input) {
   return null;
 }
 
+/**
+ * Backwards-compat-mapping: rendert cd_improvement_intents-rij als oud
+ * cd_pattern_suggestions-vorm (frontend die nog text_md/current_status verwacht).
+ * Block 2b verwijdert deze mapping wanneer UI direct cd_improvement_intents-keys leest.
+ */
+function mapIntentToLegacySuggestion(intent) {
+  if (!intent) return null;
+  // status → current_status mapping
+  let currentStatus;
+  if (intent.status === "dismissed")        currentStatus = "rejected";
+  else if (intent.status === "definitief")  currentStatus = "promoted";
+  else                                       currentStatus = intent.is_user_edited ? "edited" : "open";
+
+  // source_type → pattern_type mapping
+  let patternType;
+  if (intent.source_type === "eigen")             patternType = "eigen";
+  else if (intent.source_type?.startsWith("ai_")) patternType = intent.source_type.slice(3); // 'ai_cluster' → 'cluster'
+  else                                             patternType = "cluster";                  // fallback
+
+  return {
+    ...intent,
+    text_md: intent.intent_md,
+    current_status: currentStatus,
+    pattern_type: patternType,
+    parent_id: intent.parent_intent_id,
+    scope: "canvas",
+    scope_target_id: null,
+    promoted_to_intent_at: intent.handover_to_roadmap_at,
+  };
+}
+
 async function handleAction({ supabase, req, res, id, action, tenantId, userRole, userId }) {
-  // Stap 11.G.3 F8: nieuwe actions `unmark` (un-accept/un-promote → open)
-  // en `restore` (un-reject → open). Beide via append-only event-INSERT —
-  // trigger cd_ps_sync_current_status zet current_status terug naar 'open'.
   const ALLOWED_ACTIONS = ["accept", "reject", "promote_to_intent", "unmark", "restore"];
   if (!ALLOWED_ACTIONS.includes(action)) {
     return res.status(400).json({ error: `action moet één van: ${ALLOWED_ACTIONS.join(', ')}` });
   }
 
-  // Lees suggestion voor canvas_id + status-validatie
+  // Lees intent voor canvas_id + status-validatie
   const { data: existing, error: selErr } = await supabase
-    .from("cd_pattern_suggestions")
-    .select("id, canvas_id, tenant_id, current_status, text_md, vanuit, pattern_type, promoted_to_intent_at")
+    .from("cd_improvement_intents")
+    .select("id, canvas_id, tenant_id, status, intent_md, title, vanuit, source_type, handover_to_roadmap_at")
     .eq("id", id)
     .maybeSingle();
   if (selErr) return res.status(500).json({ error: selErr.message });
   if (!existing) return res.status(404).json({ error: "suggestion niet gevonden of geen toegang" });
 
   let eventType;
-  let extraUpdate = null;
-  let createdIntent = null;
-  if (action === "accept") {
-    eventType = "accepted";
-  } else if (action === "reject") {
-    eventType = "rejected";
-  } else if (action === "promote_to_intent") {
-    if (existing.current_status !== "accepted") {
-      return res.status(409).json({ error: "alleen geaccepteerde suggestions kunnen gepromoot worden" });
-    }
-    eventType = "promoted_to_intent";
-    extraUpdate = { promoted_to_intent_at: new Date().toISOString() };
+  let updateFields = null;
+  let metadataExtra = { legacy_action: action };
 
-    // Stap 11.H: bij body { title, intent_md } daadwerkelijk een intent
-    // aanmaken (1:1-relatie via source_suggestion_id). Backwards-compat: zonder
-    // body blijft het bestaande gedrag (alleen status-flag + audit-event).
-    const body = req?.body || {};
-    if (body.title && body.intent_md) {
-      const trimmedTitle  = String(body.title).trim();
-      const trimmedIntent = String(body.intent_md).trim();
-      if (trimmedTitle.length < 1 || trimmedTitle.length > 100) {
-        return res.status(400).json({ error: "title moet 1-100 tekens zijn" });
-      }
-      if (trimmedIntent.length < 50 || trimmedIntent.length > 2000) {
-        return res.status(400).json({ error: "intent_md moet 50-2000 tekens zijn" });
-      }
-      const { data: intentRow, error: intentErr } = await supabase
-        .from("cd_improvement_intents")
-        .insert({
-          canvas_id: existing.canvas_id,
-          tenant_id: existing.tenant_id,
-          title: trimmedTitle,
-          intent_md: trimmedIntent,
-          source_suggestion_id: existing.id,
-          vanuit: Array.isArray(existing.vanuit) ? existing.vanuit : null,
-        })
-        .select()
-        .single();
-      if (intentErr) {
-        if (intentErr.code === "23505") {
-          return res.status(409).json({ error: "Deze suggestion is al gepromoot naar een intent" });
-        }
-        return res.status(500).json({ error: intentErr.message });
-      }
-      createdIntent = intentRow;
+  if (action === "accept") {
+    // No-op op status (concept blijft concept in nieuwe model). Emit 'edited'
+    // voor audit-spoor.
+    eventType = "edited";
+    metadataExtra.note = "accepted_legacy";
+  } else if (action === "reject") {
+    if (existing.status === "dismissed") {
+      return res.status(409).json({ error: "intent is al dismissed" });
     }
+    eventType = "dismissed";
+    updateFields = {
+      status: "dismissed",
+      dismissed_at: new Date().toISOString(),
+      dismissal_motivation: LEGACY_REJECT_MOTIVATION,
+    };
   } else if (action === "unmark") {
-    if (!["accepted", "promoted"].includes(existing.current_status)) {
-      return res.status(409).json({ error: "alleen geaccepteerde of gepromoveerde suggestions kunnen ge-unmarkt worden" });
-    }
-    eventType = "unpromoted";
-    // Bij promoted: clear promoted_to_intent_at
-    if (existing.current_status === "promoted") {
-      extraUpdate = { promoted_to_intent_at: null };
+    // Legacy unmark: was 'accepted'→'open' of 'promoted'→'open'.
+    // Nieuwe model: vanaf 'definitief' → back_to_concept; vanaf 'concept' = no-op.
+    if (existing.status === "definitief") {
+      eventType = "back_to_concept";
+      updateFields = {
+        status: "concept",
+        handover_to_roadmap_at: null,
+      };
+    } else if (existing.status === "concept") {
+      eventType = "edited";
+      metadataExtra.note = "unmark_noop_legacy";
+    } else {
+      return res.status(409).json({ error: "alleen 'concept' of 'definitief' kan ge-unmarkt worden" });
     }
   } else if (action === "restore") {
-    if (existing.current_status !== "rejected") {
-      return res.status(409).json({ error: "alleen verwijderde suggestions kunnen hersteld worden" });
+    if (existing.status !== "dismissed") {
+      return res.status(409).json({ error: "alleen dismissed intents kunnen hersteld worden" });
     }
-    eventType = "unrejected";
+    eventType = "restored";
+    updateFields = {
+      status: "concept",
+      dismissed_at: null,
+      dismissal_motivation: null,
+    };
+  } else if (action === "promote_to_intent") {
+    if (existing.status === "definitief") {
+      return res.status(409).json({ error: "intent is al definitief" });
+    }
+    if (existing.status === "dismissed") {
+      return res.status(409).json({ error: "dismissed intents kunnen niet gepromoot worden" });
+    }
+    eventType = "made_definitief";
+    const body = req?.body || {};
+    const newTitle  = body.title  != null ? String(body.title).trim()      : existing.title;
+    const newIntent = body.intent_md != null ? String(body.intent_md).trim() : existing.intent_md;
+    if (newTitle.length < 1 || newTitle.length > 100) {
+      return res.status(400).json({ error: "title moet 1-100 tekens zijn" });
+    }
+    if (newIntent.length < 50 || newIntent.length > 2000) {
+      return res.status(400).json({ error: "intent_md moet 50-2000 tekens zijn" });
+    }
+    updateFields = {
+      title: newTitle,
+      intent_md: newIntent,
+      status: "definitief",
+      handover_to_roadmap_at: new Date().toISOString(),
+    };
+    if (body.title != null || body.intent_md != null) {
+      metadataExtra.body_updated = true;
+    }
   }
 
-  // Apply extra update first (alleen voor promote)
-  if (extraUpdate) {
+  // Apply update first
+  if (updateFields) {
     const { error: upErr } = await supabase
-      .from("cd_pattern_suggestions")
-      .update(extraUpdate)
+      .from("cd_improvement_intents")
+      .update(updateFields)
       .eq("id", id);
-    if (upErr) return res.status(500).json({ error: upErr.message });
+    if (upErr) {
+      if (upErr.code === "P0001") return res.status(400).json({ error: upErr.message });
+      if (upErr.code === "23514") return res.status(400).json({ error: upErr.message });
+      return res.status(500).json({ error: upErr.message });
+    }
   }
 
-  // INSERT event — trigger sync't current_status automatisch
-  const eventMetadata = action === "promote_to_intent"
-    ? (createdIntent
-        ? { intent_id: createdIntent.id }
-        : { placeholder_for_fase_4: true })
-    : {};
+  // INSERT event in cd_improvement_intent_events
   const { error: evErr } = await supabase
-    .from("cd_pattern_suggestion_events")
+    .from("cd_improvement_intent_events")
     .insert({
-      suggestion_id: id,
+      intent_id: id,
       event_type: eventType,
       actor_user_id: userId,
       actor_role: userRole,
-      text_before_md: existing.text_md,
-      text_after_md: existing.text_md,
-      metadata: eventMetadata,
+      text_before_md: existing.intent_md,
+      text_after_md: updateFields?.intent_md || existing.intent_md,
+      metadata: metadataExtra,
       tenant_id: existing.tenant_id,
       canvas_id: existing.canvas_id,
     });
   if (evErr) return res.status(500).json({ error: evErr.message });
 
-  // Lees actuele state na trigger
+  // Lees actuele state
   const { data: refreshed, error: rfErr } = await supabase
-    .from("cd_pattern_suggestions")
+    .from("cd_improvement_intents")
     .select("*")
     .eq("id", id)
     .single();
   if (rfErr) return res.status(500).json({ error: rfErr.message });
 
+  const legacy = mapIntentToLegacySuggestion(refreshed);
   return res.status(200).json({
-    pattern_suggestion: refreshed,
-    event_type: eventType,
-    ...(createdIntent ? { intent: createdIntent } : {}),
+    pattern_suggestion: legacy,
+    intent: refreshed,
+    // Backwards-compat: legacy emission van event_type met oude vocabulary
+    event_type:
+      eventType === "dismissed"        ? "rejected" :
+      eventType === "made_definitief"  ? "promoted_to_intent" :
+      eventType === "back_to_concept"  ? "unpromoted" :
+      eventType === "restored"         ? "unrejected" :
+      "edited",
+    new_event_type: eventType,
   });
 }

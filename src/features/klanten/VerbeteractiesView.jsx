@@ -43,6 +43,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Loader2, Plus, MoreVertical } from "lucide-react";
 import { useAppConfig } from "../../shared/context/AppConfigContext";
 import AiIconButton from "../../shared/components/AiIconButton";
+import ModusToggle from "../../shared/components/ModusToggle";
 import * as klantenService from "./services/klanten.service";
 import SuggestionCard from "./SuggestionCard";
 import IntentCard from "./IntentCard";
@@ -108,6 +109,14 @@ export default function VerbeteractiesView({
   const [intentModalState, setIntentModalState] = useState(null); // { mode, intent? }
   const [promoteSuggestion, setPromoteSuggestion] = useState(null);
   const [overflowOpenId,   setOverflowOpenId]   = useState(null);
+
+  // 11.U Block 2: ModusToggle Doorloop/Overzicht. Default = doorloop
+  // (per Kees-akkoord 17 mei design-prototype). Block 2a rendert alleen
+  // de Overzicht-modus uit + placeholder voor Doorloop; volledige Doorloop-
+  // implementatie (FocusCard + ChoiceCards + LensPicker + AiResultDraft)
+  // + extra state (currentFocusIdx, lensPickerOpenFor, aiDraftFor) landt
+  // in Block 2b.
+  const [modus, setModus] = useState("doorloop");
 
   // ── AI-affordance-knop click ────────────────────────────────────────────────
   async function handleAiClick(action) {
@@ -311,7 +320,48 @@ export default function VerbeteractiesView({
           "Acties starten als Concept en kunnen Definitief gemaakt worden. Plan en uitvoering volgt in het Veranderprogramma-werkblad.")}
       </div>
 
-      {/* Intro */}
+      {/* 11.U Block 2: ModusToggle Doorloop/Overzicht */}
+      <div className="mb-5 flex items-center justify-between">
+        <ModusToggle
+          value={modus}
+          onChange={setModus}
+          options={[
+            { value: "doorloop",  label: appLabel("klanten.verbeteractie.modus.doorloop",  "Doorloop") },
+            { value: "overzicht", label: appLabel("klanten.verbeteractie.modus.overzicht", "Overzicht") },
+          ]}
+          testIdPrefix="verbeteracties-modus-toggle"
+        />
+      </div>
+
+      {/* Doorloop-placeholder — Block 2b vult deze met FocusCard/ChoiceCards/LensPicker/AiResultDraft */}
+      {modus === "doorloop" && (
+        <div
+          data-testid="verbeteracties-doorloop-placeholder"
+          className="mb-6 px-5 py-6 bg-slate-50 border border-slate-200 rounded text-center"
+        >
+          <p className="text-sm text-slate-700 font-medium mb-2">
+            {appLabel("klanten.verbeteractie.doorloop.placeholder.titel", "Doorloop-modus komt eraan")}
+          </p>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {appLabel(
+              "klanten.verbeteractie.doorloop.placeholder.toelichting",
+              "In de volgende release lopen we hier samen door je pijnpunten en kies je per pijnpunt: AI-suggestie, eigen actie of bewust niet adresseren. Tot dan kun je via Overzicht je verbeteracties beheren.",
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => setModus("overzicht")}
+            data-testid="verbeteracties-doorloop-naar-overzicht"
+            className="mt-4 text-xs font-bold uppercase tracking-widest text-[var(--color-accent)] hover:text-[var(--color-accent-hover)]"
+          >
+            {appLabel("klanten.verbeteractie.doorloop.placeholder.cta", "Ga naar Overzicht")}
+          </button>
+        </div>
+      )}
+
+      {/* Intro — alleen in Overzicht-modus */}
+      {modus === "overzicht" && (
+      <>
       <div className="mb-6">
         <p className="text-sm text-slate-500 italic mb-4 max-w-3xl">
           {appLabel("klanten.verbeteractie.intro", "Verbeteracties starten als concept — vanuit AI-patroonherkenning of als eigen actie. Bewerk wat moet, verwijder wat niet klopt, maak definitief wat blijft.")}
@@ -503,6 +553,8 @@ export default function VerbeteractiesView({
             busyId={busyAction?.action === "restore" ? busyAction.id : null}
           />
         </div>
+      )}
+      </>
       )}
 
       {/* Modals */}

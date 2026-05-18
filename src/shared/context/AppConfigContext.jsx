@@ -390,7 +390,8 @@ const LABEL_FALLBACKS = {
   "klanten.analyse.actie.reject":                   "Verwijder",
   "klanten.analyse.accept.tooltip.fase4":           "nog te promoten in fase 4 (verbeteracties) — komt later",
   // Bundle 1+2 F28 — analyse-intro + 4 SuggestionCard actie-tooltips
-  "klanten.analyse.intro":                          "Patronen herkennen in de pijnpunten — selecteer een analyse-type hieronder. AI doet de eerste pas; jij blijft eigenaar van het resultaat. Bewerk wat moet, verwijder wat niet klopt, markeer wat doorbouwt naar verbeteracties.",
+  // (11.U Block 2 boy-scout: dedupe — 'klanten.analyse.intro' op regel 354 is
+  // de live-versie; Bundle 1+2 F28 herdefinieerde dezelfde key per ongeluk.)
   "klanten.analyse.actie.accept.tooltip":           "Dit patroon doorbouwen naar fase 4 als verbeteractie",
   "klanten.analyse.actie.refine.edit.tooltip":      "Tekst aanpassen — audit-spoor onthoudt dat consultant gewijzigd heeft",
   "klanten.analyse.actie.reject.tooltip":           "Wegnemen uit zicht. Zichtbaar in \"Verwijderd\"-collapse om terug te halen",
@@ -506,6 +507,13 @@ const LABEL_FALLBACKS = {
   // F20 — nieuwe label-key voor RapportView counter (verbeteractie/verbeteracties)
   "klanten.rapport.counter.verbeteracties":          "verbeteracties",
   "klanten.rapport.samenvatting.volledig":           "Werkblad in volledige fase-keten — verbeteracties vastgelegd.",
+  // 11.U Block 2 — ModusToggle + Doorloop-placeholder (Block 2b vult)
+  "klanten.verbeteractie.modus.doorloop":            "Doorloop",
+  "klanten.verbeteractie.modus.overzicht":           "Overzicht",
+  "klanten.verbeteractie.doorloop.placeholder.titel": "Doorloop-modus komt eraan",
+  "klanten.verbeteractie.doorloop.placeholder.toelichting":
+    "In de volgende release lopen we hier samen door je pijnpunten en kies je per pijnpunt: AI-suggestie, eigen actie of bewust niet adresseren. Tot dan kun je via Overzicht je verbeteracties beheren.",
+  "klanten.verbeteractie.doorloop.placeholder.cta":  "Ga naar Overzicht",
 };
 
 const AppConfigContext = createContext(null);

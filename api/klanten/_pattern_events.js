@@ -2,15 +2,20 @@
  * api/klanten/pattern_suggestion_events.js — read-only audit-trail
  * (RFC-001 §2.6).
  *
- * GET ?suggestion_id=...   → events van één suggestion (chronologisch)
+ * 11.U Block 2 refactor (RFC-007-rev2 §B):
+ * cd_pattern_suggestion_events is opgegaan in cd_improvement_intent_events.
+ * Dit endpoint behoudt zijn URL en query-params (?suggestion_id, ?canvas_id)
+ * voor frontend backwards-compat, maar leest onder de motorkap nu de nieuwe
+ * tabel. `suggestion_id` mapt 1:1 op `intent_id`.
+ *
+ * GET ?suggestion_id=...   → events van één intent (chronologisch)
  * GET ?canvas_id=...       → alle events in canvas (voor admin/debug, beperkt 200)
  *
  * Mutaties (INSERT) gebeuren elders:
- *   - pattern_suggestions_generate.js (ai_generated bij bulk-AI-call)
- *   - pattern_suggestions.js (consultant-acties: edited/accepted/rejected/
- *     refined_dig_deeper/promoted_to_intent)
+ *   - _pattern_generate.js (created bij bulk-AI-call)
+ *   - pattern_suggestions.js (consultant-acties via action-handlers)
  *
- * RLS: cd_pse SELECT-policy doet tenant + canvas-eigenaar-check; geen
+ * RLS: cd_iie SELECT-policy doet tenant + canvas-eigenaar-check; geen
  * UPDATE/DELETE-policies → append-only via RLS afgedwongen.
  */
 
@@ -42,17 +47,19 @@ async function handleEvents(req, res) {
 
   try {
     let q = supabase
-      .from("cd_pattern_suggestion_events")
+      .from("cd_improvement_intent_events")
       .select("*")
       .order("created_at", { ascending: true })
       .limit(MAX_LIMIT);
 
-    if (suggestion_id) q = q.eq("suggestion_id", suggestion_id);
+    if (suggestion_id) q = q.eq("intent_id", suggestion_id);
     if (canvas_id)     q = q.eq("canvas_id", canvas_id);
 
     const { data, error } = await q;
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json({ events: data });
+    // Backwards-compat: spiegelen `intent_id` als `suggestion_id` voor oude clients.
+    const mapped = (data || []).map(ev => ({ ...ev, suggestion_id: ev.intent_id }));
+    return res.status(200).json({ events: mapped });
   } catch (err) {
     console.error("[api/klanten/pattern_suggestion_events] onverwachte fout:", err);
     return res.status(500).json({ error: err.message || "interne fout" });

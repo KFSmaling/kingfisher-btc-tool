@@ -140,6 +140,14 @@ async function openFase3() {
   const tab = await screen.findByTestId("werkblad-header-tab-3");
   await act(async () => { fireEvent.click(tab); });
   await screen.findByTestId("verbeteracties-view");
+  // 11.U Block 2: default-modus = Doorloop. Voor de bestaande S4-tests
+  // (concept-list/definitief-list) switchen we naar Overzicht zodat de
+  // legacy-render zichtbaar is. Block 2b zal nieuwe Doorloop-specific
+  // tests toevoegen.
+  const overzichtBtn = screen.queryByTestId("verbeteracties-modus-toggle-option-overzicht");
+  if (overzichtBtn) {
+    await act(async () => { fireEvent.click(overzichtBtn); });
+  }
 }
 
 describe("VerbeteractiesView — S4 RFC-007 C1", () => {
