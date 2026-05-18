@@ -29,6 +29,7 @@ export default function DoorloopView({
   lensLoading,
   aiDraftFor,
   eigenActieEditFor,
+  recommendedLensFor, // 11.U Block 3 F-retro-1 — { painPointId, lens }
   // Choice/Lens/AI/Eigen handlers
   onChooseAi,
   onChooseEigen,
@@ -42,6 +43,9 @@ export default function DoorloopView({
   onCancelEigenActie,
   onReopen,
   onEditIntent,
+  onClickLensHint, // 11.U Block 3 F-retro-1
+  onJumpToNextOpen, // 11.U Block 3 F-retro-2
+  nextOpenIdxFor, // 11.U Block 3 F-retro-2 — number | null
   appLabel,
 }) {
   const lbl = (key, fb) => (appLabel ? appLabel(key, fb) : fb);
@@ -77,6 +81,10 @@ export default function DoorloopView({
   const isLensLoadingHere = lensLoading && lensLoading.painPointId === painPoint.id;
   const isAiDraftHere = aiDraftFor?.painPointId === painPoint.id ? aiDraftFor.draftIntent : null;
   const isEigenOpenHere = eigenActieEditFor === painPoint.id;
+  const recommendedLensHere = recommendedLensFor?.painPointId === painPoint.id
+    ? recommendedLensFor.lens
+    : null;
+  const nextOpenAvailable = typeof nextOpenIdxFor === "number" && nextOpenIdxFor !== safeIdx;
 
   return (
     <div className="flex gap-4 min-h-0" data-testid="doorloop-view">
@@ -133,6 +141,7 @@ export default function DoorloopView({
           linkedIntents={linkedIntents}
           lensPickerOpen={isLensOpenHere}
           lensLoading={isLensLoadingHere ? lensLoading : null}
+          recommendedLens={recommendedLensHere}
           aiDraft={isAiDraftHere}
           eigenActieOpen={isEigenOpenHere}
           onChooseAi={() => onChooseAi(painPoint)}
@@ -147,6 +156,9 @@ export default function DoorloopView({
           onCancelEigenActie={() => onCancelEigenActie(painPoint)}
           onReopen={() => onReopen(painPoint)}
           onEditIntent={onEditIntent}
+          onClickLensHint={() => onClickLensHint(painPoint)}
+          onJumpToNextOpen={() => onJumpToNextOpen(painPoint)}
+          nextOpenAvailable={nextOpenAvailable}
           appLabel={appLabel}
         />
         </div>

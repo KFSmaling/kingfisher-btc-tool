@@ -24,6 +24,7 @@ const LENSES = [
 
 export default function LensPicker({
   loading,        // { phase: 'collecting'|'ai_running' } | null
+  recommendedLens, // 11.U Block 3 F-retro-1: PAST-pill op aanbevolen lens
   onPickLens,
   onCancel,
   appLabel,
@@ -69,25 +70,41 @@ export default function LensPicker({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {LENSES.map(({ key, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onPickLens(key)}
-            data-testid={`doorloop-lens-${key}`}
-            className="text-left border border-slate-200 bg-white rounded-md p-3 hover:bg-slate-50 hover:border-[var(--color-accent)]/60 transition-colors flex flex-col gap-1.5"
-          >
-            <div className="flex items-center gap-2 text-[var(--color-accent)]">
-              <Icon size={16} />
-              <span className="text-sm font-semibold text-[var(--color-primary)]">
-                {lbl(`klanten.verbeteracties.lens.${key}.titel`, capitalize(key))}
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 leading-snug">
-              {lbl(`klanten.verbeteracties.lens.${key}.body`, "")}
-            </p>
-          </button>
-        ))}
+        {LENSES.map(({ key, icon: Icon }) => {
+          const isRecommended = recommendedLens === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onPickLens(key)}
+              data-testid={`doorloop-lens-${key}`}
+              data-recommended={isRecommended ? "true" : "false"}
+              className={`relative text-left border bg-white rounded-md p-3 hover:bg-slate-50 transition-colors flex flex-col gap-1.5 ${
+                isRecommended
+                  ? "border-amber-400 ring-2 ring-amber-200"
+                  : "border-slate-200 hover:border-[var(--color-accent)]/60"
+              }`}
+            >
+              {isRecommended && (
+                <span
+                  data-testid={`doorloop-lens-past-${key}`}
+                  className="absolute -top-2 left-3 px-1.5 py-0.5 bg-amber-400 text-amber-900 text-[10px] font-bold uppercase tracking-widest rounded"
+                >
+                  {lbl("klanten.verbeteracties.lens_hint.past_marker", "PAST")}
+                </span>
+              )}
+              <div className="flex items-center gap-2 text-[var(--color-accent)]">
+                <Icon size={16} />
+                <span className="text-sm font-semibold text-[var(--color-primary)]">
+                  {lbl(`klanten.verbeteracties.lens.${key}.titel`, capitalize(key))}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 leading-snug">
+                {lbl(`klanten.verbeteracties.lens.${key}.body`, "")}
+              </p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
