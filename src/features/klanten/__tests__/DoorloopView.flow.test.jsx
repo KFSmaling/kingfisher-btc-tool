@@ -226,15 +226,16 @@ describe("11.U Block 2b — DoorloopView volledig functioneel", () => {
     expect(screen.queryByTestId("doorloop-ai-result-draft")).not.toBeInTheDocument();
   });
 
-  test("8. ChoiceCards 'Niet adresseren' → error-banner met Block 3 placeholder", async () => {
+  test("8. ChoiceCards 'Niet adresseren' → MotivatieInput-modal opent (Block 3 wired)", async () => {
     klantenService.listPainPoints.mockResolvedValue({
       data: [pp("p1", "Pijnpunt")],
       error: null,
     });
     await renderAndOpenFase3();
     await act(async () => { fireEvent.click(screen.getByTestId("doorloop-choice-dismiss")); });
-    expect(screen.getByTestId("doorloop-error-dismiss")).toBeInTheDocument();
-    expect(screen.getByText(/Motivatie-modal komt/i)).toBeInTheDocument();
+    // Block 3: opent MotivatieInput-modal i.p.v. error-banner
+    expect(screen.getByTestId("dismiss-motivatie-modal")).toBeInTheDocument();
+    expect(screen.queryByTestId("doorloop-error-dismiss")).not.toBeInTheDocument();
   });
 
   test("9. Pijnpunt met coverage='dismissed' → motivation + reopen-knop", async () => {

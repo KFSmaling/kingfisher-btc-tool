@@ -45,6 +45,8 @@ import { useAppConfig } from "../../shared/context/AppConfigContext";
 import AiIconButton from "../../shared/components/AiIconButton";
 import ModusToggle from "../../shared/components/ModusToggle";
 import DoorloopView from "./components/DoorloopView";
+import MotivatieInput from "./components/MotivatieInput";
+import { suggestLens } from "./components/lensSuggestion";
 import * as klantenService from "./services/klanten.service";
 import SuggestionCard from "./SuggestionCard";
 import IntentCard from "./IntentCard";
@@ -123,6 +125,10 @@ export default function VerbeteractiesView({
   const [aiDraftFor, setAiDraftFor] = useState(null);                 // { painPointId, draftIntent }
   const [eigenActieEditFor, setEigenActieEditFor] = useState(null);   // pp.id of null
 
+  // 11.U Block 3 — F-retro-1 + Fix 3 + Fix 4
+  const [dismissModalFor, setDismissModalFor] = useState(null);        // painPoint | null
+  const [reopenConfirmFor, setReopenConfirmFor] = useState(null);      // { painPoint, linkCount } | null
+
   // Sortering pijnpunten voor Doorloop: open eerst, dan addressed, dan dismissed;
   // binnen elke groep op created_at ASC.
   const sortedPainPoints = useMemo(() => {
@@ -153,6 +159,33 @@ export default function VerbeteractiesView({
     setCurrentFocusIdx(Math.max(0, Math.min(sortedPainPoints.length - 1, idx)));
   }
 
+  // 11.U Block 3 F-retro-2: findNextOpenIdx — idx van eerstvolgende coverage_status='open'
+  // ná currentIdx (cyclisch: doorloop list, return null indien geen open meer).
+  function findNextOpenIdx(currentIdx) {
+    if (sortedPainPoints.length === 0) return null;
+    // Zoek vooruit; wrap rond naar begin als nodig (maar skip currentIdx).
+    for (let offset = 1; offset <= sortedPainPoints.length; offset++) {
+      const candidateIdx = (currentIdx + offset) % sortedPainPoints.length;
+      if (candidateIdx === currentIdx) continue;
+      const pp = sortedPainPoints[candidateIdx];
+      if ((pp.coverage_status || "open") === "open") return candidateIdx;
+    }
+    return null;
+  }
+  const nextOpenIdx = findNextOpenIdx(currentFocusIdx);
+
+  // 11.U Block 3 F-retro-1: lens-suggestie voor huidig open pijnpunt
+  const currentPainPoint = sortedPainPoints[currentFocusIdx];
+  const recommendedLensFor = useMemo(() => {
+    if (!currentPainPoint || (currentPainPoint.coverage_status || "open") !== "open") return null;
+    const lens = suggestLens({
+      painPoint: currentPainPoint,
+      intents: intents || [],
+      dimensions: dimensions || [],
+    });
+    return { painPointId: currentPainPoint.id, lens };
+  }, [currentPainPoint, intents, dimensions]);
+
   // ── 11.U Block 2b — Doorloop-handlers ──────────────────────────────────────
   // Choice-cards
   function handleChooseAi(painPoint) {
@@ -163,14 +196,37 @@ export default function VerbeteractiesView({
     resetInlineState();
     setEigenActieEditFor(painPoint.id);
   }
-  function handleChooseDismiss(/* painPoint */) {
-    // Block 3 wires MotivatieModal. Block 2b: placeholder-alert.
-    setGlobalError({
-      message: appLabel(
-        "klanten.verbeteracties.actie.dismiss_block3_pending",
-        "Motivatie-modal komt in volgende release — gebruik voor nu Overzicht-modus.",
-      ),
-    });
+  function handleChooseDismiss(painPoint) {
+    // 11.U Block 3 Fix 3: opent MotivatieInput-modal i.p.v. placeholder-alert
+    resetInlineState();
+    setDismissModalFor(painPoint);
+  }
+  // 11.U Block 3 F-retro-1: klik op SuggestedLensHint → opent LensPicker met
+  // recommendedLens preselected.
+  function handleClickLensHint(painPoint) {
+    resetInlineState();
+    setLensPickerOpenFor(painPoint.id);
+  }
+  // 11.U Block 3 F-retro-2: skip naar volgende open pijnpunt
+  function handleJumpToNextOpen(/* painPoint */) {
+    if (nextOpenIdx == null) return;
+    jumpToIdx(nextOpenIdx);
+  }
+  // 11.U Block 3 Fix 3: MotivatieInput confirm-handler
+  async function handleConfirmDismiss(motivation) {
+    if (!dismissModalFor) return { error: new Error("dismiss-context ontbreekt") };
+    const { error: dErr } = await klantenService.dismissPainPoint(dismissModalFor.id, motivation);
+    if (dErr) { setGlobalError(dErr); return { error: dErr }; }
+    const skipIdx = nextOpenIdx;
+    setDismissModalFor(null);
+    // Auto-skip naar volgende open (indien beschikbaar)
+    if (skipIdx != null) jumpToIdx(skipIdx);
+    // Reload painPoints via parent custom event (KlantenWerkblad listens — anker Block 2b)
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("klanten:reload-painpoints"));
+    }
+    reloadIntents();
+    return { error: null };
   }
   // Lens-picker → AI-call
   async function handlePickLens(painPoint, lens) {
@@ -263,19 +319,42 @@ export default function VerbeteractiesView({
     setEigenActieEditFor(null);
   }
 
-  // Reopen pijnpunt (vanuit addressed of dismissed)
+  // 11.U Block 3 Fix 4: Reopen pijnpunt vanuit addressed OF dismissed.
+  // - dismissed → restorePainPoint (zelfde als Block 2b)
+  // - addressed: unlink alle intent-pain-links; coverage-trigger zet status='open'.
+  //   Confirm-dialog bij ≥2 links (reviewer-instructie regel 141-144, "alle links verwijderen"-pad).
   async function handleReopenPain(painPoint) {
     if (painPoint.coverage_status === "dismissed") {
       const { error: rErr } = await klantenService.restorePainPoint(painPoint.id);
       if (rErr) { setGlobalError(rErr); return; }
+      reloadIntents();
+      if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+        window.dispatchEvent(new CustomEvent("klanten:reload-painpoints"));
+      }
+      return;
     }
-    // Voor 'addressed': unlink alle gekoppelde intents zou pain weer open maken (trigger);
-    // Block 3 wires complete reopen-flow. Voor 2b: alleen dismissed → open functioneel.
-    // Reload via parent
+    if (painPoint.coverage_status === "addressed") {
+      const linkedIntentLinks = (intentPainLinks || []).filter(l => l.pain_point_id === painPoint.id);
+      if (linkedIntentLinks.length >= 2) {
+        // Open confirm-dialog
+        setReopenConfirmFor({ painPoint, linkCount: linkedIntentLinks.length });
+        return;
+      }
+      // Direct unlink (single of 0 links — geen confirm)
+      await performAddressedReopen(painPoint);
+    }
+  }
+  async function performAddressedReopen(painPoint) {
+    const linksToRemove = (intentPainLinks || []).filter(l => l.pain_point_id === painPoint.id);
+    setReopenConfirmFor(null);
+    for (const link of linksToRemove) {
+      const { error: dErr } = await klantenService.deleteIntentPainPointLink(link.intent_id, painPoint.id);
+      if (dErr) { setGlobalError(dErr); return; }
+    }
+    reloadIntents();
     if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
       window.dispatchEvent(new CustomEvent("klanten:reload-painpoints"));
     }
-    reloadIntents();
   }
 
   // ── AI-affordance-knop click (Overzicht-modus) ─────────────────────────────
@@ -518,6 +597,10 @@ export default function VerbeteractiesView({
             onPrev={() => moveFocus(-1)}
             onNext={() => moveFocus(+1)}
             onJumpToIdx={jumpToIdx}
+            recommendedLensFor={recommendedLensFor}
+            nextOpenIdxFor={nextOpenIdx}
+            onClickLensHint={handleClickLensHint}
+            onJumpToNextOpen={handleJumpToNextOpen}
             lensPickerOpenFor={lensPickerOpenFor}
             lensLoading={lensLoading}
             aiDraftFor={aiDraftFor}
@@ -775,6 +858,56 @@ export default function VerbeteractiesView({
           onClose={() => setPromoteSuggestion(null)}
           onSubmit={handlePromoteSubmit}
         />
+      )}
+
+      {/* 11.U Block 3 Fix 3: MotivatieInput modal voor "Niet adresseren" */}
+      <MotivatieInput
+        open={!!dismissModalFor}
+        painPoint={dismissModalFor}
+        onClose={() => setDismissModalFor(null)}
+        onConfirm={handleConfirmDismiss}
+        appLabel={appLabel}
+      />
+
+      {/* 11.U Block 3 Fix 4: Reopen confirm-dialog bij ≥2 gekoppelde intents */}
+      {reopenConfirmFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          data-testid="reopen-confirm-modal"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setReopenConfirmFor(null); }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-5 space-y-4">
+            <h3 className="text-base font-semibold text-slate-900">
+              {appLabel("klanten.verbeteracties.reopen.confirm.titel", "Pijnpunt opnieuw openzetten")}
+            </h3>
+            <p className="text-sm text-slate-600">
+              {appLabel(
+                "klanten.verbeteracties.reopen.confirm.body",
+                "Dit verwijdert {N} gekoppelde verbeteracties. Doorgaan?",
+              ).replace("{N}", reopenConfirmFor.linkCount)}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReopenConfirmFor(null)}
+                data-testid="reopen-confirm-cancel"
+                className="text-xs font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-300 hover:border-slate-500 px-3 py-2 rounded"
+              >
+                {appLabel("klanten.verbeteracties.reopen.confirm.annuleer", "Annuleer")}
+              </button>
+              <button
+                type="button"
+                onClick={() => performAddressedReopen(reopenConfirmFor.painPoint)}
+                data-testid="reopen-confirm-bevestig"
+                className="text-xs font-bold uppercase tracking-widest text-white bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] px-3 py-2 rounded"
+              >
+                {appLabel("klanten.verbeteracties.reopen.confirm.bevestig", "Ja, opnieuw openzetten")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

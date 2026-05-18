@@ -573,6 +573,29 @@ const LABEL_FALLBACKS = {
   "klanten.verbeteracties.rail.status.open":         "Open",
   "klanten.verbeteracties.rail.status.addressed":    "Geadresseerd",
   "klanten.verbeteracties.rail.status.dismissed":    "Genegeerd",
+  // 11.U Block 3 — F-retro-1 SuggestedLensHint + LensPicker PAST-pill
+  "klanten.verbeteracties.lens_hint.titel":          "AI-suggestie: {lens-naam} past hier waarschijnlijk",
+  "klanten.verbeteracties.lens_hint.past_marker":    "PAST",
+  "klanten.verbeteracties.lens_hint.body.cluster":       "Combineer pijnpunten in samenhangend cluster-thema.",
+  "klanten.verbeteracties.lens_hint.body.paradox":       "Identificeer de onderliggende paradox of dilemma.",
+  "klanten.verbeteracties.lens_hint.body.positionering": "Onderbouw vanuit strategische positionering.",
+  "klanten.verbeteracties.lens_hint.body.overstijgend":  "Verbind dit aan een hogere strategische lijn.",
+  "klanten.verbeteracties.lens_hint.body.algemeen":      "Algemene verbeteringsaanbeveling op basis van context.",
+  // 11.U Block 3 — F-retro-2 Volgende open pijnpunt-knop
+  "klanten.verbeteracties.actie.volgende_open":      "Volgende open pijnpunt",
+  "klanten.verbeteracties.actie.alle_gedaan":        "Alle pijnpunten geadresseerd",
+  // 11.U Block 3 Fix 3 — MotivatieInput modal
+  "klanten.verbeteracties.dismiss.titel":            "Bewust niet adresseren",
+  "klanten.verbeteracties.dismiss.placeholder":      "Bijv. 'Komt terug in IT-werkblad' of 'Buiten scope voor dit kwartaal'",
+  "klanten.verbeteracties.dismiss.char_counter":     "{N}/20+ chars",
+  "klanten.verbeteracties.dismiss.confirm":          "Negeer en volgende",
+  "klanten.verbeteracties.dismiss.cancel":           "Annuleer",
+  "klanten.verbeteracties.dismiss.error_min_chars":  "Minimaal 20 karakters nodig",
+  // 11.U Block 3 Fix 4 — Reopen confirm-dialog
+  "klanten.verbeteracties.reopen.confirm.titel":     "Pijnpunt opnieuw openzetten",
+  "klanten.verbeteracties.reopen.confirm.body":      "Dit verwijdert {N} gekoppelde verbeteracties. Doorgaan?",
+  "klanten.verbeteracties.reopen.confirm.bevestig":  "Ja, opnieuw openzetten",
+  "klanten.verbeteracties.reopen.confirm.annuleer":  "Annuleer",
 };
 
 const AppConfigContext = createContext(null);

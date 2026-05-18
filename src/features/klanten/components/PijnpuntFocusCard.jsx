@@ -10,10 +10,11 @@
  */
 
 import React, { useState } from "react";
-import { Circle, CheckCircle2, Slash, Loader2, X, Check } from "lucide-react";
+import { Circle, CheckCircle2, Slash, Loader2, X, Check, ArrowRight } from "lucide-react";
 import ChoiceCards from "./ChoiceCards";
 import LensPicker from "./LensPicker";
 import AiResultDraft from "./AiResultDraft";
+import SuggestedLensHint from "./SuggestedLensHint";
 
 const STATUS_STYLES = {
   open:      { bg: "bg-amber-100",   text: "text-amber-800",   icon: Circle },
@@ -28,6 +29,7 @@ export default function PijnpuntFocusCard({
   // Inline-state
   lensPickerOpen,
   lensLoading,
+  recommendedLens, // 11.U Block 3 F-retro-1
   aiDraft,
   eigenActieOpen,
   // Handlers
@@ -42,6 +44,9 @@ export default function PijnpuntFocusCard({
   onSaveEigenActie,
   onCancelEigenActie,
   onReopen,
+  onClickLensHint, // 11.U Block 3 F-retro-1
+  onJumpToNextOpen, // 11.U Block 3 F-retro-2
+  nextOpenAvailable = false,
   onEditIntent,
   appLabel,
 }) {
@@ -84,6 +89,7 @@ export default function PijnpuntFocusCard({
         <OpenBody
           lensPickerOpen={lensPickerOpen}
           lensLoading={lensLoading}
+          recommendedLens={recommendedLens}
           aiDraft={aiDraft}
           eigenActieOpen={eigenActieOpen}
           onChooseAi={onChooseAi}
@@ -96,6 +102,7 @@ export default function PijnpuntFocusCard({
           onWuifWegAi={onWuifWegAi}
           onSaveEigenActie={onSaveEigenActie}
           onCancelEigenActie={onCancelEigenActie}
+          onClickLensHint={onClickLensHint}
           appLabel={appLabel}
         />
       )}
@@ -105,6 +112,8 @@ export default function PijnpuntFocusCard({
           linkedIntents={linkedIntents}
           onReopen={onReopen}
           onEditIntent={onEditIntent}
+          onJumpToNextOpen={onJumpToNextOpen}
+          nextOpenAvailable={nextOpenAvailable}
           appLabel={appLabel}
         />
       )}
@@ -113,6 +122,8 @@ export default function PijnpuntFocusCard({
         <DismissedBody
           motivation={painPoint?.dismissal_motivation || ""}
           onReopen={onReopen}
+          onJumpToNextOpen={onJumpToNextOpen}
+          nextOpenAvailable={nextOpenAvailable}
           appLabel={appLabel}
         />
       )}
@@ -123,10 +134,11 @@ export default function PijnpuntFocusCard({
 // ── Sub-components ──────────────────────────────────────────────────────────
 
 function OpenBody({
-  lensPickerOpen, lensLoading, aiDraft, eigenActieOpen,
+  lensPickerOpen, lensLoading, recommendedLens, aiDraft, eigenActieOpen,
   onChooseAi, onChooseEigen, onChooseDismiss,
   onPickLens, onCancelLens, onAccepteerAi, onVerfijnAi, onWuifWegAi,
   onSaveEigenActie, onCancelEigenActie,
+  onClickLensHint,
   appLabel,
 }) {
   // Eén inline-state actief tegelijk — als lens/draft/eigen open is, geen ChoiceCards
@@ -145,6 +157,7 @@ function OpenBody({
     return (
       <LensPicker
         loading={lensLoading}
+        recommendedLens={recommendedLens}
         onPickLens={onPickLens}
         onCancel={onCancelLens}
         appLabel={appLabel}
@@ -161,12 +174,22 @@ function OpenBody({
     );
   }
   return (
-    <ChoiceCards
-      onChooseAi={onChooseAi}
-      onChooseEigen={onChooseEigen}
-      onChooseDismiss={onChooseDismiss}
-      appLabel={appLabel}
-    />
+    <div className="space-y-3">
+      <ChoiceCards
+        onChooseAi={onChooseAi}
+        onChooseEigen={onChooseEigen}
+        onChooseDismiss={onChooseDismiss}
+        appLabel={appLabel}
+      />
+      {/* 11.U Block 3 F-retro-1: amber AI-lens-suggestie-hint onder ChoiceCards */}
+      {recommendedLens && (
+        <SuggestedLensHint
+          recommendedLens={recommendedLens}
+          onClick={onClickLensHint}
+          appLabel={appLabel}
+        />
+      )}
+    </div>
   );
 }
 
@@ -258,7 +281,11 @@ function EigenActieInline({ onSave, onCancel, appLabel }) {
   );
 }
 
-function AddressedBody({ linkedIntents, onReopen, onEditIntent, appLabel }) {
+function AddressedBody({
+  linkedIntents, onReopen, onEditIntent,
+  onJumpToNextOpen, nextOpenAvailable,
+  appLabel,
+}) {
   const lbl = (key, fb) => (appLabel ? appLabel(key, fb) : fb);
   return (
     <div className="space-y-3" data-testid="doorloop-addressed-body">
@@ -293,19 +320,39 @@ function AddressedBody({ linkedIntents, onReopen, onEditIntent, appLabel }) {
           ))}
         </ul>
       )}
-      <button
-        type="button"
-        onClick={onReopen}
-        data-testid="doorloop-reopen-pain"
-        className="text-xs font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-300 hover:border-slate-500 px-3 py-2 rounded inline-flex items-center gap-1.5"
-      >
-        {lbl("klanten.verbeteracties.actie.reopen", "Maak opnieuw open")}
-      </button>
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onReopen}
+          data-testid="doorloop-reopen-pain"
+          className="text-xs font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-300 hover:border-slate-500 px-3 py-2 rounded inline-flex items-center gap-1.5"
+        >
+          {lbl("klanten.verbeteracties.actie.reopen", "Maak opnieuw open")}
+        </button>
+        {onJumpToNextOpen && (
+          <button
+            type="button"
+            onClick={onJumpToNextOpen}
+            disabled={!nextOpenAvailable}
+            data-testid="doorloop-jump-next-open"
+            className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] hover:text-[var(--color-accent)] border border-[var(--color-primary)]/30 hover:border-[var(--color-accent)] px-3 py-2 rounded inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {nextOpenAvailable
+              ? lbl("klanten.verbeteracties.actie.volgende_open", "Volgende open pijnpunt")
+              : lbl("klanten.verbeteracties.actie.alle_gedaan", "Alle pijnpunten geadresseerd")}
+            <ArrowRight size={12} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function DismissedBody({ motivation, onReopen, appLabel }) {
+function DismissedBody({
+  motivation, onReopen,
+  onJumpToNextOpen, nextOpenAvailable,
+  appLabel,
+}) {
   const lbl = (key, fb) => (appLabel ? appLabel(key, fb) : fb);
   return (
     <div className="space-y-3" data-testid="doorloop-dismissed-body">
@@ -318,14 +365,30 @@ function DismissedBody({ motivation, onReopen, appLabel }) {
       >
         {motivation || lbl("klanten.verbeteracties.dismissed.geen_motivatie", "(geen motivatie opgegeven)")}
       </p>
-      <button
-        type="button"
-        onClick={onReopen}
-        data-testid="doorloop-reopen-pain"
-        className="text-xs font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-300 hover:border-slate-500 px-3 py-2 rounded inline-flex items-center gap-1.5"
-      >
-        {lbl("klanten.verbeteracties.actie.reopen", "Maak opnieuw open")}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onReopen}
+          data-testid="doorloop-reopen-pain"
+          className="text-xs font-bold uppercase tracking-widest text-slate-600 hover:text-slate-900 border border-slate-300 hover:border-slate-500 px-3 py-2 rounded inline-flex items-center gap-1.5"
+        >
+          {lbl("klanten.verbeteracties.actie.reopen", "Maak opnieuw open")}
+        </button>
+        {onJumpToNextOpen && (
+          <button
+            type="button"
+            onClick={onJumpToNextOpen}
+            disabled={!nextOpenAvailable}
+            data-testid="doorloop-jump-next-open"
+            className="text-xs font-bold uppercase tracking-widest text-[var(--color-primary)] hover:text-[var(--color-accent)] border border-[var(--color-primary)]/30 hover:border-[var(--color-accent)] px-3 py-2 rounded inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {nextOpenAvailable
+              ? lbl("klanten.verbeteracties.actie.volgende_open", "Volgende open pijnpunt")
+              : lbl("klanten.verbeteracties.actie.alle_gedaan", "Alle pijnpunten geadresseerd")}
+            <ArrowRight size={12} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
